@@ -1,0 +1,2100 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>請求書発行（現場別）</title>
+<style>
+  :root{
+    --blue:#0070C0;
+    --bg:#f6f6f6; --card:#fff; --line:#ddd; --ink:#111; --muted:#666;
+    --r:12px; --pad:12px;
+    --font:"Yu Mincho","Hiragino Mincho ProN","MS PMincho","MS Mincho",serif;
+    --fontNum:"Yu Gothic","Hiragino Kaku Gothic ProN","Meiryo",system-ui,sans-serif;
+  }
+  body{ margin:0; font-family:var(--font); background:var(--bg); color:var(--ink); }
+  header{
+    position:sticky; top:0; z-index:20;
+    background:var(--blue); color:#fff;
+    border-bottom:1px solid rgba(255,255,255,.25);
+    padding:10px 14px;
+    display:flex; gap:12px; align-items:center; justify-content:space-between;
+  }
+  header h1{ margin:0; font-size:15px; letter-spacing:.5px; }
+  .tabs{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  .tab{
+    border:1px solid rgba(255,255,255,.9);
+    background:rgba(255,255,255,.12);
+    color:#fff;
+    padding:8px 12px; border-radius:999px; cursor:pointer;
+    font-size:13px; line-height:1.15;
+    text-align:center;
+  }
+  .tab small{
+    display:block;
+    font-size:10px;
+    opacity:.85;
+    margin-top:2px;
+    white-space:nowrap;
+  }
+  .tab.active{
+    background:#fff;
+    color:var(--blue);
+    border-color:#fff;
+    font-weight:800;
+  }
+
+  .wrap{ padding:14px; max-width:1100px; margin:0 auto; }
+  .grid{ display:grid; grid-template-columns: 1fr 1fr; gap:14px; }
+  .card{
+    background:var(--card); border:1px solid var(--line); border-radius:var(--r);
+    overflow:hidden;
+  }
+  .card h2{ margin:0; padding:10px 12px; font-size:14px; background:#fafafa; border-bottom:1px solid var(--line); }
+  .card .body{ padding:12px; }
+  label{ display:block; font-size:12px; color:#333; margin:10px 0 4px; }
+  input, select, textarea{
+    width:100%; box-sizing:border-box; padding:9px 10px;
+    border:1px solid #bbb; border-radius:10px; background:#fff; font-size:14px;
+  }
+  textarea{ min-height:60px; resize:vertical; }
+  input.readonly, select.readonly{
+    background:#f3f3f3;
+    color:#888;
+    border-color:#d0d0d0;
+  }
+  input.readonly::placeholder{ color:#aaa; }
+
+  .row{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .btns{ display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; }
+  button{
+    border:1px solid #222; background:#222; color:#fff;
+    padding:9px 12px; border-radius:10px; font-size:14px; cursor:pointer;
+  }
+  button.secondary{ background:#fff; color:#222; }
+  button.danger{ background:#b00020; border-color:#b00020; }
+  .hint{ font-size:12px; color:var(--muted); line-height:1.6; }
+  .list{
+    width:100%; border-collapse:collapse; font-size:13px;
+  }
+  .list th,.list td{ border-top:1px solid #eee; padding:8px 6px; text-align:left; vertical-align:top; }
+  .list th{ color:#333; font-weight:700; background:#fcfcfc; }
+  .pill{ display:inline-block; padding:2px 8px; border-radius:999px; border:1px solid #bbb; font-size:12px; color:#333; }
+  .right{ text-align:right; }
+  .mono{ font-variant-numeric: tabular-nums; }
+  .nowrap{ white-space:nowrap; }
+  .col-order{ min-width:140px; }
+  .col-money{ min-width:150px; }
+  .hide{ display:none !important; }
+  .kv{
+    display:grid; grid-template-columns: 1fr 1fr; gap:8px;
+    background:#fbfbfb; border:1px solid #eee; border-radius:12px; padding:10px;
+    margin-top:10px;
+  }
+  .kv .item{ border:1px solid #eee; border-radius:10px; padding:8px 10px; background:#fff; }
+  .kv .k{ font-size:10px; color:#444; }
+  .kv .v{ font-size:14px; font-weight:800; margin-top:2px; }
+  .kv .s{ font-size:10px; color:#666; margin-top:2px; }
+
+  /* ---- 印刷ページ（A4） ---- */
+  .paperWrap{ padding:14px; }
+  .paper{
+    width:210mm; min-height:297mm; margin:0 auto;
+    background:#fff; border:1px solid #bbb; box-sizing:border-box;
+    padding:10mm 8mm 8mm 12mm;
+  }
+  .paper{
+  padding-right:5mm !important;
+}
+  .title{
+    text-align:center;
+    font-size:30px;
+    letter-spacing:8px;
+    margin:0 0 5mm;
+    padding-bottom:2mm;
+    position:relative;
+  }
+  .title::after{
+    content:"";
+    display:block;
+    width:95mm;
+    margin:2mm auto 0;
+    border-bottom:1px solid #000;
+  }
+  .topGrid{ display:grid; grid-template-columns: 1.25fr .95fr; gap:4mm; }
+  .toBlock{ font-size:20px; }
+  .toLine{ display:none; }
+  .rightBlock{ text-align:right; font-size:15px; line-height:1.55; padding-right:2mm; margin-top:10mm;  }
+  .signRow{display:flex; justify-content:flex-end; align-items:flex-end; gap:6px;}
+  .nameLine{
+  display:flex;
+  justify-content:flex-end;   /* ← 右寄せの決定版 */
+  align-items:flex-end;
+  border-bottom:1px solid #000;
+  flex:0 0 55mm;              /* ← 線の長さ（調整可） */
+  height:7mm;                 /* ← 文字を線の上に乗せる高さ */
+  padding-right:2mm;          /* ← 右端との余白 */
+}
+
+  .midInfo{ margin-top:6mm; font-size:13px; line-height:1.65; }
+  .midInfo .uline{
+  border-bottom:1px solid #000;
+  display:inline-block;
+  min-width:150mm;
+  vertical-align:baseline;
+  margin-left:0.5mm;
+}
+
+  .metaGrid{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:6mm; margin-top:4mm; }
+  .metaBox{ border-bottom:1px solid #000; padding-bottom:0.5mm; }
+  .metaLabel{ font-size:16px; }
+  .metaValue{ font-size:18px; font-weight:850; }
+  .bigTotal{ margin-top:6mm; border:1.3px solid #000; display:grid; grid-template-columns: 1fr 1fr .55fr; }
+  .bigTotal .left{ padding:6mm; font-size:18px; border-right:1.3px solid #000; display:flex; align-items:center; }
+  .bigTotal .right{ padding:5mm; font-size:28px; font-weight:900; text-align:right; font-family:var(--fontNum); }
+  .bigTotal .right small{ font-size:14px; font-weight:600; }
+  table.sheet{ width:100%; border-collapse:collapse; margin-top:6mm; font-size:14px; }
+  table.sheet th, table.sheet td{ border:1px solid #000; padding:3mm 2.5mm; }
+  table.sheet th{ font-weight:800; text-align:left; font-size:15px; }
+  .num{ text-align:right; font-variant-numeric: tabular-nums; font-size:18px; font-weight:800; font-family:var(--fontNum); }
+  .note{ margin-top:5mm; font-size:12px; line-height:1.55; }
+  .apprBox div{white-space:nowrap;}
+  .apprLine{border-bottom:1px solid #000; height:10mm; margin-top:2mm;}
+  .bank{
+  margin-top:2mm;
+  border:1px solid #999;
+  padding:3mm 3.5mm;
+  font-size:16px;          /* ←★ ここ */
+  line-height:1.6;         /* ←★ 読みやすく */
+}
+
+  .foot{ margin-top:4mm; font-size:10px; line-height:1.5; }
+
+  @media print{
+    @page{ size:A4; margin:0; }
+
+    header{ display:none !important; }
+    body{ background:#fff; margin:0 !important; }
+
+    #view-settings, #view-sites, #view-monthly{ display:none !important; }
+    #view-print .card{ display:none !important; }
+    #view-summary .card{ display:none !important; }
+
+    .wrap{ padding:0 !important; max-width:none !important; }
+
+    /* 余白はここで作る（左・上） */
+    .paperWrap{ padding:10mm 0 0 15mm !important; }
+
+    /* 印刷時はレイアウトごと縮小（2ページ化しにくい） */
+    .paper{
+      border:none !important;
+      margin:0 !important;
+      zoom:0.85;
+      transform:none !important;
+      page-break-inside:avoid;
+    }
+  }
+
+  /* ==== 保留金アラート compact 3行 完全版 ==== */
+.ret-alert{
+  margin-top:10px;
+  border:1.5px solid #b00020;
+  background:#fff5f5;
+  color:#b00020;
+  border-radius:8px;
+  padding:6px 8px;
+  font-family:var(--fontNum);
+  font-size:11px;
+  line-height:1.3;
+}
+.ret-alert .title{
+  font-size:12px;
+  font-weight:900;
+  margin:0 0 2px;
+  padding:0;
+}
+.ret-alert .amt{
+  font-size:15px;
+  font-weight:900;
+}
+.ret-alert .hint{
+  font-size:10px;
+  margin-top:2px !important;
+  line-height:1.25;
+}
+
+/* ===== 現場登録画面：現場一覧 行・列調整 ===== */
+  #sitesTable { width: 100%; table-layout: fixed; }
+  #sitesTable th:nth-child(1), #sitesTable td:nth-child(1){ width:200px; word-break:break-all; }
+  #sitesTable th:nth-child(2), #sitesTable td:nth-child(2){ width:100px; }
+  #sitesTable td:nth-child(2), #sitesTable th:nth-child(2){ font-size:11px; }
+  #sitesTable .pill{ border:none; background:none; padding:0; border-radius:0; font-weight:normal; font-size:inherit; }
+  #sitesTable .pill::before{ content:"（"; }
+  #sitesTable .pill::after{ content:"）"; }
+  #sitesTable button{ padding:4px 8px; font-size:11px; border-radius:6px; }
+  #sitesTable th:nth-child(3),#sitesTable td:nth-child(3),
+  #sitesTable th:nth-child(4),#sitesTable td:nth-child(4),
+  #sitesTable th:nth-child(5),#sitesTable td:nth-child(5){ width:90px; }
+  #view-sites .grid{ grid-template-columns: 1fr 1.8fr; }
+  #view-sites .wrap-wide{ max-width:1400px; }
+
+  /* ===== 保留金アラート（小型・完全版） ===== */
+.ret-alert{
+    margin-top:8px;
+    border:1.5px solid #b00020;
+    background:#fff5f5;
+    color:#b00020;
+    border-radius:8px;
+    padding:6px 8px;
+    font-family:var(--fontNum);
+    font-size:11px;        /* 全体を小さく */
+    line-height:1.45;
+}
+.ret-alert .title{
+    font-size:12px;        /* タイトル行 */
+    font-weight:900;
+    margin:0 0 2px;
+    padding:0;
+}
+.ret-alert .amt{
+    font-size:16px;        /* 金額の数字も小型化 */
+    font-weight:900;
+}
+
+/* ===== 現場一覧で出る保留バッジ（小型版） ===== */
+.ret-badge{
+    display:inline-block;
+    padding:2px 8px;
+    border-radius:999px;
+    border:1.5px solid #b00020;
+    color:#b00020;
+    background:#fff5f5;
+    font-weight:900;
+    font-size:10px;
+    font-family:var(--fontNum);
+    margin-left:6px;
+    line-height:1.2;
+}
+#pvClient{
+  display: block;
+  padding-bottom: 1mm;   /* 文字と下線の間 */
+  margin-bottom: 3mm;    /* ←★ ここを追加（下に空白） */
+  border-bottom: 1px solid #000;
+}
+
+.pv-uline{
+  display:inline-block;
+  border-bottom:1px solid #000;
+  padding-bottom:0.5mm;  /* ←ここを 0.2mm とかにすると「文字と線」がもっと詰まる */
+  line-height:1.0;
+}
+#pvSigner{
+  border:0 !important;        /* 余計な下線を消す */
+  padding-bottom:0;
+}
+/* === Custom adjustments for approval lines === */
+.apprLine{
+  height:0;
+  border-bottom:1px solid #000;
+  margin-top:1mm;      /* 文字と線の間隔 */
+  margin-bottom:2mm;   /* 枠線との二重を防ぐ */
+  margin-left:-2mm;   /* ← 左に 2mm 伸ばす */
+  margin-right:-2mm;  /* ← 右に 2mm 伸ばす */
+}
+.apprBox{
+  border-bottom:1px solid #000 !important; /* 四角を閉じる */
+}
+
+/* === Move labels left by 5mm === */
+.apprLabel{
+  margin-left:-5mm !important;
+}
+.issuerName{
+  font-size: 22px;
+  font-weight: 900;
+  line-height: 1.2;
+  margin-bottom: 1mm;
+}
+#svDate{
+  margin-top: -10mm;   /* ←★ 数値を調整 */
+}
+/* 総括請求書：請求先ブロックを下げる */
+#view-summary .toBlock{
+  margin-top: 8mm;   /* ←★ 数値を調整 */
+}
+
+
+/* ===== 安全管理比率：完全ロック ===== */
+#sr_safeRate{
+  background:#f2f2f2;
+  border:1px solid #ccc;
+  color:#555;
+  pointer-events:none;
+  font-weight:600;
+}
+
+</style>
+</head>
+<body>
+<!-- ===== Password Gate (client-side) ===== -->
+<style>
+  html.pw-locked #appRoot{ display:none !important; }
+  #pwOverlay{
+    position:fixed; inset:0; z-index:99999;
+    display:flex; align-items:center; justify-content:center;
+    background:rgba(0,0,0,.55);
+    font-family:var(--fontNum, system-ui, sans-serif);
+  }
+  #pwBox{
+    width:min(520px, calc(100% - 28px));
+    background:#fff;
+    border-radius:14px;
+    border:1px solid #ddd;
+    box-shadow:0 10px 30px rgba(0,0,0,.25);
+    padding:16px 16px 14px;
+  }
+  #pwBox h2{ margin:0 0 10px; font-size:18px; }
+  #pwBox p{ margin:0 0 10px; font-size:13px; line-height:1.6; color:#333; }
+  #pwRow{ display:flex; gap:10px; align-items:center; }
+  #pwInput{
+    flex:1;
+    padding:10px 12px;
+    border:1px solid #bbb;
+    border-radius:10px;
+    font-size:16px;
+    letter-spacing:.15em;
+  }
+  #pwBtn{
+    padding:10px 14px;
+    border-radius:10px;
+    border:1px solid #111;
+    background:#111;
+    color:#fff;
+    font-size:14px;
+    cursor:pointer;
+  }
+  #pwMsg{ margin-top:10px; font-size:12px; color:#b00020; min-height:1.2em; }
+  @media print{ #pwOverlay{ display:none !important; } }
+</style>
+<script>
+  (function(){
+    const PW = "0000";
+    const KEY = "invoice_pw_ok";
+    document.documentElement.classList.add("pw-locked");
+
+    function unlock(){
+      sessionStorage.setItem(KEY, "1");
+      document.documentElement.classList.remove("pw-locked");
+      const ov = document.getElementById("pwOverlay");
+      if(ov) ov.remove();
+    }
+
+    function check(p){
+      return String(p ?? "").trim() === PW;
+    }
+
+    function initOverlay(){
+      if(sessionStorage.getItem(KEY)==="1"){
+        unlock();
+        return;
+      }
+
+      const ov = document.createElement("div");
+      ov.id = "pwOverlay";
+      ov.innerHTML = `
+        <div id="pwBox" role="dialog" aria-modal="true" aria-label="パスワード入力">
+          <h2>パスワードを入力してください</h2>
+          <p>※このパスワード機能はHTML内で動く簡易ロックです（サーバー側の認証ではありません）。</p>
+          <div id="pwRow">
+            <input id="pwInput" type="password" inputmode="numeric" pattern="[0-9]*" autocomplete="current-password" placeholder="••••">
+            <button id="pwBtn">開く</button>
+          </div>
+          <div id="pwMsg"></div>
+        </div>
+      `;
+      document.body.appendChild(ov);
+
+      const inp = document.getElementById("pwInput");
+      const btn = document.getElementById("pwBtn");
+      const msg = document.getElementById("pwMsg");
+
+      function tryOpen(){
+        if(check(inp.value)){
+          unlock();
+        }else{
+          msg.textContent = "パスワードが違います。";
+          inp.value = "";
+          inp.focus();
+        }
+      }
+
+      btn.addEventListener("click", tryOpen);
+      inp.addEventListener("keydown", (e)=>{ if(e.key==="Enter") tryOpen(); });
+      setTimeout(()=>inp.focus(), 50);
+    }
+
+    if(document.readyState === "loading"){
+      document.addEventListener("DOMContentLoaded", initOverlay);
+    }else{
+      initOverlay();
+    }
+  })();
+</script>
+<!-- ===== /Password Gate ===== -->
+<div id="appRoot">
+<header>
+  <h1>請求書発行（現場別）</h1>
+  <div class="tabs">
+    <button class="tab" data-view="sites" onclick="switchView('sites')">現場<small>工事・契約の登録</small></button>
+    <button class="tab" data-view="monthly" onclick="switchView('monthly')">月次<small>出来高入力</small></button>
+    <button class="tab" data-view="print" onclick="switchView('print')">印刷<small>請求書出力</small></button>
+    <button class="tab" data-view="summary" onclick="switchView('summary')">総括<small>総括請求書</small></button>
+    <button class="tab active" data-view="settings" onclick="switchView('settings')">設定<small>会社情報</small></button>
+  </div>
+</header>
+
+<div class="wrap wrap-wide">
+  <!-- 設定 -->
+  <section id="view-settings">
+    <div class="grid">
+      <div class="card">
+        <h2>自社情報（マスタ）</h2>
+        <div class="body">
+          <label>自社名</label>
+          <input id="s_myName" value="エムエス・ランドスケープ">
+          <label>住所</label>
+          <input id="s_myAddr" value="静岡県伊豆の国市田京1021-5">
+          <div class="row">
+            <div>
+              <label>TEL</label>
+              <input id="s_myTel" value="055-999-9999">
+            </div>
+            <div>
+              <label>署名（担当者）</label>
+              <input id="s_mySigner" value="菅尾基弘">
+            </div>
+          </div>
+          <div class="row">
+            <div>
+              <label>印表示</label>
+              <select id="s_useStamp">
+                <option value="1" selected>表示する</option>
+                <option value="0">表示しない</option>
+              </select>
+            </div>
+            <div>
+              <label>税率（%）</label>
+              <input id="s_taxRate" type="number" step="0.1" value="10">
+            </div>
+          </div>
+          <label>振込先（表示文）</label>
+          <input id="s_bankText" value="【振込先】 静岡銀行　三島支店　普通　9999999　菅尾基弘">
+          <div class="btns">
+            <button onclick="saveAll()">保存</button>
+            <button class="secondary" onclick="loadAll(true)">読み込み</button>
+          </div>
+          <div class="hint">※ここで入力した内容は印刷レイアウトに自動反映します。</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>請求先（会社）</h2>
+        <div class="body">
+          <label>請求先名（例：○○株式会社 御中）</label>
+          <input id="s_clientName" value="鶴よし建設株式会社 御中">
+          <div class="hint">※現場ごとに請求先が違う場合は、次段階で「現場側」に持たせます（今は共通）。</div>
+          <div class="btns">
+            <button onclick="saveAll()">保存</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 現場 -->
+  <section id="view-sites" class="hide">
+    <div class="grid">
+      <div class="card">
+        <h2>現場の登録</h2>
+        <div class="body">
+          <label>現場名（工事名）</label>
+          <input id="p_name" placeholder="••••">
+          <div class="row">
+            <div>
+              <label>注文番号</label>
+              <input id="p_orderNo" placeholder="••••">
+            </div>
+            <div>
+              <label>工事番号</label>
+              <input id="p_workNo" placeholder="••••">
+            </div>
+          </div>
+
+          <div class="row">
+            <div>
+              <label>担当者</label>
+              <input id="p_manager" placeholder="••••">
+            </div>
+            <div>
+              <label>登録日</label>
+              <input id="p_regDate" type="date">
+            </div>
+          </div>
+
+          <div class="row">
+            <div>
+              <label>注文金額（当初金額・税抜）</label>
+              <input id="p_contractNet" inputmode="numeric" placeholder="••••" oninput="formatCommaInput(this)">
+            </div>
+            <div>
+              <label>最終注文金額（税抜）</label>
+              <input id="p_displayContract" disabled value="—">
+            </div>
+          </div>
+
+          <div class="row">
+            <div>
+              <label>増額（税抜）</label>
+              <input id="p_increaseNet" inputmode="numeric" value="0" oninput="formatCommaInput(this)">
+            </div>
+            <div>
+              <label>減額（税抜）</label>
+              <input id="p_reductionNet" inputmode="numeric" value="0" oninput="formatCommaInput(this)">
+            </div>
+          </div>
+
+          <div class="row">
+            <div>
+              <label>保留金率（%）</label>
+              <div class="hint" style="margin:-2px 0 6px; color:#888;">※変更する場合はHTMLをエディターで編集してください</div>
+              <input id="p_retainRate" type="number" step="0.1" value="5" disabled class="readonly">
+            </div>
+            <div>
+              <label>保留金発生ライン（%）</label>
+              <input id="p_retainTrigger" type="number" step="0.1" value="95" disabled class="readonly">
+            </div>
+          </div>
+          <div class="btns">
+            <button id="btnSiteSave" onclick="saveSite()">現場を追加</button>
+            <button class="secondary" onclick="resetSiteForm()">入力クリア</button>
+            <button id="btnSiteCancel" class="secondary hide" onclick="cancelEditSite()">編集キャンセル</button>
+          </div>
+          <div class="hint">
+            ・最終注文金額＝（当初＋増額−減額）<br>
+            ・最終注文金額（保留計算用の基準）＝（当初 − 減額）※増額は含めない<br>
+            ・保留金上限＝実質請負×保留金率（四捨五入）<br>
+            ・累計出来高が「保留計算用基準×95%」以上で保留金が発生し、当月請求から控除。<br>
+            ・最終月は残り保留金を請求（工事完了後に当月出来高0でも保留金だけ請求可能）
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>現場一覧</h2>
+        <div class="body">
+          <table class="list" id="sitesTable">
+            <thead>
+              <tr>
+                <th>現場</th>
+                <th class="nowrap col-order">注文/工事</th>
+                <th class="right col-money">最終注文金額（税抜）</th>
+                <th class="right col-money">既受領（税抜）</th>
+                <th class="right col-money">請求残金（税抜）</th>
+                <th class="right">操作</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+          <div class="btns">
+            <button class="secondary" onclick="exportData()">データ書き出し（JSON）</button>
+            <button class="danger" onclick="clearAll()">全削除</button>
+          </div>
+          <textarea id="exportBox" class="hide" spellcheck="false"></textarea>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 月次 -->
+  <section id="view-monthly" class="hide">
+    <div class="grid">
+      <div class="card">
+        <h2>月次入力（当月出来高）</h2>
+        <div class="body">
+          <div class="row">
+            <div>
+              <label>対象月（YYYY-MM）</label>
+              <input id="m_month" type="month">
+            </div>
+            <div>
+              <label>現場を選択</label>
+              <select id="m_site"></select>
+            </div>
+          </div>
+
+          <!-- 現場サマリー -->
+          <div class="kv" id="siteSummary">
+<div class="item">
+              <div class="k">注文金額（当初金額・税抜）</div>
+              <div class="v mono" id="sum_contract">—</div>
+              <div class="s">現場マスタ</div>
+            </div>
+            <div class="item">
+              <div class="k">最終注文金額（税抜）</div>
+              <div class="v mono" id="sum_displayContract">—</div>
+              <div class="s">当初＋増額−減額</div>
+            </div>
+
+            <div class="item">
+              <div class="k">増額（税抜）</div>
+              <div class="v mono" id="sum_increase">—</div>
+              <div class="s">保留金の基準に含めない</div>
+            </div>
+            <div class="item">
+              <div class="k">減額（税抜）</div>
+              <div class="v mono" id="sum_reduction">—</div>
+              <div class="s">保留金の基準に反映</div>
+            </div>
+
+            <div class="item">
+              <div class="k">最終注文金額（保留金計算用・税抜）</div>
+              <div class="v mono" id="sum_effective">—</div>
+              <div class="s">当初−減額（増額は含めない）</div>
+            </div>
+
+            <div class="item">
+              <div class="k">保留金残（未請求・税抜）</div>
+              <div class="v mono" id="sum_retRemain">—</div>
+              <div class="s">95%到達後：上限−控除済み</div>
+            </div>
+
+            <div class="item">
+              <div class="k">保留上限（税抜）</div>
+              <div class="v mono" id="sum_retCap">—</div>
+              <div class="s">保留計算用×保留金率</div>
+            </div>
+            <div class="item">
+              <div class="k">発生ライン（税抜）</div>
+              <div class="v mono" id="sum_trigger">—</div>
+              <div class="s">保留計算用×発生ライン%</div>
+            </div>
+            <div class="item">
+              <div class="k">前月まで累計（税抜）＝既受領</div>
+              <div class="v mono" id="sum_prevCum">—</div>
+              <div class="s">月次履歴から自動</div>
+            </div>
+            <div class="item">
+              <div class="k">請求残金（税抜）</div>
+              <div class="v mono" id="sum_balance">—</div>
+              <div class="s">最終注文金額−累計出来高−保留金残</div>
+            </div>
+          </div>
+
+          <label>当月出来高（税抜）</label>
+          <input id="m_thisMonthNet" class="money" inputmode="numeric" value="0" oninput="formatCommaInput(this)">
+
+          <label>最終月（保留金を残り請求して完了）</label>
+          <select id="m_isFinal">
+            <option value="0" selected>通常月</option>
+            <option value="1">最終月</option>
+          </select>
+
+          <!-- ★ 保留金アラート（3行コンパクト版：保存ボタン直前）★ -->
+          <div id="retAlert" class="ret-alert hide" role="alert" aria-live="polite">
+            <div class="title">⚠ 保留金が残っています</div>
+            <div>未請求の保留金残： <span class="amt" id="retAlertAmt">0</span> 円</div>
+            <div class="hint">※「保留金だけ請求（月次出来高0）」が可能です。</div>
+          </div>
+
+
+          <div class="btns">
+            <button onclick="saveMonthly()">月次を保存</button>
+            <button class="secondary" onclick="loadMonthlyToForm()">保存済みを読み込み</button>
+          </div>
+
+          <div class="hint">
+            ※既受領額（税抜）は <b>前月までの累計出来高</b> として自動計算します。<br>
+            ※保留金は <b>実質請負（請負−減額）</b> を基準に計算します（増額は影響しません）。
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>月別履歴（この現場）</h2>
+        <div class="body">
+          <div class="hint" style="margin-bottom:8px;">
+            下は現場ごとの月別出来高の履歴です。<br>
+            「この月へ」で月次入力にジャンプできます。
+          </div>
+          <table class="list" id="siteHistoryTable">
+            <thead>
+              <tr>
+                <th>年月</th>
+                <th class="right">当月出来高（税抜）</th>
+                <th>状態</th>
+                <th class="right">操作</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+
+          <hr style="border:none;border-top:1px solid #eee;margin:12px 0;">
+          <h2 style="margin:0 0 6px;font-size:14px;">月次一覧（この月）</h2>
+          <table class="list" id="monthlyTable">
+            <thead>
+              <tr>
+                <th>現場</th>
+                <th class="right">既受領(税抜)</th>
+                <th class="right">当月出来高(税抜)</th>
+                <th>状態</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 印刷 -->
+  <section id="view-print" class="hide">
+    <div class="card">
+      <h2>印刷（現場別）</h2>
+      <div class="body">
+        <div class="row">
+          <div>
+            <label>対象月（YYYY-MM）</label>
+            <input id="pr_month" type="month">
+          </div>
+          <div>
+            <label>現場を選択</label>
+            <select id="pr_site"></select>
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <label>請求日（表示用）</label>
+            <input id="pr_billDate" type="date">
+          </div>
+          <div>
+            <label>印刷</label>
+            <div class="btns" style="margin-top:6px;">
+              <button onclick="renderPrint()">プレビュー更新</button>
+              <button class="secondary" onclick="window.print()">印刷 / PDF保存</button>
+            </div>
+          </div>
+        </div>
+        <div class="hint">※入力は「設定／現場／月次」で行い、ここは出力専用です。</div>
+      </div>
+    </div>
+
+    <div class="paperWrap">
+      <div class="paper">
+        <h2 class="title">請 求 書（現場別）</h2>
+
+        <div class="topGrid">
+          <div class="toBlock">
+            <div style="font-size:24px; font-weight:800; margin-bottom:0.5mm; line-height:1.2;">
+              <span id="pvClient">（請求先）</span> <span class="toLine"></span>
+            </div>
+            <div class="midInfo">工事代金を下記のとおり御請求いたします。</div>
+
+            <div class="midInfo" style="margin-top:4mm;">
+              <div class="metaLabel" style="font-size:13px; font-weight:800;">工事名</div>
+              <div class="metaValue"><span id="pvSite" class="pv-uline">（現場名）</span></div>
+            </div>
+
+            <div class="metaGrid">
+              <div class="metaBox">
+                <div class="metaLabel">注文番号</div>
+                <div class="metaValue" id="pvOrderNo">—</div>
+              </div>
+              <div class="metaBox">
+                <div class="metaLabel">工事番号</div>
+                <div class="metaValue" id="pvWorkNo">—</div>
+              </div>
+                          </div>
+          </div>
+
+          <div class="rightBlock">
+            <div id="pvDate">—</div>
+            <div style="margin-top:3mm;">
+              <div id="pvMyName" class="issuerName">—</div>
+              <div id="pvMyAddr">—</div>
+              <div>TEL. <span id="pvMyTel">—</span></div>
+              <div class="signRow">
+              <span class="nameLine">
+              <span id="pvSigner">菅尾基弘</span>
+             </span>
+            </div>
+
+            </div>
+             <div style="font-size:10px; margin-top:1mm;">※弊社使用欄</div>
+            <div class="apprBox"
+                  style="margin-top:0mm;   /* ← 上に8mm食い込ませる */
+                         border:1px solid #000;height:22mm; /* ← 14mm + 8mm */
+                         display:grid;
+                         grid-template-columns:repeat(4,1fr);">
+              <div style="border-right:1px solid #000; padding:2mm; font-size:10px;"><div class="apprLabel">工事部長</div><div class="apprLine"></div></div>
+              <div style="border-right:1px solid #000; padding:2mm; font-size:10px;"><div class="apprLabel">現場担当</div><div class="apprLine"></div></div>
+              <div style="border-right:1px solid #000; padding:2mm; font-size:10px;"><div class="apprLabel">総務</div><div class="apprLine"></div></div>
+              <div style="padding:2mm; font-size:10px;"><div class="apprLabel">経理</div><div class="apprLine"></div></div>
+            </div>
+           
+          </div>
+        </div>
+
+        <div class="bigTotal">
+          <div class="left">請求額合計　<small>（税込）</small></div>
+          <div class="right"><span id="pvTotalGross">¥0</span><small>.-</small></div>
+          <div style="border-left:1.3px solid #000; padding:5mm; font-size:12px; display:flex; flex-direction:column; justify-content:center; gap:4px;">
+            <div style="font-weight:800;">（（弊社担当者名））</div>
+            <div style="border-bottom:1px solid #000; padding-bottom:2px; font-size:16px; font-weight:900;" id="pvStaff">　</div>
+          </div>
+        </div>
+
+        <table class="sheet" id="pvTableDetailed">
+          <tr>
+            <th style="width:65mm;">① 注文金額（税抜）</th>
+            <td class="num" id="pvContractNet">0 円</td>
+            <th style="width:42mm; text-align:center;">〈保留金額〉</th>
+          </tr>
+          <tr>
+            <th><span id="pvLblIncrease">② 追加工事（税抜）</span></th>
+            <td class="num" id="pvIncreaseNet">0 円</td>
+            <td class="num" style="text-align:center; font-size:18px; font-weight:900;" id="pvRetentionBox">　</td>
+          </tr>
+          <tr>
+            <th><span id="pvLblReduction">③ 減額工事（税抜）</span></th>
+            <td class="num" id="pvReductionNet">0 円</td>
+            <td rowspan="6"></td>
+          </tr>
+          <tr>
+            <th>④ 最終注文金額（税抜）</th>
+            <td class="num" id="pvFinalOrderNet">0 円</td>
+          </tr>
+          <tr>
+            <th>⑤ 既受領額（税抜）</th>
+            <td class="num" id="pvReceivedNet">0 円</td>
+          </tr>
+          <tr>
+            <th>⑥ 当月出来高（税抜）</th>
+            <td class="num" id="pvThisMonthNet">0 円</td>
+          </tr>
+          <tr>
+            <th>⑦ 累計出来高（税抜）</th>
+            <td class="num" id="pvCumNet">0 円</td>
+          </tr>
+          <tr>
+            <th>⑧ 当月合計金額（税抜）</th>
+            <td class="num" id="pvBillNet">0 円</td>
+          </tr>
+          <tr>
+            <th>消費税額</th>
+            <td class="num" id="pvTax">0 円</td>
+            <td></td>
+          </tr>
+        </table>
+
+        <table class="sheet hide" id="pvTableSimple">
+  <tr>
+    <th style="width:65mm;">① 注文金額（税抜）</th>
+    <td class="num"><span data-bind="pvContractNet">0 円</span></td>
+  </tr>
+  <tr>
+    <th>② 既受領額（税抜）</th>
+    <td class="num"><span data-bind="pvReceivedNet">0 円</span></td>
+  </tr>
+  <tr>
+    <th>③ 当月出来高（税抜）</th>
+    <td class="num"><span data-bind="pvThisMonthNet">0 円</span></td>
+  </tr>
+  <tr>
+    <th>④ 累計出来高（税抜）</th>
+    <td class="num"><span data-bind="pvCumNet">0 円</span></td>
+  </tr>
+  <tr>
+    <th>⑤ 当月合計金額（税抜）</th>
+    <td class="num"><span data-bind="pvBillNet">0 円</span></td>
+  </tr>
+  <tr>
+    <th>消費税額</th>
+    <td class="num"><span data-bind="pvTax">0 円</span></td>
+  </tr>
+</table>
+
+        <div class="note">
+          （作成上の注意）<br>
+          1．注文書単位に請求書を作成してください。<br>
+          2．金額欄は原則、消費税抜金額で記入してください。<br>
+          3．注文No、工事番号の記入の無いものはお支払い出来ない場合があります。<br>
+          4．追加工事、減額工事は最終請求時に内訳書を必ず添付してください。<br>
+          5．保留金の扱いは契約条件に従います（本アプリは設定により計算）。<br>
+          ※保留金の基準は「実質請負（請負−減額）」で、増額は影響しません。
+        </div>
+
+        <!--  <div class="bank" id="pvBank">—</div> -->
+
+
+        <!--<div class="foot">
+          ※請求書は月末締めで翌月5日までに必着でお願いします。<br>
+          ※尚、支払いは翌月末となります。
+        </div>-->
+      </div>
+    </div>
+  
+  </section>
+
+  <!-- 総括（一覧） -->
+  <section id="view-summary" class="hide">
+    <div class="card">
+      <h2>印刷（総括請求書）</h2>
+      <div class="body">
+        <div class="row">
+          <div>
+            <label>対象月（YYYY-MM）</label>
+            <input id="sr_month" type="month">
+          </div>
+          <div>
+            <label>請求日（表示用）</label>
+            <input id="sr_billDate" type="date">
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <label>安全管理費率（%）</label>
+            <input id="sr_safeRate" type="number" step="0.001" value="0.5" readonly tabindex="-1" onfocus="this.blur();">
+            <div class="hint">※見本どおり 0.5%（= 0.005）です。必要なら変更できます。</div>
+          </div>
+          <div>
+            <label>印刷</label>
+            <div class="btns" style="margin-top:6px;">
+              <button onclick="renderSummary()">プレビュー更新</button>
+              <button class="secondary" onclick="window.print()">印刷 / PDF保存</button>
+            </div>
+          </div>
+        </div>
+        <div class="hint">※指定月に請求がある現場を自動で集計します。</div>
+        <div class="hint" id="svDebug" style="margin-top:6px;">（データ確認中…）</div>
+      </div>
+    </div>
+
+    <div class="paperWrap">
+      <div class="paper" id="summaryPaper">
+        <h2 class="title">総 括 請 求 書</h2>
+
+        <div class="topGrid" style="grid-template-columns: 1.25fr .95fr;">
+          <div class="toBlock">
+            <div style="font-size:22px; font-weight:800; margin-bottom:0.5mm; line-height:1.2;">
+              <span id="svClient" class="pv-uline">（請求先）</span>
+            </div>
+            <div class="midInfo">下記のとおり御請求申し上げます。</div>
+          </div>
+
+          <div class="rightBlock">
+            <div id="svDate">—</div>
+            <div style="margin-top:3mm;">
+              <div id="svMyName" class="issuerName">—</div>
+              <div id="svMyAddr">—</div>
+              <div>TEL. <span id="svMyTel">—</span></div>
+              <div class="signRow">
+                <span class="nameLine">
+                  <span id="svSigner">—</span>
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <table class="sheet" id="svTable" style="margin-top:8mm;">
+          <thead>
+            <tr>
+              <th style="width:110mm; text-align:center;">工 事 名（現 場 名）</th>
+              <th style="width:30mm; text-align:center;">請求回数</th>
+              <th style="width:45mm; text-align:center;">請求金額（税込）</th>
+            </tr>
+          </thead>
+          <tbody id="svTbody">
+            <tr><td colspan="3" class="hint">対象月を選択してください。</td></tr>
+          </tbody>
+          <tfoot>
+            <tr>
+              <th colspan="2">① 請求金額合計</th>
+              <td class="num" id="svSum1">0 円</td>
+            </tr>
+            <tr>
+              <th colspan="1">② 安全管理費（①×0.005）</th>
+              <td style="text-align:center; font-weight:900;">△</td>
+              <td class="num" id="svSafe">0 円</td>
+            </tr>
+            <tr>
+              <th colspan="2">合　計（①−②）</th>
+              <td class="num" id="svSumNet">0 円</td>
+            </tr>
+          </tfoot>
+        </table>
+
+        <div class="bank" id="svBank" style="margin-top:8mm;">—</div>
+
+        <div class="foot" style="margin-top:4mm;">
+          ※請求書は月末締めで翌月5日までに必着でお願いします。<br>
+          ※尚、支払いは翌月末となります。<br>
+          ※注文金額が30万円以上になる場合は保留金が発生します。
+        </div>
+      </div>
+    </div>
+  </section>
+</section>
+</div>
+
+<script>
+  // ====== Input helpers ======
+  function formatCommaInput(el){
+    const raw = el.value.replace(/,/g,'');
+    if(raw === '' || isNaN(raw)) return;
+    el.value = Number(raw).toLocaleString('ja-JP');
+  }
+  function getNumber(el){
+    return Number((el.value||'').replace(/,/g,'') || 0);
+  }
+
+  // ====== Storage ======
+  const KEY = "invoice_app_v3";
+  const state = {
+    settings: {
+      myName:"エムエス・ランドスケープ",
+      myAddr:"静岡県伊豆の国市田京1021-5",
+      myTel:"055-999-9999",
+      mySigner:"菅尾基弘",
+      useStamp:true,
+      taxRate:10,
+      bankText:"【振込先】 静岡銀行　三島支店　普通　9999999　菅尾基弘",
+      clientName:"鶴よし建設株式会社 御中"
+    },
+    sites: [],
+    monthly: {}
+  };
+
+  function saveAll(){ localStorage.setItem(KEY, JSON.stringify(state)); }
+  function loadAll(silent=false){
+    const raw = localStorage.getItem(KEY);
+    if(!raw){ if(!silent) alert("保存データがありません"); return; }
+    try{
+      const obj = JSON.parse(raw);
+      Object.assign(state.settings, obj.settings || {});
+      state.sites = Array.isArray(obj.sites) ? obj.sites : [];
+      state.monthly = obj.monthly || {};
+      syncSettingsToForm();
+      refreshSiteTable();
+      refreshSiteSelects();
+      refreshMonthlyTable();
+      refreshSiteSummaryAndHistory();
+      if(!silent) alert("読み込みました");
+    }catch(e){
+      if(!silent) alert("読み込みに失敗しました");
+    }
+  }
+  function clearAll(){
+    if(!confirm("全データを削除します。よろしいですか？")) return;
+    localStorage.removeItem(KEY);
+    location.reload();
+  }
+
+  // ====== Utils ======
+  function uid(){ return "S" + Math.random().toString(36).slice(2,9); }
+  function round(n){ return Math.round(Number(n||0)); }
+  function yen(n){ return round(n).toLocaleString("ja-JP"); }
+  function escapeHtml(s){
+    return String(s ?? "").replace(/[&<>"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m]));
+  }
+  function monthListSorted(){ return Object.keys(state.monthly).sort(); }
+  function getRec(month, siteId){ return (state.monthly[month] && state.monthly[month][siteId]) || null; }
+  function sumBeforeMonth(siteId, month){
+    let sum = 0;
+    for(const m of monthListSorted()){
+      if(m >= month) break;
+      const rec = getRec(m, siteId);
+      if(rec) sum += Number(rec.thisMonthNet||0);
+    }
+    return sum;
+  }
+
+  // 自動「最終月」判定（全額到達で最終月。ただし出来高0の保留金請求月は最終月にしない）
+  function autoIsFinalMonth(siteId, month, thisMonthNet){
+    // ★最終月判定（ユーザー要望）
+    // ・95%未満：通常月
+    // ・95%以上：最終月（完了扱い）
+    // ※出来高0で「保留金だけ請求」の月は最終月にしない（完了済み後の保留金請求として扱う）
+    const site = state.sites.find(s=>s.id===siteId);
+    if(!site || !month) return false;
+
+    const trigger = triggerLine(site); // 95%ライン（最終注文金額×%）
+    if(trigger <= 0) return false;
+
+    const received = Number(sumBeforeMonth(siteId, month) || 0);
+
+    // ★出来高0で、既に95%以上到達済みの月は「保留金だけ請求」扱い → 最終月にしない
+    if (Number(thisMonthNet || 0) === 0 && received >= (trigger - 1)) return false;
+
+    const cum = received + Number(thisMonthNet || 0);
+    return cum >= (trigger - 1);
+  }
+
+  function sumAllMonths(siteId){
+    let sum = 0;
+    for(const m of monthListSorted()){
+      const rec = getRec(m, siteId);
+      if(rec) sum += Number(rec.thisMonthNet||0);
+    }
+    return sum;
+  }
+
+  // ====== View ======
+  function switchView(view){
+    document.querySelectorAll(".tab").forEach(b=>{
+      b.classList.toggle("active", b.dataset.view===view);
+    });
+    document.getElementById("view-settings").classList.toggle("hide", view!=="settings");
+    document.getElementById("view-sites").classList.toggle("hide", view!=="sites");
+    document.getElementById("view-monthly").classList.toggle("hide", view!=="monthly");
+    document.getElementById("view-print").classList.toggle("hide", view!=="print");
+    document.getElementById("view-summary").classList.toggle("hide", view!=="summary");
+    if(view==="monthly") { refreshMonthlyTable(); refreshSiteSummaryAndHistory(); }
+    if(view==="print") { refreshSiteSelects(); renderPrint(); }
+    if(view==="summary") { renderSummary(); }
+  }
+
+  // ====== Settings ======
+  function syncSettingsToForm(){
+    s_myName.value = state.settings.myName || "";
+    s_myAddr.value = state.settings.myAddr || "";
+    s_myTel.value = state.settings.myTel || "";
+    s_mySigner.value = state.settings.mySigner || "";
+    s_useStamp.value = state.settings.useStamp ? "1":"0";
+    s_taxRate.value = state.settings.taxRate ?? 10;
+    s_bankText.value = state.settings.bankText || "";
+    s_clientName.value = state.settings.clientName || "";
+  }
+  function syncFormToSettings(){
+    state.settings.myName = s_myName.value.trim();
+    state.settings.myAddr = s_myAddr.value.trim();
+    state.settings.myTel = s_myTel.value.trim();
+    state.settings.mySigner = s_mySigner.value.trim();
+    state.settings.useStamp = (s_useStamp.value==="1");
+    state.settings.taxRate = Number(s_taxRate.value||10);
+    state.settings.bankText = s_bankText.value.trim();
+    state.settings.clientName = s_clientName.value.trim();
+  }
+  ["s_myName","s_myAddr","s_myTel","s_mySigner","s_useStamp","s_taxRate","s_bankText","s_clientName"].forEach(id=>{
+    const el=document.getElementById(id);
+    el.addEventListener("change", ()=>{ syncFormToSettings(); saveAll(); renderPrint(); });
+  });
+
+  // ====== Sites ======
+  let editingSiteId = null;
+
+  function displayContract(site){
+    return Number(site.contractNet||0) + Number(site.increaseNet||0) - Number(site.reductionNet||0);
+  }
+  function effContract(site){
+    return Math.max(0, Number(site.contractNet||0) - Number(site.reductionNet||0));
+  }
+
+  // ★計算用サイト（通常月は増額・減額を0扱い、最終月のみ反映）
+  function getSiteForCalc(site, isFinal){
+    const inc = Number(site?.increaseNet||0);
+    const dec = Number(site?.reductionNet||0);
+    return {
+      ...site,
+      increaseNet: isFinal ? inc : 0,
+      reductionNet: isFinal ? dec : 0,
+      retainRate: Number(site?.retainRate||5),
+      retainTrigger: Number(site?.retainTrigger||95)
+    };
+  }
+
+  function retentionCap(site){
+    const base = effContract(site);
+    return round(base * (Number(site.retainRate||5)/100));
+  }
+  function triggerLine(site){
+    // ★保留金発生ラインは「最終注文金額（当初＋増額−減額）」×％
+    const base = displayContract(site);
+    return base * (Number(site.retainTrigger||95)/100);
+  }
+
+  function resetSiteForm(){
+    p_name.value=""; p_orderNo.value=""; p_workNo.value="";
+    p_contractNet.value=""; p_increaseNet.value="0"; p_reductionNet.value="0";
+    p_displayContract.value="—";
+    if(typeof p_manager!=="undefined") p_manager.value="";
+    if(typeof p_regDate!=="undefined") p_regDate.value="";
+    p_retainRate.value="5"; p_retainTrigger.value="95";
+    editingSiteId = null;
+    const btn = document.getElementById("btnSiteSave");
+    if(btn) btn.textContent = "現場を追加";
+    const c = document.getElementById("btnSiteCancel");
+    if(c) c.classList.add("hide");
+  }
+  function updateDisplayContractPreview(){
+    const tmp = {
+      contractNet: getNumber(p_contractNet),
+      increaseNet: getNumber(p_increaseNet),
+      reductionNet: getNumber(p_reductionNet)
+    };
+    p_displayContract.value = `${yen(displayContract(tmp))} 円`;
+  }
+  ["p_contractNet","p_increaseNet","p_reductionNet"].forEach(id=>{
+    const el = document.getElementById(id);
+    el.addEventListener("input", updateDisplayContractPreview);
+  });
+
+  function saveSite(){
+    const name = p_name.value.trim();
+    if(!name){ alert("現場名を入力してください"); return; }
+
+    const siteData = {
+      id: editingSiteId || uid(),
+      name,
+      orderNo: p_orderNo.value.trim(),
+      workNo: p_workNo.value.trim(),
+      contractNet: getNumber(p_contractNet),
+      increaseNet: getNumber(p_increaseNet),
+      reductionNet: getNumber(p_reductionNet),
+      retainRate: Number(p_retainRate.value||5),
+      retainTrigger: Number(p_retainTrigger.value||95),
+      manager: (typeof p_manager!=="undefined" ? p_manager.value.trim() : ""),
+      regDate: (typeof p_regDate!=="undefined" ? p_regDate.value : "")
+    };
+
+    if(editingSiteId){
+      const idx = state.sites.findIndex(s=>s.id===editingSiteId);
+      if(idx>=0) state.sites[idx] = siteData;
+      alert("現場を更新しました");
+    }else{
+      state.sites.push(siteData);
+      alert("現場を追加しました");
+    }
+
+    saveAll();
+    resetSiteForm();
+    refreshSiteTable();
+    refreshSiteSelects();
+  }
+
+  function startEditSite(id){
+    const s = state.sites.find(x=>x.id===id);
+    if(!s) return;
+    editingSiteId = id;
+
+    p_name.value = s.name || "";
+    p_orderNo.value = s.orderNo || "";
+    p_workNo.value = s.workNo || "";
+    p_contractNet.value = Number(s.contractNet||0).toLocaleString("ja-JP");
+    p_increaseNet.value = Number(s.increaseNet||0).toLocaleString("ja-JP");
+    p_reductionNet.value = Number(s.reductionNet||0).toLocaleString("ja-JP");
+    updateDisplayContractPreview();
+
+    if(typeof p_manager!=="undefined") p_manager.value = s.manager || "";
+    if(typeof p_regDate!=="undefined") p_regDate.value = s.regDate || "";
+
+    const btn = document.getElementById("btnSiteSave");
+    if(btn) btn.textContent = "現場を更新";
+    const c = document.getElementById("btnSiteCancel");
+    if(c) c.classList.remove("hide");
+    window.scrollTo({top:0, behavior:"smooth"});
+  }
+
+  function cancelEditSite(){ resetSiteForm(); }
+  function addSite(){ return saveSite(); } // 互換
+
+  function deleteSite(id){
+    if(!confirm("この現場を削除しますか？")) return;
+    state.sites = state.sites.filter(s=>s.id!==id);
+    for(const m of Object.keys(state.monthly)){
+      if(state.monthly[m] && state.monthly[m][id]) delete state.monthly[m][id];
+    }
+    saveAll();
+    refreshSiteTable();
+    refreshSiteSelects();
+    refreshMonthlyTable();
+    refreshSiteSummaryAndHistory();
+  }
+  function refreshSiteTable(){
+    const tb = document.querySelector("#sitesTable tbody");
+    tb.innerHTML="";
+    if(state.sites.length===0){
+      tb.innerHTML = `<tr><td colspan="6" class="hint">まだ現場がありません。左で追加してください。</td></tr>`;
+      return;
+    }
+    state.sites.forEach(s=>{
+      const tr = document.createElement("tr");
+      const finalOrder = displayContract(s);
+      const received = sumAllMonths(s.id);
+      const balance = Math.max(0, finalOrder - received);
+
+      // 保留金残（全期間の控除累計から算出）
+      const cap = retentionCap(s);
+      const trig = triggerLine(s);
+      const heldTotal = retentionHeldTotal(s.id);
+      const reached = (received >= trig);
+      const retRemain = reached ? Math.max(0, cap - heldTotal) : 0;
+      tr.innerHTML = `
+        <td><b>${escapeHtml(s.name)}</b>
+          <div class="hint">最終注文金額: ${yen(finalOrder)} 円 ／ 担当: ${escapeHtml(s.manager||'-')} ／ 登録日: ${escapeHtml(s.regDate||'-')} ／ ID: ${escapeHtml(s.id)}
+          ${retRemain>0 ? `／ <span class="ret-badge">保留金残 ${yen(retRemain)}円</span>` : ``}</div>
+        </td>
+        <td class="nowrap col-order"><span class="pill">${escapeHtml((s.orderNo||"-").toUpperCase())}</span> <span class="pill">${escapeHtml(s.workNo||"-")}</span></td>
+        <td class="right mono col-money">${yen(finalOrder)} 円</td>
+        <td class="right mono col-money">${yen(received)} 円</td>
+        <td class="right mono col-money">${yen(balance)} 円</td>
+        <td class="right"><button class="secondary" onclick="startEditSite('${s.id}')">編集</button> <button class="danger" onclick="deleteSite('${s.id}')">削除</button></td>
+      `;
+      tb.appendChild(tr);
+    });
+  }
+  function refreshSiteSelects(){
+    const opts = state.sites.map(s=>`<option value="${s.id}">${escapeHtml(s.name)}</option>`).join("");
+    m_site.innerHTML = opts || `<option value="">（現場なし）</option>`;
+    pr_site.innerHTML = opts || `<option value="">（現場なし）</option>`;
+  }
+
+  // ====== Monthly ======
+  function monthKey(){ return (m_month.value || "").trim(); }
+  function getMonthly(month){
+    if(!state.monthly[month]) state.monthly[month]={};
+    return state.monthly[month];
+  }
+  function saveMonthly(){
+  const month = monthKey();
+  const siteId = m_site.value;
+  if(!month){ alert("対象月を入力してください"); return; }
+  if(!siteId){ alert("現場を選択してください"); return; }
+
+  const thisMonth = getNumber(m_thisMonthNet);
+
+  // ★最終月は自動判定（保留金だけ請求の月は最終月にしない）
+  const isFinalAuto = autoIsFinalMonth(siteId, month, thisMonth);
+  m_isFinal.value = isFinalAuto ? "1" : "0";
+
+  const site = state.sites.find(s=>s.id===siteId);
+  const mobj = getMonthly(month);
+
+  // まず保存（retHeldNetは後で計算して付与）
+  mobj[siteId] = { thisMonthNet: thisMonth, isFinal: isFinalAuto, retHeldNet: 0 };
+
+  // ★保留金控除の保存値を現行ルールで再計算して付与（全月を整合させる）
+  if(site){
+    migrateRetention();
+  }else{
+    saveAll();
+  }
+
+  refreshSiteTable();
+  refreshMonthlyTable();
+  refreshSiteSummaryAndHistory();
+  alert("月次を保存しました");
+}
+  function loadMonthlyToForm(){
+    const month = monthKey();
+    const siteId = m_site.value;
+    if(!month || !siteId) return;
+
+    const rec = getRec(month, siteId);
+    if(!rec){
+      m_thisMonthNet.value = "0";
+      formatCommaInput(m_thisMonthNet);
+      m_isFinal.value = "0";
+      refreshSiteSummaryAndHistory();
+      return;
+    }
+
+    m_thisMonthNet.value = String(rec.thisMonthNet ?? 0);
+    formatCommaInput(m_thisMonthNet);
+
+    const thisMonth = Number(rec.thisMonthNet ?? 0);
+    const isFinalAuto = autoIsFinalMonth(siteId, month, thisMonth);
+    m_isFinal.value = isFinalAuto ? "1" : "0";
+
+    refreshSiteSummaryAndHistory();
+  }
+
+  function refreshMonthlyTable(){
+    const month = monthKey();
+    const tb = document.querySelector("#monthlyTable tbody");
+    tb.innerHTML="";
+    if(!month){
+      tb.innerHTML = `<tr><td colspan="4" class="hint">対象月を入力してください。</td></tr>`;
+      return;
+    }
+    if(state.sites.length===0){
+      tb.innerHTML = `<tr><td colspan="4" class="hint">現場がありません。</td></tr>`;
+      return;
+    }
+    const data = state.monthly[month] || {};
+    state.sites.forEach(s=>{
+      const rec = data[s.id];
+      const received = sumBeforeMonth(s.id, month);
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td><b>${escapeHtml(s.name)}</b></td>
+        <td class="right mono">${yen(received)} 円</td>
+        <td class="right mono">${rec ? yen(rec.thisMonthNet) : "—"} 円</td>
+        <td>${rec ? (rec.isFinal ? "最終月" : "通常") : "未入力"}</td>
+      `;
+      tb.appendChild(tr);
+    });
+  }
+
+  function deleteMonthly(siteId, month){
+    if(!confirm(`${month} のデータを削除しますか？`)) return;
+    if(state.monthly[month] && state.monthly[month][siteId]){
+      delete state.monthly[month][siteId];
+      if(Object.keys(state.monthly[month]).length===0) delete state.monthly[month];
+    }
+    saveAll();
+    refreshSiteTable();
+    refreshMonthlyTable();
+    refreshSiteSummaryAndHistory();
+  }
+
+  // ====== 保留金：前月までの控除累計（保存値優先）=====
+// monthlyレコードに retHeldNet（その月に控除した保留金：税抜）を保存する。
+// 既存データに無い場合は「推定」で計算してフォールバックする。
+function retentionHeldBeforeMonth(siteForCalc, siteId, month){
+  let held = 0;
+
+  for(const m of monthListSorted()){
+    if(m >= month) break;
+    const rec = getRec(m, siteId);
+    if(!rec) continue;
+
+    if(typeof rec.retHeldNet === "number"){
+      held += Number(rec.retHeldNet || 0);
+    }else{
+      // 旧データ互換：推定
+      const base = effContract(siteForCalc);
+      const rate = Number(siteForCalc.retainRate||5)/100;
+      const cap = round(base * rate);
+      const triggerBase = displayContract(siteForCalc);
+    const trigger = triggerBase * (Number(siteForCalc.retainTrigger||95)/100);
+
+      // 旧推定は「その月までの累計」がtrigger以上なら控除が始まる想定
+      // （※厳密には、当アプリの現行ルールと一致させるため migrateRetention() で補正する）
+      const receivedBefore = sumBeforeMonth(siteId, m);
+      const thisNet = Number(rec.thisMonthNet||0);
+      const cum = receivedBefore + thisNet;
+      if(cum < trigger) continue;
+
+      const monthHold = Math.min(Math.max(0, cap - held), Math.round(thisNet * rate));
+      held += monthHold;
+    }
+  }
+  return held;
+}
+
+// 保留金のロジック
+function retentionHeldTotal(siteId){
+  let held = 0;
+  for(const m of monthListSorted()){
+    const rec = getRec(m, siteId);
+    if(!rec) continue;
+    if(typeof rec.retHeldNet === "number") held += Number(rec.retHeldNet || 0);
+  }
+  return held;
+}
+
+// （控除/解除）
+function calcRetention(site, siteId, month, receivedNet, thisMonthNet, isFinal){
+  // ルール：
+  // ・累計が発生ライン(95%)以上になった月から保留金が発生
+  // ・控除は「保留金上限の残り」をその月の請求から一括で控除
+  // ・出来高が不足する場合のみ、控除できる範囲で控除し、残りは次月以降へ繰越
+  const siteForCalc = getSiteForCalc(site, !!isFinal);
+
+  const base = effContract(siteForCalc);
+  const rate = Number(siteForCalc.retainRate||5) / 100;
+  const cap  = round(base * rate);
+
+  const triggerBase = displayContract(siteForCalc);
+  const trigger = triggerBase * (Number(siteForCalc.retainTrigger||95) / 100);
+
+  const cum = receivedNet + thisMonthNet;
+  if(cum < trigger) return {mode:"none", amount:0, cap, trigger, base};
+
+  const heldSoFar = retentionHeldBeforeMonth(siteForCalc, siteId, month);
+  const remain = Math.max(0, cap - heldSoFar);
+
+  // 最終月でも控除は行う（保留金だけ請求の月は別処理）
+  const monthHold = Math.min(remain, Math.max(0, thisMonthNet));
+  return {mode:"deduct", amount:monthHold, cap, trigger, base, heldSoFar};
+}
+
+
+// ====== 既存データの保留金控除を「現行ルール」で再計算して保存（移行）=====
+function migrateRetention(){
+  // 月順で、現場ごとに累計して retHeldNet を付与（現行ルール：一括控除）
+  const months = monthListSorted();
+  if(months.length===0) return;
+
+  for(const site of state.sites){
+    const siteId = site.id;
+    let heldSoFar = 0;
+
+    for(const month of months){
+      const rec = getRec(month, siteId);
+      if(!rec) continue;
+
+      const receivedBefore = sumBeforeMonth(siteId, month);
+      const thisNet = Number(rec.thisMonthNet||0);
+      const cum = receivedBefore + thisNet;
+
+      // 保留金だけ請求（月次出来高0）の月は控除ではない
+      if(thisNet === 0){
+        rec.retHeldNet = 0;
+        continue;
+      }
+
+      const isFinalWork = autoIsFinalMonth(siteId, month, thisNet);
+      const siteForCalc = getSiteForCalc(site, isFinalWork);
+
+      const base = effContract(siteForCalc);
+      const rate = Number(siteForCalc.retainRate||5)/100;
+      const cap  = round(base * rate);
+
+      const triggerBase = displayContract(siteForCalc);
+      const trigger = triggerBase * (Number(siteForCalc.retainTrigger||95)/100);
+
+      let hold = 0;
+      if(cum >= trigger && heldSoFar < cap){
+        const remain = Math.max(0, cap - heldSoFar);
+        hold = Math.min(remain, thisNet);
+      }else{
+        hold = 0;
+      }
+
+      rec.retHeldNet = hold;
+      heldSoFar += hold;
+      if(heldSoFar >= cap) heldSoFar = cap;
+    }
+  }
+  saveAll();
+}
+  function refreshSiteSummaryAndHistory(){
+    const month = monthKey();
+    const siteId = m_site.value;
+    const site = state.sites.find(s=>s.id===siteId);
+
+    if(!site || !month){
+      sum_contract.textContent="—";
+      sum_increase.textContent="—";
+      sum_reduction.textContent="—";
+      sum_displayContract.textContent="—";
+      sum_effective.textContent="—";
+      sum_prevCum.textContent="—";
+      sum_retCap.textContent="—";
+      sum_trigger.textContent="—";
+      sum_balance.textContent="—";
+      const elRemain = document.getElementById("sum_retRemain");
+      if(elRemain) elRemain.textContent="—";
+      renderHistoryTable(null);
+      return;
+    }
+
+    const prev = sumBeforeMonth(siteId, month);
+
+    const thisMonthDraft = getNumber(m_thisMonthNet);
+    const cumDraft = prev + thisMonthDraft;
+
+    // ★最終月は自動判定
+    m_isFinal.value = autoIsFinalMonth(siteId, month, thisMonthDraft) ? "1" : "0";
+
+    const isFinalWork = (m_isFinal.value === "1");
+    const siteForCalc = isFinalWork ? site : Object.assign({}, site, { increaseNet: 0, reductionNet: 0 });
+
+    const base = effContract(siteForCalc);
+    const cap = retentionCap(siteForCalc);
+    const trig = triggerLine(siteForCalc);
+
+    const heldBefore = retentionHeldBeforeMonth(siteForCalc, siteId, month);
+
+    // ★95%到達後に保留金残が発生（上限−控除済み）
+    const reached = (cumDraft >= trig);
+    const retRemain = reached ? Math.max(0, cap - heldBefore) : 0;
+
+    const elRemain = document.getElementById("sum_retRemain");
+    if(elRemain) elRemain.textContent = `${yen(retRemain)} 円`;
+
+    // 目立つアラート表示
+    const alertBox = document.getElementById("retAlert");
+    const alertAmt = document.getElementById("retAlertAmt");
+    if(alertBox && alertAmt){
+      if(retRemain > 0){
+        alertAmt.textContent = yen(retRemain);
+        alertBox.classList.remove("hide");
+      }else{
+        alertBox.classList.add("hide");
+      }
+    }
+
+    const disp = displayContract(site);
+
+    // ★請求残金（税抜）＝ 最終注文金額 − 累計出来高 − 保留金残（未請求）
+    const balance = Math.max(0, disp - cumDraft - retRemain);
+
+    sum_contract.textContent = `${yen(site.contractNet)} 円`;
+    sum_increase.textContent = `${yen(Number(site.increaseNet||0))} 円`;
+    sum_reduction.textContent = `${yen(site.reductionNet)} 円`;
+    sum_displayContract.textContent = `${yen(disp)} 円`;
+    sum_effective.textContent = `${yen(base)} 円`;
+    sum_prevCum.textContent = `${yen(prev)} 円`;
+    sum_retCap.textContent = `${yen(cap)} 円`;
+    sum_trigger.textContent = `${yen(trig)} 円`;
+    sum_balance.textContent = `${yen(balance)} 円`;
+
+    renderHistoryTable(siteId);
+  }
+
+  function renderHistoryTable(siteId){
+    const tb = document.querySelector("#siteHistoryTable tbody");
+    tb.innerHTML="";
+    if(!siteId){
+      tb.innerHTML = `<tr><td colspan="4" class="hint">現場を選ぶと履歴が表示されます。</td></tr>`;
+      return;
+    }
+    const months = monthListSorted();
+    const rows = [];
+    for(const m of months){
+      const rec = getRec(m, siteId);
+      if(rec) rows.push({month:m, rec});
+    }
+    if(rows.length===0){
+      tb.innerHTML = `<tr><td colspan="4" class="hint">この現場の月次データはまだありません。</td></tr>`;
+      return;
+    }
+    rows.forEach(r=>{
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td><b>${r.month}</b></td>
+        <td class="right mono">${yen(r.rec.thisMonthNet)} 円</td>
+        <td>${r.rec.isFinal ? "最終月" : "通常"}</td>
+        <td class="right">
+          <button class="secondary" onclick="jumpToMonth('${r.month}')">この月へ</button>
+          <button class="danger" onclick="deleteMonthly('${siteId}','${r.month}')">削除</button>
+        </td>
+      `;
+      tb.appendChild(tr);
+    });
+  }
+  function jumpToMonth(month){
+    m_month.value = month;
+    refreshMonthlyTable();
+    loadMonthlyToForm();
+  }
+
+  // ★完全版：印刷（95%到達後は保留金を控除／最終月は保留金残を請求に戻す）
+  function renderPrint(){
+    syncFormToSettings();
+
+    const month  = (pr_month.value||"").trim();
+    const siteId = pr_site.value;
+    const site   = state.sites.find(s=>s.id===siteId);
+
+    const setText = (key, text) => {
+  // id と data-bind の両方に反映（簡易表／詳細表の両方を更新）
+  const el = document.getElementById(key);
+  if(el) el.textContent = text;
+  document.querySelectorAll(`[data-bind="${key}"]`).forEach(n=>{ n.textContent = text; });
+};
+
+    setText("pvDate", pr_billDate.value
+      ? new Date(pr_billDate.value).toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'})
+      : "—"
+    );
+    setText("pvClient", state.settings.clientName || "—");
+    setText("pvMyName", state.settings.myName || "—");
+    setText("pvMyAddr", state.settings.myAddr || "—");
+    setText("pvMyTel",  state.settings.myTel  || "—");
+    setText("pvSigner", state.settings.mySigner || "—");
+    setText("pvBank",   state.settings.bankText || "—");
+
+    if(!site){
+      setText("pvSite","（現場を選択）");
+      setText("pvOrderNo","—");
+      setText("pvWorkNo","—");
+      setText("pvStaff","　");
+      ["pvContractNet","pvIncreaseNet","pvReductionNet","pvFinalOrderNet",
+       "pvReceivedNet","pvThisMonthNet","pvCumNet","pvBillNet","pvTax"
+      ].forEach(id=>setText(id,"0 円"));
+      setText("pvTotalGross","¥0");
+      setText("pvRetentionBox","　");
+      return;
+    }
+
+    setText("pvSite",   site.name);
+    setText("pvOrderNo",site.orderNo || "—");
+    setText("pvWorkNo", site.workNo  || "—");
+    setText("pvStaff",  site.manager ? site.manager : "　");
+
+    const rec = getRec(month, siteId) || {thisMonthNet:0,isFinal:false};
+    const thisMonthNet = Number(rec.thisMonthNet || 0);
+
+    const contractNet0   = Number(site.contractNet  || 0);
+    const increaseNet0   = Number(site.increaseNet  || 0);
+    const reductionNet0  = Number(site.reductionNet || 0);
+    const finalOrderNet0 = Number(displayContract(site) || 0);
+
+    const receivedNet  = Number(sumBeforeMonth(siteId, month) || 0);
+    const cumNet       = receivedNet + thisMonthNet;
+
+    const isFinalWork = autoIsFinalMonth(siteId, month, thisMonthNet);
+
+    // ★要望：増額（追加工事）・減額（減額工事）は「最終月だけ」計算に反映する
+    // 通常月は計算上も 0 として扱い、表の形は維持して空欄表示（別途下で制御）
+    const siteForCalc = isFinalWork ? site : Object.assign({}, site, { increaseNet: 0, reductionNet: 0 });
+    const increaseNetEff  = isFinalWork ? increaseNet0  : 0;
+    const reductionNetEff = isFinalWork ? reductionNet0 : 0;
+    const finalOrderNetEff = contractNet0 + increaseNetEff - reductionNetEff;
+
+    const base = effContract(siteForCalc);
+    const rate = Number(site.retainRate||5)/100;
+    const cap  = round(base * rate);
+    const triggerBase = displayContract(site);
+      const trigger = triggerBase * (Number(siteForCalc.retainTrigger||95)/100);
+
+    setText("pvRetentionBox", `${yen(cap)} 円`);
+
+    const heldBefore = retentionHeldBeforeMonth(siteForCalc, siteId, month);
+    const reached = (cumNet >= trigger);
+
+    const retRemain = reached ? Math.max(0, cap - heldBefore) : 0;
+
+    // ★保留金だけ請求：当月出来高0、⑤>=④、保留金残あり
+const retentionOnly = (thisMonthNet === 0 && receivedNet >= finalOrderNetEff && retRemain > 0);
+// ===== 印刷レイアウト切替 =====
+// ★要望：通常月でも②〜⑤を含む「詳細表」を必ず出す（簡易表は使わない）
+const simpleMode = false;
+
+const tblD = document.getElementById("pvTableDetailed");
+const tblS = document.getElementById("pvTableSimple");
+if(tblD && tblS){
+  tblD.classList.toggle("hide", simpleMode);
+  tblS.classList.toggle("hide", !simpleMode);
+}
+
+
+let billNet = 0;
+
+if(retentionOnly){
+  // 出来高0でも「残り保留金」だけ請求できる
+  billNet = retRemain;
+}else{
+  // ⑥当月出来高は実績（そのまま表示）
+  // ⑧当月合計金額（税抜）は実際の請求額
+  // 95%到達後は「保留金上限の残り」をその月の請求から一括で控除する
+  const billBaseNet = thisMonthNet;
+
+  const ret = calcRetention(siteForCalc, siteId, month, receivedNet, thisMonthNet, /*isFinal*/ isFinalWork);
+
+  if(ret.mode === "deduct"){
+    billNet = billBaseNet - ret.amount;
+  }else{
+    billNet = billBaseNet;
+  }
+
+  if(billNet < 0) billNet = 0;
+}
+
+const taxRate = Number(state.settings.taxRate || 10);
+    const tax   = round(billNet * (taxRate/100));
+    const gross = billNet + tax;
+
+    setText("pvContractNet",   `${yen(contractNet0)} 円`);
+
+    // ★要望：最終月以外（通常月）は ②追加工事・③減額工事 を印字しない（表の形は維持して空欄）
+    if(isFinalWork){
+      setText("pvLblIncrease",  "② 追加工事（税抜）");
+      setText("pvLblReduction", "③ 減額工事（税抜）");
+      setText("pvIncreaseNet",  `${yen(increaseNet0)} 円`);
+      setText("pvReductionNet", `${yen(reductionNet0)} 円`);
+    }else{
+      setText("pvLblIncrease",  "　");
+      setText("pvLblReduction", "　");
+      setText("pvIncreaseNet",  "　");
+      setText("pvReductionNet", "　");
+    }
+
+    setText("pvFinalOrderNet", `${yen(finalOrderNetEff)} 円`);
+
+    setText("pvReceivedNet",  `${yen(receivedNet)} 円`);
+    setText("pvThisMonthNet", `${yen(thisMonthNet)} 円`);
+    setText("pvCumNet",       `${yen(cumNet)} 円`);
+
+    setText("pvBillNet", `${yen(billNet)} 円`);
+    setText("pvTax",        `${yen(tax)} 円`);
+    setText("pvTotalGross", `¥${yen(gross)}`);
+  }
+
+  
+  // ====== 総括請求書（指定月の現場を横断集計） ======
+  function toReiwaYMD(dateStr){
+    if(!dateStr) return "—";
+    try{
+      const d = new Date(dateStr);
+      if(isNaN(d.getTime())) return "—";
+      const y = d.getFullYear();
+      const m = d.getMonth()+1;
+      const day = d.getDate();
+      const reiwa = y - 2018; // 2019=令和1
+      if(reiwa >= 1){
+        return `令和${reiwa}年${m}月${day}日`;
+      }
+      // 令和以前は西暦表示
+      return d.toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'});
+    }catch(e){
+      return "—";
+    }
+  }
+
+  // 指定月の「実際の請求額（税抜/税込）」を、現場別請求書と同じ計算で返す
+  function calcBillForSite(month, site){
+    const siteId = site.id;
+    const rec = getRec(month, siteId);
+    if(!rec) return {billNet:0, tax:0, gross:0, label:"—", count:0};
+
+    const thisMonthNet = Number(rec.thisMonthNet || 0);
+    const contractNet0  = Number(site.contractNet  || 0);
+    const increaseNet0  = Number(site.increaseNet  || 0);
+    const reductionNet0 = Number(site.reductionNet || 0);
+
+    const receivedNet = Number(sumBeforeMonth(siteId, month) || 0);
+    const isFinalWork = autoIsFinalMonth(siteId, month, thisMonthNet);
+
+    const siteForCalc = isFinalWork ? site : Object.assign({}, site, { increaseNet: 0, reductionNet: 0 });
+    const increaseNetEff  = isFinalWork ? increaseNet0  : 0;
+    const reductionNetEff = isFinalWork ? reductionNet0 : 0;
+    const finalOrderNetEff = contractNet0 + increaseNetEff - reductionNetEff;
+
+    const base = effContract(siteForCalc);
+    const rate = Number(site.retainRate||5)/100;
+    const cap  = round(base * rate);
+
+    const triggerBase = displayContract(site);
+    const trigger = triggerBase * (Number(siteForCalc.retainTrigger||95)/100);
+
+    const cumNet = receivedNet + thisMonthNet;
+    const heldBefore = retentionHeldBeforeMonth(siteForCalc, siteId, month);
+    const reached = (cumNet >= trigger);
+    const retRemain = reached ? Math.max(0, cap - heldBefore) : 0;
+
+    // 保留金だけ請求：当月出来高0、⑤>=④、保留金残あり
+    const retentionOnly = (thisMonthNet === 0 && receivedNet >= finalOrderNetEff && retRemain > 0);
+
+    let billNet = 0;
+    if(retentionOnly){
+      billNet = retRemain;
+    }else{
+      const billBaseNet = thisMonthNet;
+      const ret = calcRetention(siteForCalc, siteId, month, receivedNet, thisMonthNet, isFinalWork);
+      if(ret.mode === "deduct"){
+        billNet = billBaseNet - ret.amount;
+      }else{
+        billNet = billBaseNet;
+      }
+      if(billNet < 0) billNet = 0;
+    }
+
+    const taxRate = Number(state.settings.taxRate || 10);
+    const tax   = round(billNet * (taxRate/100));
+    const gross = billNet + tax;
+
+    return {billNet, tax, gross, isFinalWork, retentionOnly};
+  }
+
+  // その現場の請求回数（gross>0 の月をカウント）
+  function invoiceCountUntil(site, month){
+    let c = 0;
+    for(const m of monthListSorted()){
+      if(m > month) break;
+      const r = getRec(m, site.id);
+      if(!r) continue;
+      const x = calcBillForSite(m, site);
+      if(x.gross > 0) c++;
+    }
+    return c;
+  }
+
+  function renderSummary(){
+    syncFormToSettings();
+
+    const month = (document.getElementById("sr_month")?.value || "").trim();
+    const billDate = (document.getElementById("sr_billDate")?.value || "").trim();
+    const safeRate = Number(document.getElementById("sr_safeRate")?.value || 0.5) / 100;
+
+    // 表示反映
+    const set = (id, val)=>{ const el=document.getElementById(id); if(el) el.textContent = val; };
+    set("svClient", state.settings.clientName || "—");
+    set("svMyName", state.settings.myName || "—");
+    set("svMyAddr", state.settings.myAddr || "—");
+    set("svMyTel",  state.settings.myTel  || "—");
+    set("svSigner", state.settings.mySigner || "—");
+    set("svBank",   state.settings.bankText || "—");
+    set("svDate", billDate ? toReiwaYMD(billDate) : "—");
+
+    const tbody = document.getElementById("svTbody");
+    const dbg = document.getElementById("svDebug");
+    if(dbg){
+      const mcount = monthListSorted().length;
+      dbg.textContent = `データ状況：現場 ${state.sites.length}件／月次 ${mcount}ヶ月（キー: ${KEY}）`;
+    }
+    if(!tbody) return;
+
+    if(!month){
+      tbody.innerHTML = `<tr><td colspan="3" class="hint">対象月を選択してください。</td></tr>`;
+      set("svSum1","0 円"); set("svSafe","0 円"); set("svSumNet","0 円");
+      return;
+    }
+
+    const rows = [];
+    let sumGross = 0;
+
+    for(const site of state.sites){
+      const rec = getRec(month, site.id);
+      if(!rec) continue;
+
+      const r = calcBillForSite(month, site);
+      if(r.gross <= 0) continue;
+
+      const count = invoiceCountUntil(site, month);
+      const timesLabel = (r.isFinalWork ? "最終" : `${count}回目`);
+      rows.push({name: site.name, timesLabel, gross: r.gross});
+      sumGross += r.gross;
+    }
+
+    if(rows.length === 0){
+      tbody.innerHTML = `<tr><td colspan="3" class="hint">この月に請求がある現場はありません。</td></tr>`;
+      set("svSum1","0 円"); set("svSafe","0 円"); set("svSumNet","0 円");
+      return;
+    }
+
+    tbody.innerHTML = rows.map(r=>`
+      <tr>
+        <td><b>${escapeHtml(r.name)}</b></td>
+        <td style="text-align:center; font-weight:900;">${escapeHtml(r.timesLabel)}</td>
+        <td class="num">${yen(r.gross)} 円</td>
+      </tr>
+    `).join("");
+
+    const safe = round(sumGross * safeRate);
+    const total = Math.max(0, sumGross - safe);
+
+    set("svSum1",   `${yen(sumGross)} 円`);
+    set("svSafe",   `${yen(safe)} 円`);
+    set("svSumNet", `${yen(total)} 円`);
+  }
+function exportData(){
+    exportBox.classList.remove("hide");
+    exportBox.value = JSON.stringify(state, null, 2);
+    exportBox.select();
+  }
+
+  // ====== init ======
+  syncSettingsToForm();
+  loadAll(true);
+  migrateRetention();
+  syncSettingsToForm();
+  refreshSiteTable();
+  refreshSiteSelects();
+  refreshMonthlyTable();
+  refreshSiteSummaryAndHistory();
+  renderPrint();
+  renderSummary();
+
+  // events
+  m_month.addEventListener("change", ()=>{ refreshMonthlyTable(); refreshSiteSummaryAndHistory(); });
+  m_site.addEventListener("change", ()=>{ loadMonthlyToForm(); refreshSiteSummaryAndHistory(); });
+  m_thisMonthNet.addEventListener("input", refreshSiteSummaryAndHistory);
+  m_isFinal.addEventListener("change", refreshSiteSummaryAndHistory);
+
+  pr_month.addEventListener("change", renderPrint);
+  pr_site.addEventListener("change", renderPrint);
+  pr_billDate.addEventListener("change", renderPrint);
+
+  // 総括（イベント）
+  sr_month.addEventListener("change", renderSummary);
+  sr_billDate.addEventListener("change", renderSummary);
+  sr_safeRate.addEventListener("change", renderSummary);
+  sr_safeRate.addEventListener("input", renderSummary);
+
+  updateDisplayContractPreview();
+</script>
+
+<!-- === 月次：自動読み込み（確定・完全版） === -->
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const monthEl = document.getElementById("m_month");
+  const siteEl  = document.getElementById("m_site");
+
+  function autoLoadMonthly() {
+    const monthlyView = document.getElementById("view-monthly");
+    if (!monthlyView || monthlyView.classList.contains("hide")) return;
+    if (typeof loadMonthlyToForm === "function") loadMonthlyToForm();
+  }
+
+  if (monthEl) {
+    monthEl.addEventListener("change", autoLoadMonthly);
+    monthEl.addEventListener("input", autoLoadMonthly);
+  }
+  if (siteEl) siteEl.addEventListener("change", autoLoadMonthly);
+});
+</script>
+
+<!-- === 金額表示：3桁カンマ対応（完全版） === -->
+<script>
+(function(){
+  function addComma(n){
+    if (n === null || n === undefined || n === "") return "";
+    const num = Number(String(n).replace(/,/g,""));
+    if (isNaN(num)) return n;
+    return num.toLocaleString("ja-JP");
+  }
+  function formatText(el){
+    const txt = el.textContent || "";
+    if (!txt) return;
+    if (txt.includes("円")){
+      const v = txt.replace(/[^0-9-]/g,"");
+      if (v !== "") el.textContent = addComma(v) + " 円";
+    } else {
+      const v = txt.replace(/[^0-9-]/g,"");
+      if (v !== "") el.textContent = addComma(v);
+    }
+  }
+  function formatInput(el){
+    if (!el.value) return;
+    const raw = String(el.value).replace(/,/g,"");
+    let ok = true;
+    for (let i=0;i<raw.length;i++){
+      const c = raw[i];
+      if (!(c>='0' && c<='9') && !(i===0 && c==='-')) { ok=false; break; }
+    }
+    if (!ok) return;
+    el.value = addComma(raw);
+  }
+  function formatAll(){
+    document.querySelectorAll(".num, .amount, .money").forEach(formatText);
+    document.querySelectorAll("input.money, input.num, input.amount").forEach(formatInput);
+  }
+  const origLoad = window.loadMonthlyToForm;
+  if (typeof origLoad === "function"){
+    window.loadMonthlyToForm = function(){
+      origLoad();
+      formatAll();
+    };
+  }
+  document.addEventListener("DOMContentLoaded", ()=>setTimeout(formatAll,0));
+})();
+</script>
+</div>
+</body>
+</html>
+
