@@ -327,13 +327,13 @@ html.ms-password-locked #msPasswordGate{display:flex;}
           <svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path><path d="M10 21h4"></path></svg>
           <span>お知らせ</span>
         </button>
-        <button onclick="MSInvoiceOpen('sites')">
-          <svg viewBox="0 0 24 24"><path d="M4 6h6l2 2h8v10H4z"></path><path d="M4 10h16"></path></svg>
-          <span>保存データ</span>
+        <button onclick="MSInvoiceOpenGuide()">
+          <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
+          <span>操作方法</span>
         </button>
-        <button onclick="location.href='invoice_summary.html'">
-          <svg viewBox="0 0 24 24"><path d="M4 4h11l5 5v11H4z"></path><path d="M15 4v5h5M8 13h8M8 17h8"></path></svg>
-          <span>総括請求</span>
+        <button onclick="MSInvoiceOpenDataManagement()">
+          <svg viewBox="0 0 24 24"><path d="M4 6h16v12H4z"></path><path d="M8 10h8M8 14h5"></path></svg>
+          <span>データ管理</span>
         </button>
       </div>
     </div>
@@ -642,4 +642,25 @@ html.ms-password-locked #msPasswordGate{display:flex;}
 })();
 </script>
 
+
+<script>
+function MSInvoiceOpenDataManagement(){
+  try{
+    if(typeof MSInvoiceOpen==='function'){
+      MSInvoiceOpen('data-management');
+      return;
+    }
+  }catch(e){}
+  location.href='invoice_app.html?view=data-management';
+}
+
+function MSInvoiceOpenGuide(){
+  var url = ''; // 操作方法YouTubeのURLをここに設定
+  if(url){
+    window.open(url, '_blank', 'noopener');
+  }else{
+    alert('操作方法の動画は準備中です。');
+  }
+}
+</script>
 </body></html>

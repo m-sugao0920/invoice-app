@@ -174,7 +174,7 @@
     document.querySelectorAll(".tab").forEach(b=>{
       b.classList.toggle("active", b.dataset.view===view);
     });
-    ["home","settings","sites","monthly","print","summary"].forEach(v=>{
+    ["home","settings","sites","monthly","print","summary","data-management"].forEach(v=>{
       const el=document.getElementById("view-"+v);
       if(el) el.classList.toggle("hide", v!==view);
     });
@@ -1949,7 +1949,7 @@ document.addEventListener("DOMContentLoaded", function(){
 
   setTimeout(function(){
     const view=localStorage.getItem("ms_invoice_open_view") || "sites";
-    const ids=["settings","sites","monthly","print","summary"];
+    const ids=["settings","sites","monthly","print","summary","data-management"];
     ids.forEach(function(v){
       const el=document.getElementById("view-"+v);
       if(el) el.classList.toggle("hide", v!==view);

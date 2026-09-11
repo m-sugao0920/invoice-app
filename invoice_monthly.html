@@ -1356,6 +1356,43 @@ html.ms-password-locked body{visibility:hidden!important;}
 })();
 </script>
 
+
+<style id="ms-client-site-filter-style">
+/* ===== 月次請求：発注先 ＋ 工事名検索 ===== */
+#invoiceMonthlyTargetGrid{
+  grid-template-columns:1fr 1fr !important;
+}
+#m_clientFilter,#m_siteSearch{
+  min-height:36px;
+  border:1px solid #c9dce9;
+  border-radius:7px;
+  padding:7px 9px;
+  background:#fff;
+  color:#263f50;
+  font:inherit;
+  font-size:12px;
+  box-sizing:border-box;
+}
+#m_siteSearch::placeholder{color:#9aa9b3;}
+#msSiteSearchStatus{display:block;min-height:18px;margin-top:3px;color:#536f81;font-size:10.5px;font-weight:700;line-height:1.35;}
+#msSiteSearchStatus.ok{color:#17638f;}
+#msSiteSearchStatus.none{color:#a44949;}
+.ms-show-saved-toggle{
+  display:flex;align-items:center;gap:7px;margin:0 10px 8px;padding:6px 9px;
+  border:1px solid #d6e3ec;border-radius:8px;background:#f7fafc;color:#536f81;
+  font-size:10.5px;font-weight:800;line-height:1.3;
+}
+.ms-show-saved-toggle input{width:16px;height:16px;margin:0;accent-color:#8A4653;cursor:pointer;}
+.ms-show-saved-toggle:focus-within{border-color:#8A4653;box-shadow:0 0 0 3px rgba(138,70,83,.12);background:#fff8f9;}
+.ms-show-saved-toggle label{cursor:pointer;font-size:10.5px!important;color:#536f81!important;}
+.ms-show-saved-toggle .note{margin-left:3px;color:#84939d;font-size:9.5px;font-weight:700;}
+@media(max-width:760px){
+  #invoiceMonthlyTargetGrid{
+    grid-template-columns:1fr !important;
+  }
+}
+</style>
+
 </head>
 <body class="ms-invoice-page">
 <header class="invoice-monthly-header">
@@ -1374,10 +1411,13 @@ html.ms-password-locked body{visibility:hidden!important;}
 <div class="body">
 <section class="month-section">
 <div class="month-section-title"><span>①</span>対象工事</div>
-<div class="month-form-grid">
+<div class="month-form-grid" id="invoiceMonthlyTargetGrid">
 <label>対象月<input id="m_month" type="month"/></label>
+<label>発注先で絞る<select id="m_clientFilter"><option value="">すべての発注先</option></select></label>
+<label>工事名で検索<input id="m_siteSearch" type="search" placeholder="工事名の一部を入力" autocomplete="off"/><small id="msSiteSearchStatus">文字を入力すると、その場で工事を絞り込みます。</small></label>
 <label>工事を選択<select id="m_site"></select></label>
 </div>
+<div class="ms-show-saved-toggle"><input id="m_showSaved" type="checkbox"/><label for="m_showSaved">済工事を表示</label><span class="note">通常は未登録の工事だけを表示します。</span></div>
 <div class="month-project-info">
 <div class="wide"><span>工事名</span><b id="msm_siteName">—</b></div>
 <div class="wide"><span>請求先</span><b id="msm_client">—</b></div>
@@ -1949,7 +1989,7 @@ function goToSiteEdit(){
 
     const rec=getRec(currentMonth(),siteId);
     if(rec && !suppressSavedWarning){
-      alert("【済】この工事は今月すでに登録されています。修正する場合は、月別履歴の「編集」から行ってください。");
+      alert("【済】この工事は今月すでに登録されています。確認・印刷はできます。修正する場合は、月別履歴から一度削除して再登録してください。");
     }
     setTimeout(decorateSiteOptions,50);
   });
@@ -2691,7 +2731,7 @@ document.addEventListener("click",(e)=>{
 
 <!-- ===== 今月の入力：キーボード操作 最終統一 2026-08-30 ===== -->
 <style id="monthly-keyboard-final-style">
-#m_site.ms-kb-choice,#m_isFinal.ms-kb-choice{
+#m_clientFilter.ms-kb-choice,#m_site.ms-kb-choice,#m_isFinal.ms-kb-choice{
   border:2px solid #8A4653 !important;
   background:#fff8f9 !important;
   box-shadow:0 0 0 3px rgba(138,70,83,.14) !important;
@@ -2710,8 +2750,9 @@ document.addEventListener("click",(e)=>{
 <script id="monthly-keyboard-final">
 (function(){
   "use strict";
-  const choiceIds=new Set(["m_site","m_isFinal"]);
-  const order=["m_site","m_isFinal","m_increaseNet","m_reductionNet","m_thisMonthNet","btnSaveMonthly","btnDirectInvoicePrint"];
+  const choiceIds=new Set(["m_clientFilter","m_site","m_isFinal"]);
+  // 対象月もキー移動に含めるが、起動時の最初のフォーカスは「発注先で絞る」。
+  const order=["m_month","m_clientFilter","m_siteSearch","m_showSaved","m_site","m_isFinal","m_increaseNet","m_reductionNet","m_thisMonthNet","btnSaveMonthly","btnDirectInvoicePrint"];
 
   function el(id){ return document.getElementById(id); }
   function focusField(id){
@@ -2723,8 +2764,10 @@ document.addEventListener("click",(e)=>{
   }
   function siteOptionSelectable(opt){
     if(!opt || opt.disabled) return false;
+    // 【済】は保存済み内容の確認・印刷のため選択可能。
+    // 【完了】は新規請求の誤操作防止のため従来どおり選択不可。
     const text=String(opt.textContent||"").trim();
-    return !(text.startsWith("【済】") || text.startsWith("【完了】"));
+    return !text.startsWith("【完了】");
   }
   function getSitePopup(){
     let box=document.getElementById("msSiteChoicePopup");
@@ -2764,6 +2807,43 @@ document.addEventListener("click",(e)=>{
     const a=box.querySelector(".active");
     if(a) a.scrollIntoView({block:"nearest"});
   }
+  function getClientPopup(){
+    let box=document.getElementById("msClientChoicePopup");
+    if(box) return box;
+    box=document.createElement("div");
+    box.id="msClientChoicePopup";
+    box.className="ms-site-choice-popup";
+    document.body.appendChild(box);
+    box.addEventListener("mousedown",function(e){
+      const item=e.target.closest("[data-ms-client-index]");
+      if(!item) return;
+      e.preventDefault();
+      const client=el("m_clientFilter");
+      const idx=Number(item.dataset.msClientIndex);
+      const opt=client?.options?.[idx];
+      if(!client || !opt || opt.disabled) return;
+      client.selectedIndex=idx;
+      renderClientPopup(client,true);
+      client.focus();
+    });
+    return box;
+  }
+  function renderClientPopup(client,show){
+    const box=getClientPopup();
+    if(!show || !client){ box.classList.remove("show"); return; }
+    const r=client.getBoundingClientRect();
+    box.style.left=Math.round(r.left)+"px";
+    box.style.top=Math.round(r.bottom+4)+"px";
+    box.style.width=Math.max(260,Math.round(r.width))+"px";
+    box.innerHTML=[...client.options].map((opt,i)=>{
+      const selectable=!opt.disabled;
+      const active=i===client.selectedIndex;
+      return `<div class="ms-site-choice-item${active?" active":""}${selectable?"":" disabled"}" data-ms-client-index="${i}">${String(opt.textContent||"").replace(/[&<>]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[m]))}</div>`;
+    }).join("");
+    box.classList.add("show");
+    const a=box.querySelector(".active");
+    if(a) a.scrollIntoView({block:"nearest"});
+  }
   function setChoice(x,on){
     if(!x) return;
     x.dataset.msKbChoice=on?"1":"0";
@@ -2772,6 +2852,7 @@ document.addEventListener("click",(e)=>{
     x.dataset.msChoiceMode="0";
     x.classList.remove("ms-select-editing");
     if(x.id==="m_site") renderSitePopup(x,!!on);
+    if(x.id==="m_clientFilter") renderClientPopup(x,!!on);
   }
   function inChoice(x){ return x?.dataset.msKbChoice==="1"; }
   function fireChange(x){
@@ -2788,7 +2869,8 @@ document.addEventListener("click",(e)=>{
       if(!opt || opt.disabled) return false;
       if(x.id!=="m_site") return true;
       const text=String(opt.textContent||"").trim();
-      if(text.startsWith("【済】") || text.startsWith("【完了】")) return false;
+      // 【済】は確認・印刷用として選択可能。【完了】だけを飛ばす。
+      if(text.startsWith("【完了】")) return false;
       return true;
     };
 
@@ -2799,8 +2881,10 @@ document.addEventListener("click",(e)=>{
       if(canChoose(x.options[n])) break;
     }
     x.selectedIndex=n;
-    fireChange(x);
+    // 発注先は候補移動中には絞り込みを確定しない。Enterで決定した時だけchangeを発火する。
+    if(x.id!=="m_clientFilter") fireChange(x);
     if(x.id==="m_site" && inChoice(x)) renderSitePopup(x,true);
+    if(x.id==="m_clientFilter" && inChoice(x)) renderClientPopup(x,true);
   }
   function moveFrom(id,dir){
     const i=order.indexOf(id); if(i<0) return;
@@ -2848,6 +2932,43 @@ document.addEventListener("click",(e)=>{
       }
       if(e.key==="ArrowUp"){
         e.preventDefault(); e.stopImmediatePropagation(); moveFrom(id,-1); return;
+      }
+      return;
+    }
+
+    // 工事名検索：文字入力は通常どおり。Enter / ↓ / Tabで「済工事を表示」へ、↑で発注先へ。
+    if(id==="m_siteSearch"){
+      if(e.key==="Enter" || e.key==="ArrowDown" || e.key==="Tab"){
+        e.preventDefault(); e.stopImmediatePropagation(); moveFrom(id,e.shiftKey?-1:1); return;
+      }
+      if(e.key==="ArrowUp"){
+        e.preventDefault(); e.stopImmediatePropagation(); moveFrom(id,-1); return;
+      }
+      return;
+    }
+
+    // 済工事を表示：SpaceでON/OFF。変更後は工事選択へ進む。
+    if(id==="m_showSaved"){
+      if(e.key===" " || e.code==="Space"){
+        e.preventDefault(); e.stopImmediatePropagation();
+        x.checked=!x.checked;
+        fireChange(x);
+        setTimeout(()=>focusField("m_site"),0);
+        return;
+      }
+      if(e.key==="Enter" || e.key==="ArrowDown" || (e.key==="Tab" && !e.shiftKey)){
+        e.preventDefault(); e.stopImmediatePropagation(); focusField("m_site"); return;
+      }
+      if(e.key==="ArrowUp" || (e.key==="Tab" && e.shiftKey)){
+        e.preventDefault(); e.stopImmediatePropagation(); focusField("m_siteSearch"); return;
+      }
+      return;
+    }
+
+    // 対象月：Enter / ↓ / Tabで発注先へ。
+    if(id==="m_month"){
+      if(e.key==="Enter" || e.key==="ArrowDown" || e.key==="Tab"){
+        e.preventDefault(); e.stopImmediatePropagation(); focusField("m_clientFilter"); return;
       }
       return;
     }
@@ -2912,10 +3033,12 @@ document.addEventListener("click",(e)=>{
   },true);
 
   function initialFocus(){
+    const client=el("m_clientFilter");
     const site=el("m_site");
-    if(site){
-      setChoice(site,false);
-      setTimeout(()=>site.focus(),60);
+    if(site) setChoice(site,false);
+    if(client){
+      setChoice(client,false);
+      setTimeout(()=>client.focus(),60);
     }
   }
   if(document.readyState==="loading"){
@@ -4303,6 +4426,223 @@ document.addEventListener("click",(e)=>{
     });
   }
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",setup);
+  else setup();
+})();
+</script>
+
+
+<script id="ms-client-site-filter-script">
+(function(){
+  "use strict";
+
+  const CLIENT_ID="m_clientFilter";
+  const SEARCH_ID="m_siteSearch";
+  const STATUS_ID="msSiteSearchStatus";
+  const SHOW_SAVED_ID="m_showSaved";
+  const SITE_ID="m_site";
+  let installed=false;
+
+  function clientNameOf(site){
+    return String(site?.clientName||"").trim();
+  }
+
+  function siteNameOf(site){
+    return String(site?.name||"").trim();
+  }
+
+  function fillClients(){
+    const client=document.getElementById(CLIENT_ID);
+    if(!client || typeof state==="undefined" || !Array.isArray(state.sites)) return;
+
+    const keep=client.value||"";
+    const names=[...new Set(
+      state.sites.map(clientNameOf).filter(Boolean)
+    )].sort((a,b)=>a.localeCompare(b,"ja"));
+
+    client.innerHTML='<option value="">すべての発注先</option>';
+    names.forEach(name=>{
+      const o=document.createElement("option");
+      o.value=name;
+      o.textContent=name;
+      client.appendChild(o);
+    });
+    if(names.includes(keep)) client.value=keep;
+  }
+
+  function normalizeText(v){
+    return String(v||"").trim().toLocaleLowerCase("ja");
+  }
+
+  function currentMonth(){
+    return document.getElementById("m_month")?.value||"";
+  }
+
+  function isSavedThisMonth(siteId){
+    const month=currentMonth();
+    if(!month) return false;
+    try{ return !!state.monthly?.[month]?.[String(siteId)]; }catch(e){ return false; }
+  }
+
+  function applyFilters(){
+    const client=document.getElementById(CLIENT_ID);
+    const search=document.getElementById(SEARCH_ID);
+    const site=document.getElementById(SITE_ID);
+    if(!client || !search || !site || typeof state==="undefined" || !Array.isArray(state.sites)) return;
+
+    const wantedClient=client.value||"";
+    const word=normalizeText(search.value);
+    const showSaved=!!document.getElementById(SHOW_SAVED_ID)?.checked;
+
+    const allowed=new Set(
+      state.sites.filter(s=>{
+        if(wantedClient && clientNameOf(s)!==wantedClient) return false;
+        if(word && !normalizeText(siteNameOf(s)).includes(word)) return false;
+        if(!showSaved && isSavedThisMonth(s.id)) return false;
+        return true;
+      }).map(s=>String(s.id))
+    );
+
+    [...site.options].forEach(opt=>{
+      if(opt.value && !allowed.has(String(opt.value))) opt.remove();
+    });
+
+    // 「済工事を表示」がONの時は、確認・印刷用として今月の【済】工事も選択可能にする。
+    if(showSaved){
+      [...site.options].forEach(opt=>{
+        if(opt.value && isSavedThisMonth(opt.value)) opt.disabled=false;
+      });
+    }
+
+    if(site.value && !allowed.has(String(site.value))) site.value="";
+
+    let blank=[...site.options].find(o=>o.value==="");
+    if(!blank){
+      blank=document.createElement("option");
+      blank.value="";
+      site.insertBefore(blank,site.firstChild);
+    }
+    blank.textContent=allowed.size ? "工事を選択してください" : "該当する工事がありません";
+    blank.disabled=false;
+
+    const status=document.getElementById(STATUS_ID);
+    if(status){
+      status.classList.remove("ok","none");
+      if(word){
+        if(allowed.size){
+          status.textContent=`「${search.value.trim()}」で ${allowed.size}件 見つかりました。右の「工事を選択」から選んでください。`;
+          status.classList.add("ok");
+        }else{
+          status.textContent=`「${search.value.trim()}」に該当する工事はありません。`;
+          status.classList.add("none");
+        }
+      }else if(wantedClient){
+        status.textContent=`この発注先の${showSaved?"表示対象":"未登録"}工事は ${allowed.size}件 です。工事名を入力するとさらに絞り込めます。`;
+      }else{
+        status.textContent=showSaved ? "済工事を含めて表示しています。文字を入力するとさらに絞り込めます。" : "未登録の工事だけを表示しています。文字を入力すると、その場で絞り込みます。";
+      }
+    }
+  }
+
+  function rebuildAndFilter(preserveSite){
+    const site=document.getElementById(SITE_ID);
+    const selected=preserveSite ? (site?.value||"") : "";
+
+    try{
+      if(typeof window.refreshSiteSelects==="function") window.refreshSiteSelects();
+    }catch(e){}
+
+    fillClients();
+    applyFilters();
+
+    if(selected && site && [...site.options].some(o=>String(o.value)===String(selected))){
+      site.value=selected;
+    }
+  }
+
+  function installRefreshWrapper(){
+    if(installed) return;
+    if(typeof window.refreshSiteSelects!=="function") return;
+
+    const old=window.refreshSiteSelects;
+    if(old.__clientSearchFilterWrapped){ installed=true; return; }
+
+    const wrapped=function(){
+      const selected=document.getElementById(SITE_ID)?.value||"";
+      const r=old.apply(this,arguments);
+      fillClients();
+      applyFilters();
+      const site=document.getElementById(SITE_ID);
+      if(selected && site && [...site.options].some(o=>String(o.value)===String(selected))){
+        site.value=selected;
+      }
+      return r;
+    };
+    wrapped.__clientSearchFilterWrapped=true;
+    window.refreshSiteSelects=wrapped;
+    installed=true;
+  }
+
+  function setup(){
+    const client=document.getElementById(CLIENT_ID);
+    const search=document.getElementById(SEARCH_ID);
+    const showSaved=document.getElementById(SHOW_SAVED_ID);
+    const site=document.getElementById(SITE_ID);
+    if(!client || !search || !showSaved || !site) return;
+
+    fillClients();
+
+    client.addEventListener("change",()=>{
+      search.value="";
+      rebuildAndFilter(false);
+      site.value="";
+      try{site.dispatchEvent(new Event("change",{bubbles:true}));}catch(e){}
+      search.focus();
+    });
+
+    search.addEventListener("input",()=>{
+      rebuildAndFilter(false);
+      site.value="";
+    });
+
+    showSaved.addEventListener("change",()=>{
+      const before=site.value||"";
+      rebuildAndFilter(true);
+      if(before && ![...site.options].some(o=>String(o.value)===String(before))){
+        site.value="";
+        try{site.dispatchEvent(new Event("change",{bubbles:true}));}catch(e){}
+      }
+      site.focus();
+    });
+
+    document.getElementById("m_month")?.addEventListener("change",()=>{
+      setTimeout(()=>rebuildAndFilter(true),30);
+    });
+
+    search.addEventListener("keydown",e=>{
+      if(e.key==="Enter" || e.key==="ArrowDown"){
+        e.preventDefault();
+        site.focus();
+      }
+      if(e.key==="Escape"){
+        search.value="";
+        rebuildAndFilter(false);
+      }
+    });
+
+    setTimeout(()=>{
+      installRefreshWrapper();
+      fillClients();
+      applyFilters();
+    },700);
+
+    setTimeout(()=>{
+      if(!installed) installRefreshWrapper();
+      fillClients();
+      applyFilters();
+    },1200);
+  }
+
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",setup,{once:true});
   else setup();
 })();
 </script>

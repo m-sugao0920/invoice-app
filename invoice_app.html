@@ -661,6 +661,240 @@ html.ms-password-locked body{visibility:hidden!important;}
 })();
 </script>
 
+
+<style id="ms-sites-filter-style">
+/* ===== 登録済み工事一覧：発注先・工事名検索・完了工事表示 ===== */
+#view-sites .ms-sites-filter-panel{
+  display:grid;
+  grid-template-columns:minmax(150px,.9fr) minmax(200px,1.2fr) auto auto;
+  gap:8px;
+  align-items:end;
+  margin:0 0 10px;
+  padding:9px 10px;
+  border:1px solid #d4e5f4;
+  border-radius:9px;
+  background:#f8fbfe;
+  box-sizing:border-box;
+}
+#view-sites .ms-sites-filter-field{
+  display:grid;
+  gap:4px;
+  min-width:0;
+}
+#view-sites .ms-sites-filter-field>span{
+  color:#405f73;
+  font-size:10.5px;
+  font-weight:900;
+  font-family:var(--fontNum);
+}
+#view-sites .ms-sites-filter-panel select,
+#view-sites .ms-sites-filter-panel input[type="search"]{
+  width:100%;
+  min-width:0;
+  height:34px;
+  padding:0 9px;
+  border:1px solid #bfd3e1;
+  border-radius:7px;
+  background:#fff;
+  color:#263f50;
+  font:inherit;
+  box-sizing:border-box;
+}
+#view-sites .ms-sites-complete-toggle{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  height:34px;
+  padding:0 10px;
+  border:1px solid #bfd3e1;
+  border-radius:7px;
+  background:#fff;
+  color:#405f73;
+  font-size:10.5px;
+  font-weight:900;
+  white-space:nowrap;
+  cursor:pointer;
+  box-sizing:border-box;
+}
+#view-sites .ms-sites-complete-toggle input{
+  width:17px;
+  height:17px;
+  margin:0;
+}
+#view-sites .ms-sites-new-button{
+  width:auto;
+  min-width:120px;
+  height:34px;
+  padding:0 11px;
+  border:1px solid #78adce;
+  border-radius:7px;
+  background:#eaf5fc;
+  color:#17638f;
+  font-size:10.5px;
+  font-weight:900;
+  white-space:nowrap;
+}
+#view-sites .ms-sites-filter-status{
+  grid-column:1/-1;
+  min-height:16px;
+  color:#657a88;
+  font-size:10px;
+  line-height:1.4;
+}
+#view-sites .ms-sites-filter-status.ok{color:#17638f;font-weight:800;}
+#view-sites .ms-sites-filter-status.none{color:#a44949;font-weight:800;}
+#view-sites .ms-site-card:focus{
+  outline:none;
+  border-color:#8A4653;
+  box-shadow:0 0 0 3px rgba(138,70,83,.14), inset 4px 0 0 #8A4653;
+}
+#view-sites #msSiteListClientFilter.ms-kb-choice{
+  border:2px solid #8A4653 !important;
+  background:#fff8f9 !important;
+  box-shadow:0 0 0 3px rgba(138,70,83,.14) !important;
+}
+.ms-sites-client-popup{
+  position:fixed;
+  z-index:10020;
+  display:none;
+  max-height:300px;
+  overflow:auto;
+  padding:4px;
+  border:2px solid #8A4653;
+  border-radius:8px;
+  background:#fff;
+  box-shadow:0 10px 28px rgba(0,0,0,.18);
+  font-size:12px;
+}
+.ms-sites-client-popup.show{display:block;}
+.ms-sites-client-popup button{
+  display:block;
+  width:100%;
+  min-width:210px;
+  padding:7px 9px;
+  border:0;
+  border-radius:5px;
+  background:#fff;
+  color:#263f50;
+  text-align:left;
+  cursor:pointer;
+}
+.ms-sites-client-popup button.active{
+  background:#fff0f3;
+  color:#6e3040;
+  font-weight:900;
+}
+@media(max-width:900px){
+  #view-sites .ms-sites-filter-panel{grid-template-columns:1fr 1fr;}
+}
+@media(max-width:620px){
+  #view-sites .ms-sites-filter-panel{grid-template-columns:1fr;}
+  #view-sites .ms-sites-filter-status{grid-column:auto;}
+}
+</style>
+
+
+<style id="ms-data-management-style">
+#view-data-management{max-width:980px;margin:0 auto;}
+.ms-data-management-card{overflow:hidden;}
+.ms-data-management-intro{
+  padding:10px 12px;
+  margin-bottom:12px;
+  border:1px solid #d6e3ec;
+  border-radius:9px;
+  background:#f5f9fc;
+  color:#4f697a;
+  font-size:12px;
+  font-weight:800;
+}
+.ms-data-management-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+}
+.ms-data-main-btn{
+  display:grid;
+  gap:6px;
+  min-height:96px;
+  padding:14px 16px;
+  border:1px solid #8ebedb;
+  border-radius:10px;
+  background:#eaf5fc;
+  color:#17638f;
+  text-align:left;
+  cursor:pointer;
+}
+.ms-data-main-btn.restore{
+  border-color:#9fc7aa;
+  background:#eef8f0;
+  color:#356b42;
+}
+.ms-data-main-btn b{font-size:15px;}
+.ms-data-main-btn span{font-size:10.5px;line-height:1.55;font-weight:700;color:#617785;}
+.ms-data-main-btn.restore span{color:#667c6c;}
+.ms-backup-last{
+  margin-top:12px;
+  padding:8px 10px;
+  border-radius:8px;
+  background:#f8fafb;
+  color:#617785;
+  font-size:11px;
+  font-weight:800;
+}
+.ms-data-note{
+  margin-top:8px;
+  color:#758794;
+  font-size:10px;
+  line-height:1.6;
+}
+.ms-danger-zone{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:14px;
+  margin-top:24px;
+  padding:12px;
+  border:1px solid #e2c7c7;
+  border-radius:9px;
+  background:#fffafa;
+}
+.ms-danger-zone>div{display:grid;gap:3px;}
+.ms-danger-zone b{color:#9a4545;font-size:12px;}
+.ms-danger-zone span{color:#8a7474;font-size:10px;}
+.ms-danger-zone button{width:auto;min-width:140px;height:34px;}
+@media(max-width:700px){
+  .ms-data-management-grid{grid-template-columns:1fr;}
+  .ms-danger-zone{align-items:stretch;flex-direction:column;}
+  .ms-danger-zone button{width:100%;}
+}
+</style>
+
+
+<style id="ms-data-management-head-fix">
+.ms-data-management-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:0 0 10px;
+}
+.ms-data-management-head h2{margin:0;}
+.ms-data-management-head button{
+  width:auto;
+  min-width:130px;
+  height:34px;
+  padding:0 12px;
+  white-space:nowrap;
+}
+@media(max-width:560px){
+  .ms-data-management-head{
+    align-items:stretch;
+    flex-direction:column;
+  }
+  .ms-data-management-head button{width:100%;}
+}
+</style>
+
 </head>
 <body class="ms-invoice-page">
 <div id="appRoot">
@@ -674,6 +908,7 @@ html.ms-password-locked body{visibility:hidden!important;}
 </div>
 <div class="ms-actions">
 <button class="ms-action" onclick="showMsNotice()">お知らせ</button>
+<button class="ms-action" onclick="switchView('data-management')" type="button">データ管理</button>
 <button class="ms-action" onclick="switchView('sites')">保存データ</button>
 <button class="ms-action" onclick="switchView('settings')">設定</button>
 </div>
@@ -769,6 +1004,47 @@ html.ms-password-locked body{visibility:hidden!important;}
 </div>
 </div>
 </section>
+
+<!-- データ管理 -->
+<section class="hide" id="view-data-management">
+  <div class="card ms-data-management-card">
+    <div class="ms-data-management-head">
+      <h2>データ管理</h2>
+      <button class="secondary" type="button" onclick="location.href='index.html'">メイン画面に戻る</button>
+    </div>
+    <div class="body">
+      <div class="ms-data-management-intro">
+        大切な請求データをバックアップ・復元します。
+      </div>
+      <div class="ms-data-management-grid">
+        <button class="ms-data-main-btn" id="msBackupSaveBtn" type="button">
+          <b>バックアップを保存</b>
+          <span>工事情報・請求履歴・発注先マスター・設定などを1つのJSONファイルに保存します。</span>
+        </button>
+        <button class="ms-data-main-btn restore" id="msBackupRestoreBtn" type="button">
+          <b>バックアップから復元</b>
+          <span>保存したバックアップファイルを選び、内容を確認してから復元します。</span>
+        </button>
+      </div>
+      <div class="ms-backup-last" id="msBackupLast">最終バックアップ：まだありません</div>
+      <div class="ms-data-note">
+        ※ 復元すると現在の保存データは、選択したバックアップの内容に置き換わります。<br/>
+        ※ 心配な場合は、復元前に「バックアップを保存」を実行してください。<br/>
+        ※ 復元後は画面を再読み込みして、復元したデータを反映します。
+      </div>
+      <input class="hide" id="msBackupRestoreFile" type="file" accept=".json,application/json"/>
+
+      <div class="ms-danger-zone">
+        <div>
+          <b>危険な操作</b>
+          <span>通常は使用しません。システム内の保存データをすべて削除します。</span>
+        </div>
+        <button class="danger" id="msAllDeleteBtn" type="button">全データを削除</button>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- 現場 -->
 <section class="hide" id="view-sites">
 <header class="invoice-lwall-header">
@@ -904,6 +1180,25 @@ html.ms-password-locked body{visibility:hidden!important;}
 </div>
 <div class="ms-sites-count" id="msSitesCount">0件</div>
 </div>
+
+<div class="ms-sites-filter-panel" id="msSitesFilterPanel">
+  <label class="ms-sites-filter-field">
+    <span>発注先で絞る</span>
+    <select id="msSiteListClientFilter">
+      <option value="">すべての発注先</option>
+    </select>
+  </label>
+  <label class="ms-sites-filter-field">
+    <span>工事名で検索</span>
+    <input id="msSiteListNameSearch" type="search" placeholder="工事名の一部を入力"/>
+  </label>
+  <label class="ms-sites-complete-toggle">
+    <input id="msSiteListShowCompleted" type="checkbox"/>
+    <span>完了工事を表示</span>
+  </label>
+  <button class="ms-sites-new-button" id="msSiteListNewButton" type="button">新しい工事を入力</button>
+  <div class="ms-sites-filter-status" id="msSitesFilterStatus">発注先または工事名で絞り込めます。</div>
+</div>
 <div class="ms-sites-card-list" id="msSitesCardList"></div>
 <!-- 既存JS互換用：従来テーブルは非表示で残す -->
 <div class="ms-sites-legacy">
@@ -920,10 +1215,6 @@ html.ms-password-locked body{visibility:hidden!important;}
 </thead>
 <tbody></tbody>
 </table>
-</div>
-<div class="ms-sites-bottom-actions">
-<button class="secondary" onclick="msExportData()">データ書き出し（JSON）</button>
-<button class="danger" onclick="msClearAll()">全削除</button>
 </div>
 <textarea class="hide" id="exportBox" spellcheck="false"></textarea>
 </div>
@@ -3124,6 +3415,499 @@ document.addEventListener("DOMContentLoaded",()=>setTimeout(()=>{
   }
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",setup);
   else setup();
+})();
+</script>
+
+
+<script id="ms-sites-filter-and-keyboard">
+/* ===== 登録済み工事一覧：検索・完了表示切替・キー操作 =====
+   既存の登録／更新／削除／請求計算には触れず、右側一覧の表示だけを絞り込む。 */
+(function(){
+  "use strict";
+
+  function el(id){ return document.getElementById(id); }
+  function esc(v){
+    try{ return typeof escapeHtml==="function" ? escapeHtml(String(v??"")) : String(v??"").replace(/[&<>"']/g,function(c){return({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]);}); }
+    catch(_){ return String(v??""); }
+  }
+  function yen(n){
+    try{return Math.round(Number(n||0)).toLocaleString("ja-JP");}catch(_){return "0";}
+  }
+  function allSites(){
+    try{return (typeof state!=="undefined" && Array.isArray(state.sites)) ? state.sites : [];}catch(_){return [];}
+  }
+  function allMonths(){
+    try{return Object.keys(state?.monthly||{}).sort();}catch(_){return [];}
+  }
+  function monthlyRec(month,siteId){
+    try{return state?.monthly?.[month]?.[siteId]||null;}catch(_){return null;}
+  }
+
+  /* 「完了」は実請求額が最終注文金額まで到達した工事を優先して判定。
+     calcBillForSite が使えない場合だけ、最終月＋出来高累計で安全側に判定する。 */
+  function siteCompleted(site){
+    if(!site) return false;
+    let finalOrder=0;
+    try{ finalOrder = typeof displayContract==="function" ? Number(displayContract(site)||0) : Number(site.contractNet||0); }catch(_){}
+    if(!(finalOrder>0)) return false;
+
+    let billed=0, usedBillCalc=false, work=0, hasFinal=false;
+    allMonths().forEach(function(month){
+      const r=monthlyRec(month,site.id);
+      if(!r) return;
+      if(r.isFinal) hasFinal=true;
+      work += Number(r.thisMonthNet||0);
+      if(typeof calcBillForSite==="function"){
+        try{
+          const b=calcBillForSite(month,site);
+          if(b && Number.isFinite(Number(b.billNet))){
+            billed += Number(b.billNet||0);
+            usedBillCalc=true;
+          }
+        }catch(_){}
+      }
+    });
+    if(usedBillCalc) return billed >= finalOrder-0.5;
+    return hasFinal && work >= finalOrder-0.5;
+  }
+
+  function populateClientFilter(){
+    const sel=el("msSiteListClientFilter");
+    if(!sel) return;
+    const keep=sel.value||"";
+    const names=[...new Set(allSites().map(function(s){return String(s.clientName||"").trim();}).filter(Boolean))]
+      .sort(function(a,b){return a.localeCompare(b,"ja");});
+    sel.innerHTML='<option value="">すべての発注先</option>';
+    names.forEach(function(name){
+      const o=document.createElement("option");
+      o.value=name; o.textContent=name; sel.appendChild(o);
+    });
+    if(names.includes(keep)) sel.value=keep;
+    else sel.value="";
+  }
+
+  function filteredSites(){
+    const client=String(el("msSiteListClientFilter")?.value||"");
+    const q=String(el("msSiteListNameSearch")?.value||"").trim().toLocaleLowerCase("ja");
+    const showCompleted=!!el("msSiteListShowCompleted")?.checked;
+    return allSites().filter(function(s){
+      if(client && String(s.clientName||"")!==client) return false;
+      if(q && !String(s.name||"").toLocaleLowerCase("ja").includes(q)) return false;
+      if(!showCompleted && siteCompleted(s)) return false;
+      return true;
+    });
+  }
+
+  function updateStatus(shown,total){
+    const st=el("msSitesFilterStatus");
+    if(!st) return;
+    const client=String(el("msSiteListClientFilter")?.value||"");
+    const q=String(el("msSiteListNameSearch")?.value||"").trim();
+    const showCompleted=!!el("msSiteListShowCompleted")?.checked;
+    st.className="ms-sites-filter-status";
+    if(shown===0){
+      st.classList.add("none");
+      st.textContent="条件に該当する工事はありません。";
+    }else if(client || q || showCompleted){
+      st.classList.add("ok");
+      st.textContent=shown+"件を表示しています（登録済み "+total+"件）。";
+    }else{
+      st.textContent="進行中の工事 "+shown+"件を表示しています。完了工事は「完了工事を表示」で確認できます。";
+    }
+  }
+
+  window.renderMsSitesCards=function(){
+    const box=el("msSitesCardList");
+    const count=el("msSitesCount");
+    if(!box || typeof state==="undefined") return;
+
+    populateClientFilter();
+    const sites=filteredSites();
+    const total=allSites().length;
+    if(count) count.textContent=sites.length+"件";
+    updateStatus(sites.length,total);
+    box.innerHTML="";
+
+    if(!sites.length){
+      box.innerHTML='<div style="padding:22px;text-align:center;color:#7a8c98;font-size:11px;">条件に該当する工事はありません。</div>';
+      return;
+    }
+
+    sites.forEach(function(s){
+      let finalOrder=0,received=0,balance=0;
+      try{finalOrder=typeof displayContract==="function"?displayContract(s):Number(s.contractNet||0);}catch(_){}
+      try{received=typeof sumAllMonths==="function"?sumAllMonths(s.id):0;}catch(_){}
+      balance=Math.max(0,Number(finalOrder||0)-Number(received||0));
+
+      const completed=siteCompleted(s);
+      const card=document.createElement("div");
+      card.className="ms-site-card"+((typeof editingSiteId!=="undefined"&&editingSiteId===s.id)?" selected":"");
+      card.tabIndex=0;
+      card.dataset.siteId=s.id;
+      card.setAttribute("aria-label",(s.name||"工事")+" を選択");
+
+      const client=s.clientName||"";
+      const location=s.workLocation||"";
+      const order=s.orderNo||"—";
+      const work=s.workNo||"—";
+
+      card.innerHTML=`
+        <div>
+          <div class="ms-site-card-name">${completed?'<span style="color:#6f7f89;font-size:10px;margin-right:5px;">【完了】</span>':""}${esc(s.name||"")}</div>
+          <div class="ms-site-card-meta">
+            ${client?`<span>請求先：${esc(client)}</span>`:""}
+            ${location?`<span>工事場所：${esc(location)}</span>`:""}
+            <span>注文：${esc(order)}</span>
+            <span>工事：${esc(work)}</span>
+          </div>
+          <div class="ms-site-card-money">
+            最終注文 <b>${yen(finalOrder)}円</b>
+            　請求済 ${yen(received)}円
+            　残 ${yen(balance)}円
+          </div>
+        </div>
+        <div class="ms-site-card-actions">
+          <button class="ms-site-edit" type="button" data-ms-no-card-enter="1" onclick="msEditSite('${esc(s.id)}')">編集</button>
+          <button class="ms-site-delete" type="button" data-ms-no-card-enter="1" onclick="msDeleteSite('${esc(s.id)}')">削除</button>
+        </div>`;
+      box.appendChild(card);
+    });
+  };
+
+  function rerender(keepFocusId){
+    window.renderMsSitesCards();
+    if(keepFocusId){
+      setTimeout(function(){ try{el(keepFocusId)?.focus();}catch(_){} },0);
+    }
+  }
+
+  function startNew(){
+    try{ if(typeof resetSiteForm==="function") resetSiteForm(); }catch(_){}
+    setTimeout(function(){
+      const p=el("p_name");
+      if(p){ p.focus(); try{p.select();}catch(_){} }
+    },50);
+  }
+
+  function visibleCards(){
+    return [...document.querySelectorAll("#msSitesCardList .ms-site-card")];
+  }
+  function focusFirstCard(){
+    const cards=visibleCards();
+    if(cards.length) cards[0].focus();
+  }
+
+  /* 発注先フィルタ用の、月次請求と同じ考え方の一覧ポップアップ */
+  function popup(){
+    let box=el("msSitesClientPopup");
+    if(box) return box;
+    box=document.createElement("div");
+    box.id="msSitesClientPopup";
+    box.className="ms-sites-client-popup";
+    document.body.appendChild(box);
+    box.addEventListener("mousedown",function(e){
+      const b=e.target.closest("button[data-index]");
+      if(!b) return;
+      e.preventDefault();
+      const sel=el("msSiteListClientFilter");
+      const i=Number(b.dataset.index);
+      if(!sel || !sel.options[i]) return;
+      sel.selectedIndex=i;
+      sel.dispatchEvent(new Event("change",{bubbles:true}));
+      setClientChoice(false);
+      el("msSiteListNameSearch")?.focus();
+    });
+    return box;
+  }
+  function renderPopup(){
+    const sel=el("msSiteListClientFilter"),box=popup();
+    if(!sel || !box) return;
+    const r=sel.getBoundingClientRect();
+    box.style.left=Math.round(r.left)+"px";
+    box.style.top=Math.round(r.bottom+4)+"px";
+    box.style.minWidth=Math.max(210,Math.round(r.width))+"px";
+    box.innerHTML=[...sel.options].map(function(o,i){
+      return `<button type="button" data-index="${i}" class="${i===sel.selectedIndex?"active":""}">${esc(o.textContent||"")}</button>`;
+    }).join("");
+    box.classList.add("show");
+    const a=box.querySelector(".active");
+    if(a) try{a.scrollIntoView({block:"nearest"});}catch(_){}
+  }
+  function setClientChoice(on){
+    const sel=el("msSiteListClientFilter");
+    if(!sel) return;
+    sel.dataset.msKbChoice=on?"1":"0";
+    sel.classList.toggle("ms-kb-choice",!!on);
+    if(on) renderPopup(); else popup().classList.remove("show");
+  }
+  function stepClient(step){
+    const sel=el("msSiteListClientFilter");
+    if(!sel || !sel.options.length) return;
+    let i=sel.selectedIndex;
+    i=Math.max(0,Math.min(sel.options.length-1,i+step));
+    sel.selectedIndex=i;
+    renderPopup();
+  }
+
+  function bind(){
+    const client=el("msSiteListClientFilter");
+    const search=el("msSiteListNameSearch");
+    const complete=el("msSiteListShowCompleted");
+    const newBtn=el("msSiteListNewButton");
+    if(!client || client.dataset.msFilterReady==="1") return;
+    client.dataset.msFilterReady="1";
+
+    populateClientFilter();
+    window.renderMsSitesCards();
+
+    client.addEventListener("change",function(){ rerender(); });
+    search?.addEventListener("input",function(){ rerender(); });
+    complete?.addEventListener("change",function(){ rerender(); });
+    newBtn?.addEventListener("click",startNew);
+
+    client.addEventListener("keydown",function(e){
+      if(e.altKey||e.ctrlKey||e.metaKey) return;
+      const active=client.dataset.msKbChoice==="1";
+      if(e.key===" "||e.code==="Space"){
+        e.preventDefault(); e.stopImmediatePropagation();
+        setClientChoice(!active);
+      }else if(active && (e.key==="ArrowDown"||e.key==="ArrowUp")){
+        e.preventDefault(); e.stopImmediatePropagation();
+        stepClient(e.key==="ArrowDown"?1:-1);
+      }else if(active && e.key==="Enter"){
+        e.preventDefault(); e.stopImmediatePropagation();
+        client.dispatchEvent(new Event("change",{bubbles:true}));
+        setClientChoice(false);
+        search?.focus();
+      }else if(active && e.key==="Escape"){
+        e.preventDefault(); setClientChoice(false);
+      }else if(!active && (e.key==="Enter"||e.key==="ArrowDown")){
+        e.preventDefault(); search?.focus();
+      }
+    },true);
+
+    search?.addEventListener("keydown",function(e){
+      if(e.altKey||e.ctrlKey||e.metaKey) return;
+      if(e.key==="Enter"||e.key==="ArrowDown"){
+        e.preventDefault(); complete?.focus();
+      }else if(e.key==="ArrowUp"){
+        e.preventDefault(); client.focus();
+      }else if(e.key==="Escape"){
+        if(search.value){e.preventDefault();search.value="";rerender("msSiteListNameSearch");}
+      }
+    },true);
+
+    complete?.addEventListener("keydown",function(e){
+      if(e.altKey||e.ctrlKey||e.metaKey) return;
+      if(e.key===" "||e.code==="Space"){
+        e.preventDefault(); e.stopImmediatePropagation();
+        complete.checked=!complete.checked;
+        complete.dispatchEvent(new Event("change",{bubbles:true}));
+      }else if(e.key==="Enter"||e.key==="ArrowDown"){
+        e.preventDefault(); focusFirstCard();
+      }else if(e.key==="ArrowUp"){
+        e.preventDefault(); search?.focus();
+      }
+    },true);
+
+    newBtn?.addEventListener("keydown",function(e){
+      if(e.key==="Enter"||e.key===" "||e.code==="Space"){
+        e.preventDefault(); startNew();
+      }
+    },true);
+
+    el("msSitesCardList")?.addEventListener("keydown",function(e){
+      const card=e.target.closest(".ms-site-card");
+      if(!card || e.target.closest("button")) return;
+      const cards=visibleCards();
+      const i=cards.indexOf(card);
+      if(e.key==="ArrowDown" && i>=0 && i<cards.length-1){
+        e.preventDefault(); cards[i+1].focus();
+      }else if(e.key==="ArrowUp" && i>0){
+        e.preventDefault(); cards[i-1].focus();
+      }else if(e.key==="ArrowUp" && i===0){
+        e.preventDefault(); complete?.focus();
+      }else if(e.key==="Enter"){
+        e.preventDefault();
+        const id=card.dataset.siteId;
+        if(id && typeof msEditSite==="function") msEditSite(id);
+      }
+    },true);
+
+    document.addEventListener("mousedown",function(e){
+      if(!e.target.closest("#msSiteListClientFilter") && !e.target.closest("#msSitesClientPopup")) setClientChoice(false);
+    },true);
+  }
+
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",function(){setTimeout(bind,180);},{once:true});
+  else setTimeout(bind,80);
+
+  /* 工事登録・更新・削除後に発注先候補と絞り込み一覧も同期 */
+  setTimeout(function(){
+    ["msSaveSite","msDeleteSite","resetSiteForm"].forEach(function(name){
+      const old=window[name];
+      if(typeof old!=="function" || old.__msSiteFilterWrapped) return;
+      const wrapped=function(){
+        const r=old.apply(this,arguments);
+        setTimeout(function(){try{populateClientFilter();window.renderMsSitesCards();}catch(_){}},80);
+        return r;
+      };
+      wrapped.__msSiteFilterWrapped=true;
+      window[name]=wrapped;
+    });
+  },500);
+})();
+</script>
+
+
+<script id="ms-data-management-script">
+(function(){
+  "use strict";
+
+  const BACKUP_TYPE="MS_INVOICE_BACKUP";
+  const BACKUP_VERSION=1;
+  const LAST_KEY="ms_invoice_last_backup_at";
+
+  function el(id){return document.getElementById(id);}
+  function pad(n){return String(n).padStart(2,"0");}
+  function stamp(d){
+    return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())+"_"+pad(d.getHours())+pad(d.getMinutes())+pad(d.getSeconds());
+  }
+  function displayStamp(d){
+    return d.getFullYear()+"/"+pad(d.getMonth()+1)+"/"+pad(d.getDate())+" "+pad(d.getHours())+":"+pad(d.getMinutes());
+  }
+  function downloadText(name,text){
+    const blob=new Blob([text],{type:"application/json;charset=utf-8"});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a");
+    a.href=url;a.download=name;
+    document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
+  }
+
+  function collectStorage(storage){
+    const obj={};
+    for(let i=0;i<storage.length;i++){
+      const k=storage.key(i);
+      if(k==null) continue;
+      /* password session token is authentication state, not invoice data */
+      if(k==="ms_invoice_auth_v1") continue;
+      obj[k]=storage.getItem(k);
+    }
+    return obj;
+  }
+
+  function makeBackup(reason){
+    const now=new Date();
+    return {
+      backupType:BACKUP_TYPE,
+      backupVersion:BACKUP_VERSION,
+      createdAt:now.toISOString(),
+      reason:reason||"manual",
+      app:"MS請求書システム",
+      localStorage:collectStorage(localStorage)
+    };
+  }
+
+  function saveBackup(reason,markLast){
+    const data=makeBackup(reason);
+    const suffix=reason==="before_restore"?"_復元前退避":"";
+    downloadText("MS請求書バックアップ_"+stamp(new Date())+suffix+".json",JSON.stringify(data,null,2));
+    if(markLast){
+      try{localStorage.setItem(LAST_KEY,data.createdAt);}catch(_){}
+      updateLast();
+    }
+    return data;
+  }
+
+  function updateLast(){
+    const box=el("msBackupLast");
+    if(!box)return;
+    let v="";
+    try{v=localStorage.getItem(LAST_KEY)||"";}catch(_){}
+    if(!v){box.textContent="最終バックアップ：まだありません";return;}
+    const d=new Date(v);
+    box.textContent="最終バックアップ："+(Number.isNaN(d.getTime())?v:displayStamp(d));
+  }
+
+  function validateBackup(data){
+    if(!data || typeof data!=="object") return "バックアップファイルの形式が正しくありません。";
+    if(data.backupType!==BACKUP_TYPE) return "MS請求書システムのバックアップファイルではありません。";
+    if(Number(data.backupVersion)!==BACKUP_VERSION) return "このバックアップのバージョンには対応していません。";
+    if(!data.localStorage || typeof data.localStorage!=="object" || Array.isArray(data.localStorage)) return "保存データが見つかりません。";
+    return "";
+  }
+
+  function restoreData(data){
+    /* 復元対象はバックアップに含まれる請求書システムのlocalStorage全体。
+       認証用sessionStorageは変更しない。 */
+    localStorage.clear();
+    Object.keys(data.localStorage).forEach(function(k){
+      if(k==="ms_invoice_auth_v1") return;
+      localStorage.setItem(k,String(data.localStorage[k]??""));
+    });
+  }
+
+  async function handleRestoreFile(file){
+    if(!file)return;
+    let data;
+    try{data=JSON.parse(await file.text());}
+    catch(_){alert("JSONファイルを読み込めませんでした。ファイルが壊れていないか確認してください。");return;}
+    const err=validateBackup(data);
+    if(err){alert(err);return;}
+
+    const created=data.createdAt?new Date(data.createdAt):null;
+    const when=created && !Number.isNaN(created.getTime()) ? displayStamp(created) : "日時不明";
+    if(!confirm("バックアップを復元します。\n\nバックアップ日時："+when+"\n現在のデータは置き換わります。\n\n復元しますか？")) return;
+
+    try{
+      restoreData(data);
+      alert("バックアップを復元しました。\n画面を再読み込みします。");
+      location.reload();
+    }catch(e){
+      alert("復元中にエラーが発生しました。\n現在のデータを確認してください。");
+    }
+  }
+
+  function bind(){
+    el("msBackupSaveBtn")?.addEventListener("click",function(){
+      try{
+        saveBackup("manual",true);
+      }catch(e){
+        alert("バックアップを保存できませんでした。");
+      }
+    });
+
+    el("msBackupRestoreBtn")?.addEventListener("click",function(){
+      const f=el("msBackupRestoreFile");
+      if(f){f.value="";f.click();}
+    });
+    el("msBackupRestoreFile")?.addEventListener("change",function(){
+      const file=this.files&&this.files[0];
+      handleRestoreFile(file);
+    });
+
+    el("msAllDeleteBtn")?.addEventListener("click",function(){
+      if(!confirm("全データを削除します。\n\nバックアップは保存しましたか？")) return;
+      if(!confirm("最終確認です。\n工事情報・請求履歴・マスター・設定などの保存データを削除します。\n\n本当に全削除しますか？")) return;
+      try{
+        saveBackup("before_delete",false);
+        if(typeof msClearAll==="function"){
+          msClearAll();
+        }else{
+          localStorage.clear();
+          alert("全データを削除しました。");
+          location.reload();
+        }
+      }catch(e){
+        alert("全削除を実行できませんでした。");
+      }
+    });
+    updateLast();
+  }
+
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",bind,{once:true});
+  else bind();
 })();
 </script>
 
