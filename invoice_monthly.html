@@ -4492,12 +4492,16 @@ document.addEventListener("click",(e)=>{
     const wantedClient=client.value||"";
     const word=normalizeText(search.value);
     const showSaved=!!document.getElementById(SHOW_SAVED_ID)?.checked;
+    // 月を戻した時、現在選択中の工事がその月の「済」であっても
+    // 選択を解除しない。これにより「この工事の月別履歴」を継続表示する。
+    // ただし、未選択の他の済工事は従来どおり「済工事を表示」OFFなら隠す。
+    const selectedSiteId=String(site.value||"");
 
     const allowed=new Set(
       state.sites.filter(s=>{
         if(wantedClient && clientNameOf(s)!==wantedClient) return false;
         if(word && !normalizeText(siteNameOf(s)).includes(word)) return false;
-        if(!showSaved && isSavedThisMonth(s.id)) return false;
+        if(!showSaved && isSavedThisMonth(s.id) && String(s.id)!==selectedSiteId) return false;
         return true;
       }).map(s=>String(s.id))
     );
