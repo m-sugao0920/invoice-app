@@ -3231,12 +3231,32 @@ document.addEventListener("click",(e)=>{
 
     /* 出来高超過の保存前チェックだけは、今月入力中の増減も含めて判定する。
        「随時」で増額と出来高を同じ月に入力した場合の誤警告を防ぐ。 */
-    const directInputLimitContract =
-      Number(s?.contractNet||0) +
-      Number(s?.increaseNet||0) -
-      Number(s?.reductionNet||0) +
-      Number(inc||0) -
-      Number(red||0);
+    let directInputLimitContract;
+    if(finalOnly(t,s) && isFinal && typeof getSiteForCalc==="function"){
+      // 「増減は工事完了時に反映」の最終月は、
+      // 前月までに記録済みの増減を含む正式な計算用工事データを基準にする。
+      // そのうえで、今月まだ保存していない増額・減額だけを追加する。
+      try{
+        const monthKey=document.getElementById("m_month")?.value||"";
+        const cs=getSiteForCalc(s,true,monthKey)||s;
+        directInputLimitContract=
+          Number(cs.contractNet||0) +
+          Number(cs.increaseNet||0) -
+          Number(cs.reductionNet||0) +
+          Number(inc||0) -
+          Number(red||0);
+      }catch(_){
+        directInputLimitContract=inputLimitContract;
+      }
+    }else{
+      // 「随時」反映など従来ケースは、これまでどおり今月入力中の増減を含める。
+      directInputLimitContract =
+        Number(s?.contractNet||0) +
+        Number(s?.increaseNet||0) -
+        Number(s?.reductionNet||0) +
+        Number(inc||0) -
+        Number(red||0);
+    }
     if(Number.isFinite(directInputLimitContract)){
       inputLimitContract=Math.max(0,directInputLimitContract);
     }
