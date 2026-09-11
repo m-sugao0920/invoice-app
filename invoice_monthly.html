@@ -1,0 +1,4440 @@
+<!-- MS請求書システム 基礎整理版 2026-08-27 -->
+<!DOCTYPE html>
+
+<html lang="ja">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width,initial-scale=1" name="viewport"/>
+<title>MS請求書作成システム</title>
+<link href="invoice_style.css" rel="stylesheet"/>
+<style>
+#view-sites .grid{display:grid!important;grid-template-columns:minmax(320px,1fr) minmax(0,2fr)!important;gap:12px;max-width:1400px;margin:0 auto;align-items:start}
+#view-sites .basic-grid,#view-sites .money-grid,#view-sites .condition-grid{grid-template-columns:1fr!important}
+#view-sites .ms-band-field.span-2{grid-column:auto!important}
+#view-sites .ms-calc-strip{grid-template-columns:1fr 1fr!important}
+.ms-sites-list-card{min-width:0;border-radius:14px;overflow:hidden}
+.ms-sites-list-card>h2{background:linear-gradient(180deg,#0e74b7,#075f9d);color:#fff;font-family:var(--fontNum);font-size:15px;font-weight:900;padding:10px 14px;margin:0}
+.ms-sites-list-card .body{padding:10px 12px 12px}
+.ms-sites-list-note{margin-bottom:8px;padding:7px 9px;border:1px solid #d6e3ec;border-radius:8px;background:#f5f9fc;color:#657a88;font-size:10px;font-family:var(--fontNum)}
+.table-scroll{overflow-x:auto}
+@media(max-width:980px){#view-sites .grid{grid-template-columns:1fr!important}}
+</style>
+<style>
+/* ===== 工事情報：請求条件を提出先設定へ移行 ===== */
+.ms-site-condition-note{
+  margin:8px 0 10px;
+  padding:7px 9px;
+  background:#f5f8fa;
+  border:1px solid #d7e2e9;
+  border-radius:8px;
+  color:#6a7c88;
+  font-size:10px;
+  line-height:1.5;
+  font-family:var(--fontNum);
+}
+
+/* 右側：MS積算風 工事一覧 */
+.ms-sites-toolbar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:8px 10px;
+  margin-bottom:9px;
+  background:#f6faff;
+  border:1px solid #d4e5f4;
+  border-radius:9px;
+  font-family:var(--fontNum);
+}
+.ms-sites-toolbar-title{
+  color:#245b80;
+  font-size:12px;
+  font-weight:900;
+}
+.ms-sites-toolbar-sub{
+  margin-top:2px;
+  color:#748695;
+  font-size:9.5px;
+}
+.ms-sites-count{
+  flex:0 0 auto;
+  min-width:48px;
+  padding:5px 9px;
+  border-radius:999px;
+  background:#e6f2fb;
+  color:#17638f;
+  text-align:center;
+  font-size:11px;
+  font-weight:900;
+}
+
+.ms-sites-card-list{
+  display:grid;
+  gap:8px;
+  max-height:520px;
+  overflow:auto;
+  padding-right:2px;
+}
+.ms-site-card{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:10px;
+  align-items:center;
+  border:1px solid #d3e4f1;
+  border-radius:11px;
+  background:#fff;
+  padding:10px 11px;
+  box-shadow:0 3px 10px rgba(20,80,120,.06);
+}
+.ms-site-card.selected{
+  background:#eef7fd;
+  border-color:#84b9da;
+  box-shadow:inset 4px 0 0 #177bb5;
+}
+.ms-site-card-name{
+  color:#1f5577;
+  font-family:var(--fontNum);
+  font-size:13px;
+  font-weight:900;
+  line-height:1.35;
+}
+.ms-site-card-meta{
+  margin-top:4px;
+  display:flex;
+  flex-wrap:wrap;
+  gap:5px 10px;
+  color:#6a7d89;
+  font-family:var(--fontNum);
+  font-size:9.5px;
+}
+.ms-site-card-money{
+  margin-top:5px;
+  color:#405d70;
+  font-family:var(--fontNum);
+  font-size:10px;
+}
+.ms-site-card-money b{
+  color:#174f73;
+  font-size:12px;
+}
+.ms-site-card-actions{
+  display:flex;
+  gap:6px;
+  align-items:center;
+}
+.ms-site-card-actions button{
+  min-width:52px;
+  height:29px;
+  padding:0 9px;
+  border-radius:7px;
+  font-size:10px;
+  font-weight:900;
+  font-family:var(--fontNum);
+}
+.ms-site-edit{
+  background:#eaf5fc;
+  color:#17638f;
+  border:1px solid #9cc7e0;
+}
+.ms-site-delete{
+  background:#fff;
+  color:#a44949;
+  border:1px solid #d8aaaa;
+}
+
+.ms-sites-legacy{display:none !important;}
+.ms-sites-bottom-actions{
+  display:flex;
+  justify-content:flex-end;
+  gap:7px;
+  margin-top:10px;
+}
+.ms-sites-bottom-actions button{
+  width:auto;
+  min-width:120px;
+  height:32px;
+  padding:0 10px;
+  border-radius:7px;
+  font-size:10px;
+  font-family:var(--fontNum);
+}
+</style>
+<style>
+/* 工事情報・登録済み工事一覧のすぐ上に置くシンプルな帯 */
+#view-sites .ms-simple-topband{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  width:100%;
+  max-width:1400px;
+  height:42px;
+  box-sizing:border-box;
+  margin:0 auto 8px;
+  padding:0 12px;
+  border-radius:10px;
+  background:linear-gradient(180deg,#0e74b7,#075f9d);
+  color:#fff;
+  font-family:var(--fontNum);
+}
+.ms-simple-topband-title{
+  font-size:14px;
+  font-weight:900;
+  letter-spacing:.02em;
+}
+.ms-simple-back{
+  width:auto;
+  min-width:125px;
+  height:30px;
+  padding:0 11px;
+  border:1px solid rgba(255,255,255,.85);
+  border-radius:7px;
+  background:rgba(255,255,255,.12);
+  color:#fff;
+  font-size:10.5px;
+  font-weight:900;
+  font-family:var(--fontNum);
+  cursor:pointer;
+}
+.ms-simple-back:hover{
+  background:#fff;
+  color:#075f9d;
+}
+</style>
+<style>
+/* ===== 工事情報：ご指定の行構成 ===== */
+
+/* 基本情報は2列 */
+#view-sites .basic-grid{
+  grid-template-columns:1fr 1fr !important;
+}
+/* 工事名・請求先はそれぞれ1行全部 */
+#view-sites .basic-grid .span-2{
+  grid-column:1 / -1 !important;
+}
+
+/* 注文金額も2列 */
+#view-sites .money-grid{
+  grid-template-columns:1fr 1fr !important;
+}
+/* 当初金額と最終注文金額はそれぞれ1行全部 */
+#view-sites .money-grid .span-2{
+  grid-column:1 / -1 !important;
+}
+</style>
+<style>
+/* 一番上のブルー帯を少し厚く */
+#view-sites .ms-simple-topband{
+  height:54px !important;
+  padding-left:14px !important;
+  padding-right:14px !important;
+}
+.ms-simple-topband-title{
+  font-size:15px !important;
+}
+.ms-simple-back{
+  height:32px !important;
+}
+</style>
+<style>
+/* ===== MS積算と同じ、画面端から端までのブルー帯 ===== */
+#view-sites .ms-simple-topband{
+  width:calc(100vw - 0px) !important;
+  max-width:none !important;
+  margin-left:calc(50% - 50vw) !important;
+  margin-right:calc(50% - 50vw) !important;
+  border-radius:0 !important;
+  padding-left:18px !important;
+  padding-right:18px !important;
+  box-sizing:border-box !important;
+}
+
+/* 工事場所は工事名・請求先と同じ1行全幅 */
+#view-sites #p_workLocation{
+  width:100%;
+}
+</style>
+<style>
+/* ===== L型擁壁アプリと同じ考え方の上部ヘッダー ===== */
+#view-sites .invoice-lwall-header{
+  position:relative;
+  width:100vw;
+  margin-left:calc(50% - 50vw);
+  margin-right:calc(50% - 50vw);
+  background:linear-gradient(135deg,#0070C0,#2b8ae2);
+  color:#fff;
+  padding:18px 4px;
+  box-sizing:border-box;
+  border-radius:0;
+}
+
+#view-sites .invoice-lwall-wrap{
+  max-width:1500px;
+  margin:0 auto;
+  display:flex;
+  gap:12px;
+  align-items:center;
+  justify-content:space-between;
+  flex-wrap:wrap;
+}
+
+#view-sites .invoice-lwall-header h1{
+  font-size:18px;
+  margin:0;
+  color:#fff;
+  font-weight:900;
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans JP","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;
+}
+
+#view-sites .invoice-lwall-header .sub{
+  margin-top:3px;
+  font-size:12px;
+  opacity:.95;
+  color:#fff;
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans JP","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;
+}
+
+#view-sites .invoice-home-link{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  min-width:150px;
+  height:38px;
+  padding:0 14px;
+  border-radius:999px;
+  background:rgba(255,255,255,.18);
+  color:#fff;
+  border:1px solid rgba(255,255,255,.55);
+  text-decoration:none;
+  font-size:13px;
+  font-weight:900;
+  box-shadow:0 6px 14px rgba(0,0,0,.12);
+  white-space:nowrap;
+  box-sizing:border-box;
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans JP","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;
+}
+
+#view-sites .invoice-home-link:hover{
+  background:rgba(255,255,255,.28);
+}
+
+/* ヘッダーと下の工事情報の間隔 */
+#view-sites .invoice-lwall-header + .grid{
+  margin-top:16px !important;
+}
+
+@media(max-width:700px){
+  #view-sites .invoice-home-link{
+    width:100%;
+    margin-top:8px;
+  }
+}
+
+@media print{
+  #view-sites .invoice-lwall-header{
+    display:none !important;
+  }
+}
+</style>
+<style id="invoice-header-position-final">
+/* =========================================================
+   上部ブルー帯：位置調整はここだけ変更してください
+   ========================================================= */
+#view-sites{
+  --invoice-header-left: 830px;   /* ← MS請求書システムを右へ: 数字を大きく / 左へ: 小さく */
+  --invoice-header-right: 830px;  /* ← 戻るボタンを左へ: 数字を大きく / 右へ: 小さく */
+}
+
+#view-sites .invoice-lwall-header{
+  width:100vw !important;
+  margin-left:calc(50% - 50vw) !important;
+  margin-right:calc(50% - 50vw) !important;
+  padding:18px 0 !important;
+  box-sizing:border-box !important;
+  background:linear-gradient(135deg,#0070C0,#2b8ae2) !important;
+}
+
+#view-sites .invoice-lwall-wrap{
+  width:100% !important;
+  max-width:none !important;
+  margin:0 !important;
+  padding-left:var(--invoice-header-left) !important;
+  padding-right:var(--invoice-header-right) !important;
+  box-sizing:border-box !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:space-between !important;
+  gap:12px !important;
+  flex-wrap:nowrap !important;
+}
+
+#view-sites .invoice-lwall-wrap > div:first-child{
+  margin:0 !important;
+  min-width:0 !important;
+}
+
+#view-sites .invoice-home-link{
+  margin:0 !important;
+  flex:0 0 auto !important;
+}
+
+@media(max-width:700px){
+  #view-sites{
+    --invoice-header-left: 16px;
+    --invoice-header-right: 16px;
+  }
+  #view-sites .invoice-lwall-wrap{
+    flex-wrap:wrap !important;
+  }
+}
+</style>
+<style id="client-master-link-style">
+#view-sites #p_clientName,#view-sites #p_orderManager{width:100%;min-height:34px;border:1px solid #c9dce9;border-radius:7px;padding:7px 9px;background:#fff;color:#263f50;font:inherit}
+.ms-client-condition-preview{grid-column:1/-1;padding:7px 9px;border:1px solid #d6e3ec;border-radius:8px;background:#f5f9fc;color:#657a88;font-size:9.5px;line-height:1.55}
+</style>
+<style id="ms-font-size-up-20260826">
+/* ===== 全体文字サイズを少し大きくして見やすく ===== */
+.ms-invoice-page{font-size:15px;}
+.ms-invoice-page input,
+.ms-invoice-page select,
+.ms-invoice-page textarea,
+.ms-invoice-page button{font-size:13px;}
+.ms-invoice-page label{font-size:12px;}
+.ms-invoice-page .hint,
+.ms-invoice-page .ms-sites-toolbar-sub,
+.ms-invoice-page .ms-site-card-meta,
+.ms-invoice-page .ms-site-condition-note{font-size:11px;}
+.ms-invoice-page .ms-sites-toolbar-title{font-size:13px;}
+.ms-invoice-page .ms-site-card-name{font-size:14px;}
+.ms-invoice-page .ms-site-card-money{font-size:11px;}
+.ms-invoice-page .ms-site-card-money b{font-size:13px;}
+.ms-invoice-page .ms-band-title,
+.ms-invoice-page .card>h2,
+.ms-invoice-page .ms-sites-list-card>h2{font-size:16px;}
+.ms-invoice-page .ms-band-field>span{font-size:12px;}
+.ms-invoice-page .ms-calc-strip span{font-size:11px;}
+.ms-invoice-page .ms-calc-strip b{font-size:14px;}
+.ms-invoice-page .ms-nav .tab,
+.ms-invoice-page .ms-action{font-size:12px;}
+.ms-invoice-page .ms-current-label{font-size:11px;}
+.ms-invoice-page .ms-current-name{font-size:15px;}
+.ms-invoice-page .ms-current-note,
+.ms-invoice-page .ms-notice,
+.ms-invoice-page .ms-work-guide{font-size:11px;}
+</style>
+<style id="invoice-monthly-page-style">
+body.ms-invoice-page{margin:0;background:#f4f7fb;color:#314b5d;font-family:"Meiryo UI","Meiryo","Yu Gothic UI","Yu Gothic",sans-serif}
+.invoice-monthly-header{
+  width:100%;background:linear-gradient(135deg,#0070C0,#2b8ae2);color:#fff;padding:18px 0;
+}
+.invoice-monthly-header .inner{
+  max-width:1400px;margin:0 auto;padding:0 14px;display:flex;justify-content:space-between;align-items:center;gap:12px
+}
+.invoice-monthly-header h1{margin:0;font-size:18px;font-weight:900}
+.invoice-monthly-header .sub{margin-top:3px;font-size:12px;opacity:.95}
+.invoice-back{
+  display:inline-flex;align-items:center;justify-content:center;min-width:150px;height:38px;padding:0 14px;
+  border-radius:999px;background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.55);
+  text-decoration:none;font-size:13px;font-weight:900;box-shadow:0 6px 14px rgba(0,0,0,.12)
+}
+.invoice-monthly-wrap{max-width:1400px;margin:16px auto 40px;padding:0 14px}
+.invoice-monthly-grid{display:grid;grid-template-columns:minmax(500px,.92fr) minmax(600px,1.08fr);gap:12px;align-items:start}
+.month-card{background:#fff;border:1px solid #d3e4f1;border-radius:14px;overflow:hidden;box-shadow:0 3px 10px rgba(20,80,120,.06)}
+.month-card>h2{margin:0;padding:10px 14px;background:linear-gradient(180deg,#0e74b7,#075f9d);color:#fff;font-size:15px;font-weight:900}
+.month-card .body{padding:11px 12px 12px}
+.month-section{margin-bottom:10px;border:1px solid #d4e2ec;border-radius:10px;background:#fff;overflow:hidden}
+.month-section-title{padding:7px 10px;background:#f3f8fc;border-bottom:1px solid #d9e6ef;color:#245b80;font-size:11.5px;font-weight:900}
+.month-section-title span{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;margin-right:4px;border-radius:50%;background:#177bb5;color:#fff;font-size:10px}
+.month-form-grid,.month-main-inputs{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px}
+.month-form-grid label,.month-main-inputs label{display:flex;flex-direction:column;gap:4px;color:#526c7c;font-size:10.5px;font-weight:700}
+.month-form-grid input,.month-form-grid select,.month-main-inputs input,.month-main-inputs select{
+  min-height:36px;border:1px solid #c9dce9;border-radius:7px;padding:7px 9px;background:#fff;color:#263f50;font:inherit;font-size:12px
+}
+.month-project-info{display:grid;grid-template-columns:1fr 1fr;gap:7px;padding:0 10px 10px}
+.month-project-info .wide{grid-column:1/-1}
+.month-project-info>div{padding:7px 9px;border:1px solid #dbe7ef;border-radius:8px;background:#fbfdff}
+.month-project-info span{display:block;color:#718493;font-size:9px;margin-bottom:2px}
+.month-project-info b{display:block;color:#244e69;font-size:11.5px;font-weight:700}
+.month-status-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;padding:10px}
+.status-box{padding:8px 9px;border:1px solid #d7e4ed;border-radius:8px;background:#fbfdff}
+.status-box span{display:block;color:#6d7e8b;font-size:9px;margin-bottom:3px}
+.status-box b{display:block;color:#244e69;font-size:13px;font-weight:700}
+.status-box.sub{background:#f7f9fb}
+.status-box.final{background:#eef7fd;border-color:#b8d8eb}
+.status-box.final b{font-size:14px;color:#174f73;font-weight:900}
+.status-box.billed{background:#edf7f0;border-color:#b9d9c2}
+.status-box.billed b{color:#2e6a40;font-weight:900}
+.status-box.balance{background:#fff6e6;border-color:#e5c987}
+.status-box.balance b{color:#8a5900;font-size:16px;font-weight:900}
+.amount-input input{font-size:19px!important;font-weight:900!important;text-align:right!important;border:2px solid #8A4653!important;background:#fff8f9!important;color:#512732!important}
+.month-actions{display:flex;flex-wrap:wrap;gap:7px;padding:0 10px 10px}
+.month-actions button{min-width:120px;height:34px;padding:0 12px;border-radius:7px;font-size:10.5px;font-weight:900}
+.month-help,.month-history-guide{margin:0 10px 10px;padding:7px 9px;border:1px solid #d6e3ec;border-radius:8px;background:#f5f9fc;color:#667b89;font-size:9.8px;line-height:1.55}
+.month-history-guide{margin:0 0 10px}
+.month-list-title{margin:0 0 7px;padding:6px 8px;border-left:4px solid #177bb5;background:#f5f9fc;color:#245b80;font-size:11px;font-weight:900}
+.month-list-title.second{margin-top:14px}
+.table-scroll{overflow-x:auto}
+table.list{width:100%;border-collapse:collapse;font-size:10px}
+table.list th,table.list td{padding:7px 8px;border-bottom:1px solid #e1e8ee;white-space:nowrap}
+table.list th{background:#f7fafc;text-align:left}
+.right{text-align:right}
+.hide{display:none!important}
+.ret-alert{margin:0 10px 10px;padding:8px 10px;border:1px solid #e1b7b7;border-radius:8px;background:#fff5f5;color:#8b3f3f;font-size:10px}
+.ret-alert .title{font-weight:900;margin-bottom:3px}
+button{cursor:pointer}
+button.secondary{background:#eaf5fc;color:#17638f;border:1px solid #9cc7e0}
+button:not(.secondary){background:#177bb5;color:#fff;border:1px solid #116b9f}
+
+.month-client-terms{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:8px}
+.month-client-terms>div{border:1px solid #d7e4ed;border-radius:8px;background:#f8fbfd;padding:6px 8px;min-width:0}
+.month-client-terms span{display:block;color:#718593;font-size:9px;margin-bottom:2px}
+.month-client-terms b{display:block;color:#32566d;font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media(max-width:760px){.month-client-terms{grid-template-columns:1fr 1fr}}
+@media(max-width:980px){.invoice-monthly-grid{grid-template-columns:1fr}}
+@media(max-width:650px){
+  .month-form-grid,.month-main-inputs,.month-project-info,.month-status-grid{grid-template-columns:1fr}
+  .month-project-info .wide{grid-column:auto}
+}
+
+<style id="invoice-monthly-amount-focus">
+/* ===== 今月の請求：金額表示を整理してメリハリを付ける ===== */
+.month-status-grid.primary{
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+}
+.status-box.primary-final{
+  background:#eef7fd;
+  border-color:#a8cfe6;
+}
+.status-box.primary-final b{
+  color:#174f73;
+  font-size:15px;
+  font-weight:900;
+}
+.status-box.primary-billed{
+  background:#edf7f0;
+  border-color:#b9d9c2;
+}
+.status-box.primary-billed b{
+  color:#2e6a40;
+  font-size:15px;
+  font-weight:900;
+}
+.status-box.primary-balance{
+  background:#fff6e6;
+  border-color:#e5c987;
+}
+.status-box.primary-balance b{
+  color:#8a5900;
+  font-size:17px;
+  font-weight:900;
+}
+
+.month-billing-highlight{
+  margin:0 10px 10px;
+  padding:10px 12px;
+  border:2px solid #8A4653;
+  border-radius:10px;
+  background:#fff8f9;
+}
+.month-billing-highlight span{
+  display:block;
+  color:#76515a;
+  font-size:10px;
+  font-weight:800;
+  margin-bottom:3px;
+}
+.month-billing-highlight b{
+  display:block;
+  color:#512732;
+  font-size:24px;
+  line-height:1.2;
+  font-weight:900;
+  text-align:right;
+}
+
+.month-detail-toggle{
+  margin:0 10px 10px;
+  border:1px solid #d7e4ed;
+  border-radius:9px;
+  background:#f8fbfd;
+  overflow:hidden;
+}
+.month-detail-toggle summary{
+  cursor:pointer;
+  list-style:none;
+  padding:8px 10px;
+  color:#536f81;
+  font-size:10.5px;
+  font-weight:900;
+  user-select:none;
+}
+.month-detail-toggle summary::-webkit-details-marker{display:none}
+.month-detail-toggle summary::before{
+  content:"▶";
+  display:inline-block;
+  margin-right:6px;
+  font-size:9px;
+  transition:transform .15s ease;
+}
+.month-detail-toggle[open] summary::before{transform:rotate(90deg)}
+.month-detail-grid{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:6px;
+  padding:0 10px 10px;
+}
+.month-detail-grid .status-box{
+  background:#fafcfd;
+  border-color:#e0e8ee;
+}
+.month-detail-grid .status-box span{
+  color:#83919b;
+  font-size:8.8px;
+}
+.month-detail-grid .status-box b{
+  color:#536b7a;
+  font-size:11.5px;
+  font-weight:700;
+}
+.month-detail-grid .status-box.retention{
+  background:#fff8f8;
+  border-color:#e3caca;
+}
+.month-detail-grid .status-box.retention b{
+  color:#8b3f3f;
+  font-weight:900;
+}
+
+@media(max-width:650px){
+  .month-status-grid.primary,
+  .month-detail-grid{grid-template-columns:1fr}
+}
+</style>
+<style id="invoice-monthly-site-keyboard-style">
+/* ===== 選択欄：MS請求書システム共通キーボードルール =====
+   Space → 選択モード（えんじ枠＋薄いえんじ背景）
+   ↑↓    → 候補変更
+   Enter → 決定して次へ
+*/
+#m_site.ms-select-editing,
+#m_isFinal.ms-select-editing{
+  border:3px solid #8A4653 !important;
+  background:#fff8f9 !important;
+  color:#5b2630 !important;
+  box-shadow:0 0 0 4px rgba(138,70,83,.18) !important;
+  font-weight:700 !important;
+}
+#m_site.ms-select-editing option,
+#m_isFinal.ms-select-editing option{
+  background:#fff;
+  color:#263f50;
+}
+</style>
+
+<style id="invoice-monthly-history-button-slim">
+/* 請求履歴：「編集」「削除」を1行分の薄いボタンに */
+#siteHistoryTable td:last-child{
+  white-space:nowrap;
+}
+#siteHistoryTable td:last-child button{
+  width:auto !important;
+  min-width:48px !important;
+  height:24px !important;
+  min-height:24px !important;
+  padding:0 7px !important;
+  margin:0 2px !important;
+  border-radius:5px !important;
+  font-size:9.5px !important;
+  line-height:22px !important;
+  vertical-align:middle !important;
+  white-space:nowrap !important;
+}
+</style>
+<style id="invoice-monthly-summary-style">
+.month-summary{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:7px;
+  margin:0 0 10px;
+}
+.month-summary .box{
+  border:1px solid #d7e4ed;
+  border-radius:9px;
+  background:#fbfdff;
+  padding:8px 9px;
+  min-width:0;
+}
+.month-summary .box span{
+  display:block;
+  color:#718493;
+  font-size:9px;
+  margin-bottom:3px;
+}
+.month-summary .box b{
+  display:block;
+  color:#244e69;
+  font-size:13px;
+  font-weight:900;
+  white-space:nowrap;
+}
+.month-summary .box.claim{
+  background:#eef7fd;
+  border-color:#b8d8eb;
+}
+.month-summary .box.retention{
+  background:#fff8f8;
+  border-color:#e3caca;
+}
+.month-summary .box.retention b{color:#8b3f3f}
+@media(max-width:900px){
+  .month-summary{grid-template-columns:1fr 1fr}
+}
+@media(max-width:520px){
+  .month-summary{grid-template-columns:1fr}
+}
+</style>
+<style id="invoice-retention-claim-action-style">
+.ret-claim-button.hide{display:none !important;}
+.ret-alert.ret-claim-ready{
+  margin:0 10px 8px !important;
+  padding:7px 9px !important;
+  border:1px solid #d8bfc5 !important;
+  border-left:5px solid #8b3f52 !important;
+  border-radius:8px !important;
+  background:#fbf1f3 !important;
+  color:#6f3040 !important;
+  box-shadow:none !important;
+}
+.ret-alert.ret-claim-ready .ret-claim-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  flex-wrap:nowrap;
+}
+.ret-alert.ret-claim-ready .title{
+  margin:0 !important;
+  font-size:11px !important;
+  font-weight:900 !important;
+  color:#7b3548 !important;
+  white-space:nowrap;
+}
+.ret-alert.ret-claim-ready .ret-claim-note{
+  margin-top:3px;
+  font-size:9.5px;
+  line-height:1.35;
+  color:#80636b;
+}
+.ret-alert.ret-claim-ready .ret-claim-button{
+  flex:0 0 auto;
+  width:auto !important;
+  min-width:118px;
+  height:28px !important;
+  margin:0 !important;
+  padding:0 9px !important;
+  border-radius:6px !important;
+  border:1px solid #743245 !important;
+  background:#8b3f52 !important;
+  color:#fff !important;
+  font-size:9.8px !important;
+  font-weight:900 !important;
+  cursor:pointer;
+  white-space:nowrap;
+}
+.ret-alert.ret-claim-ready .ret-claim-button:hover{
+  filter:brightness(.97);
+}
+
+/* 保留金だけを請求する状態では、出来高欄を視覚的に弱くする */
+.amount-input.retention-only-ready{
+  opacity:.62;
+}
+.amount-input.retention-only-ready input{
+  background:#f1f4f6 !important;
+  border-color:#d5dde2 !important;
+  color:#8a959c !important;
+  box-shadow:none !important;
+}
+.amount-input.retention-only-ready::after{
+  content:"出来高は計上済み";
+  display:block;
+  margin-top:2px;
+  font-size:9px;
+  color:#87939b;
+  font-weight:700;
+}
+
+.ret-input-warning{
+  margin:0 10px 8px;
+  padding:7px 9px;
+  border:1px solid #e0b0b0;
+  border-left:5px solid #a84b4b;
+  border-radius:7px;
+  background:#fff5f5;
+  color:#813636;
+  font-size:9.8px;
+  font-weight:800;
+  line-height:1.4;
+}
+
+@media(max-width:650px){
+  .ret-alert.ret-claim-ready .ret-claim-row{
+    align-items:stretch;
+    flex-direction:column;
+  }
+  .ret-alert.ret-claim-ready .ret-claim-button{
+    width:100% !important;
+  }
+}
+
+.ret-alert.ret-claim-ready.ret-info-only{
+  margin:0 10px 6px !important;
+  padding:5px 8px !important;
+  border:1px solid #c7dce9 !important;
+  border-left:4px solid #5d91b0 !important;
+  border-radius:7px !important;
+  background:#eef6fb !important;
+  color:#355f78 !important;
+  box-shadow:none !important;
+}
+.ret-alert.ret-claim-ready.ret-info-only .title{
+  margin:0 !important;
+  font-size:9.8px !important;
+  font-weight:800 !important;
+  line-height:1.25 !important;
+  color:#466f87 !important;
+}
+.ret-alert.ret-claim-ready.ret-info-only .title .amt{
+  display:inline !important;
+  margin-left:2px !important;
+  font-size:11px !important;
+  font-weight:900 !important;
+  color:#285c7a !important;
+}
+.ret-alert.ret-claim-ready.ret-info-only .ret-claim-note{
+  margin-top:1px !important;
+  font-size:8.5px !important;
+  line-height:1.2 !important;
+  color:#7891a0 !important;
+}
+.ret-alert.ret-claim-ready.ret-actionable{
+  border:1px solid #d8bfc5 !important;
+  border-left:5px solid #8b3f52 !important;
+  background:#fbf1f3 !important;
+  color:#6f3040 !important;
+}
+.ret-alert.ret-claim-ready.ret-actionable .title{
+  color:#7b3548 !important;
+}
+
+</style>
+<style id="retention-info-oneline-compact">
+#retAlert.ret-info-only{
+  padding:6px 9px !important;
+  margin:0 10px 6px !important;
+  border:none !important;
+  border-left:none !important;
+  box-shadow:none !important;
+  border-radius:7px !important;
+  min-height:0 !important;
+}
+#retAlert.ret-info-only .ret-claim-row{
+  display:block !important;
+}
+#retAlert.ret-info-only .title{
+  margin:0 !important;
+  padding:0 !important;
+  font-size:12px !important;
+  line-height:1.35 !important;
+  font-weight:800 !important;
+  white-space:nowrap !important;
+}
+#retAlert.ret-info-only .title .amt{
+  font-size:14px !important;
+  font-weight:900 !important;
+}
+#retAlert.ret-info-only .ret-claim-note{
+  display:none !important;
+}
+#retAlert.ret-info-only .ret-claim-button{
+  display:none !important;
+}
+</style>
+<style id="invoice-monthly-site-retention-status-style">
+#m_site.ms-has-retention-options{
+  border-color:#a9cdb2;
+}
+</style>
+<style id="retention-text-larger-final">
+/* 保留金あり：横線なし、1行、枠内で読みやすく */
+#retAlert.ret-info-only{
+  border:none !important;
+  border-left:none !important;
+  box-shadow:none !important;
+  padding:7px 10px !important;
+}
+#retAlert.ret-info-only .title{
+  font-size:14px !important;
+  line-height:1.25 !important;
+  font-weight:800 !important;
+  white-space:nowrap !important;
+}
+#retAlert.ret-info-only .title .amt{
+  font-size:16px !important;
+  line-height:1.25 !important;
+  font-weight:900 !important;
+}
+
+/* 保留金請求：横線なし、文字・金額・ボタンを枠内いっぱいに読みやすく */
+#retAlert.ret-actionable{
+  border:none !important;
+  border-left:none !important;
+  box-shadow:none !important;
+  padding:8px 10px !important;
+}
+#retAlert.ret-actionable .ret-claim-row{
+  gap:8px !important;
+  align-items:center !important;
+}
+#retAlert.ret-actionable .title{
+  font-size:14px !important;
+  line-height:1.25 !important;
+  font-weight:800 !important;
+  white-space:nowrap !important;
+}
+#retAlert.ret-actionable .title .amt{
+  font-size:17px !important;
+  line-height:1.25 !important;
+  font-weight:900 !important;
+}
+#retAlert.ret-actionable .ret-claim-note{
+  font-size:10px !important;
+  line-height:1.2 !important;
+  margin-top:2px !important;
+}
+#retAlert.ret-actionable .ret-claim-button{
+  font-size:12px !important;
+  font-weight:800 !important;
+  line-height:1.2 !important;
+  min-height:32px !important;
+  padding:5px 10px !important;
+  white-space:nowrap !important;
+}
+</style>
+<style id="invoice-monthly-direct-print-style">
+.month-actions .ms-direct-print{
+  background:#eaf5fc;
+  color:#17638f;
+  border:1px solid #9cc7e0;
+  font-weight:900;
+}
+.month-actions .ms-direct-print:disabled{
+  opacity:.42;
+  cursor:not-allowed;
+}
+#siteHistoryTable .ms-reprint-btn{
+  margin-left:4px;
+  padding:3px 7px;
+  min-width:auto;
+  height:25px;
+  border:1px solid #c8d7e2;
+  border-radius:6px;
+  background:#f7fafc;
+  color:#607481;
+  font-size:9.5px;
+  font-weight:700;
+}
+#siteHistoryTable .ms-reprint-btn:hover{background:#eef4f8;color:#35586d;}
+</style>
+
+<style id="monthly-final-actions-important-style">
+/* ===== 月次入力の最終操作：保存・印刷を明確にする ===== */
+.month-actions.ms-final-actions{
+  display:block !important;
+  margin:4px 10px 12px !important;
+  padding:10px 11px 11px !important;
+  border:1px solid #d4e2ec !important;
+  border-radius:10px !important;
+  background:#f8fbfd !important;
+}
+.ms-final-actions-title{
+  margin:0 0 8px;
+  padding-left:8px;
+  border-left:4px solid #177bb5;
+  color:#245b80;
+  font-size:11px;
+  font-weight:900;
+  line-height:1.4;
+}
+.ms-final-actions-main{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+}
+.month-actions.ms-final-actions .ms-final-actions-main button{
+  width:100% !important;
+  min-width:0 !important;
+  height:46px !important;
+  padding:0 16px !important;
+  border-radius:9px !important;
+  font-size:13px !important;
+  font-weight:900 !important;
+  letter-spacing:.01em;
+  box-shadow:0 3px 8px rgba(20,60,90,.10);
+}
+#btnSaveMonthly{
+  background:#8A4653 !important;
+  color:#fff !important;
+  border:1px solid #743945 !important;
+}
+#btnSaveMonthly:disabled{
+  opacity:.42 !important;
+  cursor:not-allowed !important;
+  box-shadow:none !important;
+}
+#btnSaveMonthly:hover,#btnSaveMonthly:focus{
+  background:#763a46 !important;
+  outline:3px solid rgba(138,70,83,.16) !important;
+  outline-offset:1px;
+}
+#btnDirectInvoicePrint{
+  background:#177bb5 !important;
+  color:#fff !important;
+  border:1px solid #116b9f !important;
+}
+#btnDirectInvoicePrint:hover,#btnDirectInvoicePrint:focus{
+  background:#116b9f !important;
+  outline:3px solid rgba(23,123,181,.16) !important;
+  outline-offset:1px;
+}
+#btnDirectInvoicePrint:disabled{
+  background:#d9e3ea !important;
+  color:#8395a1 !important;
+  border-color:#c7d2da !important;
+  box-shadow:none !important;
+  opacity:1 !important;
+}
+.ms-final-actions-sub{
+  display:flex;
+  justify-content:flex-end;
+  gap:7px;
+  margin-top:8px;
+}
+.month-actions.ms-final-actions .ms-final-actions-sub button{
+  min-width:118px !important;
+  height:30px !important;
+  padding:0 10px !important;
+  font-size:9.8px !important;
+  box-shadow:none !important;
+}
+@media(max-width:700px){
+  .ms-final-actions-main{grid-template-columns:1fr;}
+  .ms-final-actions-sub{flex-wrap:wrap;}
+}
+</style>
+
+<style id="retention-final-action-minimal-fix">
+/* 保留金請求は通常の保存と同じ「確定操作」なので、同じ位置・同じ色にする。 */
+.month-actions.ms-final-actions .ms-final-actions-main #retClaimBtn{
+  width:100% !important; min-width:0 !important; height:46px !important; padding:0 16px !important;
+  border-radius:9px !important; font-size:13px !important; font-weight:900 !important; letter-spacing:.01em !important;
+  box-shadow:0 3px 8px rgba(20,60,90,.10) !important;
+  background:#8A4653 !important; color:#fff !important; border:1px solid #743945 !important;
+}
+.month-actions.ms-final-actions .ms-final-actions-main #retClaimBtn:hover,
+.month-actions.ms-final-actions .ms-final-actions-main #retClaimBtn:focus{
+  background:#763a46 !important; outline:3px solid rgba(138,70,83,.16) !important; outline-offset:1px;
+}
+</style>
+
+<style id="invoice-monthly-header-alignment-fix-20260831">
+/* 上部ブルー帯：本文（今月の請求／請求履歴）の左右端に揃える */
+.invoice-monthly-header .inner{
+  width:100% !important;
+  max-width:1400px !important;
+  margin:0 auto !important;
+  padding:0 14px !important;
+  box-sizing:border-box !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:space-between !important;
+}
+.invoice-monthly-header .inner > div:first-child{margin:0 !important;text-align:left !important;}
+.invoice-monthly-header h1,.invoice-monthly-header .sub{text-align:left !important;}
+.invoice-monthly-header .invoice-back{margin-left:auto !important;flex:0 0 auto !important;}
+</style>
+
+<style id="retention-guidance-clear-20260901">
+/* 保留金発生時：状態→説明→次の操作が一目で分かるようにする */
+#retAlert.ret-info-only{padding:10px 12px !important;margin:0 10px 8px !important;}
+#retAlert.ret-info-only .title{font-size:15px !important;font-weight:900 !important;}
+#retAlert.ret-info-only .title .amt{font-size:18px !important;}
+#retAlert.ret-info-only .ret-claim-note{display:block !important;margin-top:4px !important;font-size:10.5px !important;line-height:1.4 !important;font-weight:700 !important;}
+.month-actions.ms-final-actions.retention-save-guide{border-color:#e5c987 !important;background:#fffaf0 !important;}
+.month-actions.ms-final-actions.retention-save-guide .ms-final-actions-title{border-left-color:#c58a16 !important;color:#805600 !important;}
+.month-actions.ms-final-actions.retention-save-guide #btnSaveMonthly{box-shadow:0 0 0 3px rgba(138,70,83,.10),0 3px 8px rgba(20,60,90,.10) !important;}
+</style>
+
+<style id="retention-save-state-separation-20260901">
+/* 保存前＝計算案内。保存後の「保留金あり」確定サインとは見た目を分ける。 */
+#retAlert.ret-calculation-preview{
+  background:#f5f9fc !important;
+  color:#536f81 !important;
+  border:1px solid #d6e3ec !important;
+  padding:7px 10px !important;
+  box-shadow:none !important;
+}
+#retAlert.ret-calculation-preview .title{
+  color:#456579 !important;
+  font-size:12px !important;
+  font-weight:800 !important;
+}
+#retAlert.ret-calculation-preview .title .amt{
+  color:#345c73 !important;
+  font-size:14px !important;
+}
+#retAlert.ret-calculation-preview .ret-claim-note{
+  display:block !important;
+  color:#718493 !important;
+  margin-top:3px !important;
+  font-size:9.8px !important;
+  font-weight:700 !important;
+}
+</style>
+
+
+<style id="ms-final-amount-card-style">
+/* 元の今月出来高欄のHTML構造・幅は変更しない。補助表示だけ右側に重ねて配置する。 */
+.amount-input:has(#msFinalAmountCard){position:relative;padding-right:34% !important;box-sizing:border-box}
+.ms-thismonth-heading{display:block;width:100%}
+.ms-final-inline-guide{
+  position:absolute;
+  right:0;
+  top:18px;
+  width:31%;
+  min-height:42px;
+  box-sizing:border-box;
+  display:flex;
+  flex-wrap:wrap;
+  align-content:center;
+  justify-content:center;
+  gap:2px 5px;
+  padding:5px 7px;
+  border:1px solid #c8ddea;
+  border-radius:7px;
+  background:#f4f9fc;
+  color:#567486;
+  font-size:9.5px;
+  font-weight:800;
+  line-height:1.2;
+  text-align:center;
+}
+.ms-final-inline-guide.hide{display:none!important}
+.ms-final-inline-guide b{color:#1d5f86;font-size:14px;font-weight:900;white-space:nowrap}
+.ms-final-inline-guide small{flex-basis:100%;color:#78909f;font-size:8px;font-weight:700;white-space:nowrap}
+@media(max-width:760px){
+  .amount-input:has(#msFinalAmountCard){padding-right:0 !important}
+  .ms-final-inline-guide{position:static;width:100%;margin:5px 0 0}
+}
+</style>
+
+
+<style id="ms-dialog-keyboard-navigation-style">
+.ms-completion-actions button{
+  transition:background .12s ease,color .12s ease,border-color .12s ease,box-shadow .12s ease;
+}
+.ms-completion-actions button.ms-dialog-unselected{
+  background:#fff !important;
+  color:#7a3b48 !important;
+  border:1px solid #8A4653 !important;
+  box-shadow:none !important;
+}
+.ms-completion-actions button.ms-dialog-key-selected,
+.ms-completion-actions button:focus{
+  background:#8A4653 !important;
+  color:#fff !important;
+  border:1px solid #743945 !important;
+  outline:3px solid rgba(138,70,83,.20) !important;
+  outline-offset:2px !important;
+  box-shadow:0 3px 8px rgba(20,60,90,.10) !important;
+}
+</style>
+
+
+<style id="ms-saved-button-label-style">
+#btnSaveMonthly:disabled{
+  background:#e6ebef !important;
+  color:#7f8d97 !important;
+  border-color:#d1d9df !important;
+  box-shadow:none !important;
+  cursor:not-allowed !important;
+  opacity:1 !important;
+}
+</style>
+
+
+<style id="ms-saved-actions-one-row-style">
+/* 保存済み時：印刷・読込・工事情報変更を1行に整列 */
+.month-actions.ms-final-actions.ms-saved-one-row .ms-final-actions-main,
+.month-actions.ms-final-actions.ms-saved-one-row .ms-final-actions-sub{
+  display:contents !important;
+}
+.month-actions.ms-final-actions.ms-saved-one-row{
+  display:grid !important;
+  grid-template-columns:minmax(0,1.45fr) minmax(0,1fr) minmax(0,1fr);
+  gap:8px !important;
+  align-items:center;
+}
+.month-actions.ms-final-actions.ms-saved-one-row .ms-final-actions-title{
+  grid-column:1 / -1;
+}
+.month-actions.ms-final-actions.ms-saved-one-row #btnSaveMonthly,
+.month-actions.ms-final-actions.ms-saved-one-row #retClaimBtn{
+  display:none !important;
+}
+.month-actions.ms-final-actions.ms-saved-one-row #btnDirectInvoicePrint,
+.month-actions.ms-final-actions.ms-saved-one-row .ms-final-actions-sub button{
+  width:100% !important;
+  min-width:0 !important;
+  height:38px !important;
+  margin:0 !important;
+  padding:0 10px !important;
+  font-size:10.5px !important;
+  white-space:nowrap !important;
+  box-sizing:border-box !important;
+}
+.month-actions.ms-final-actions.ms-saved-one-row #btnDirectInvoicePrint{
+  font-size:11.5px !important;
+}
+@media(max-width:760px){
+  .month-actions.ms-final-actions.ms-saved-one-row{
+    grid-template-columns:1fr !important;
+  }
+  .month-actions.ms-final-actions.ms-saved-one-row .ms-final-actions-title{
+    grid-column:1;
+  }
+}
+</style>
+
+
+<style id="ms-history-delete-only-style">
+#siteHistoryTable button[data-ms-history-edit],
+#siteHistoryTable .ms-history-edit-hidden{
+  display:none !important;
+}
+</style>
+
+
+<style id="monthly-list-title-larger-final">
+/* 「この月の請求一覧」「この工事の月別履歴」を見やすくする */
+.month-list-title{
+  font-size:15px !important;
+  font-weight:700 !important;
+}
+</style>
+
+
+<style id="monthly-list-detail-larger-final">
+/* 月次請求の一覧は、見出しだけでなく中身の明細も読みやすくする */
+#monthlyTable th,
+#monthlyTable td,
+#siteHistoryTable th,
+#siteHistoryTable td{
+  font-size:13px !important;
+  line-height:1.45 !important;
+  padding-top:7px !important;
+  padding-bottom:7px !important;
+}
+#monthlyTable button,
+#siteHistoryTable button{
+  font-size:12px !important;
+}
+</style>
+
+
+<style id="monthly-list-detail-larger-v2">
+#monthlyTable th,
+#monthlyTable td,
+#siteHistoryTable th,
+#siteHistoryTable td{
+  font-size:15px !important;
+  line-height:1.5 !important;
+  padding-top:8px !important;
+  padding-bottom:8px !important;
+}
+#monthlyTable button,
+#siteHistoryTable button{
+  font-size:13px !important;
+}
+</style>
+
+
+<style id="monthly-list-detail-medium-final">
+#monthlyTable th,
+#monthlyTable td,
+#siteHistoryTable th,
+#siteHistoryTable td{
+  font-size:14px !important;
+  line-height:1.45 !important;
+  padding-top:7px !important;
+  padding-bottom:7px !important;
+}
+#monthlyTable button,
+#siteHistoryTable button{
+  font-size:12px !important;
+}
+</style>
+
+
+<style id="monthly-list-detail-13px-final">
+#monthlyTable th,
+#monthlyTable td,
+#siteHistoryTable th,
+#siteHistoryTable td{
+  font-size:13px !important;
+  line-height:1.45 !important;
+  padding-top:7px !important;
+  padding-bottom:7px !important;
+}
+#monthlyTable button,
+#siteHistoryTable button{
+  font-size:12px !important;
+}
+</style>
+
+
+<style id="monthly-list-detail-12px-final">
+#monthlyTable th,
+#monthlyTable td,
+#siteHistoryTable th,
+#siteHistoryTable td{
+  font-size:12px !important;
+  line-height:1.45 !important;
+  padding-top:7px !important;
+  padding-bottom:7px !important;
+}
+#monthlyTable button,
+#siteHistoryTable button{
+  font-size:12px !important;
+}
+</style>
+
+
+<!-- MS請求書システム 簡易パスワード保護（SHA-256 / セッション中のみ認証保持） -->
+<style id="ms-password-gate-style">
+html.ms-password-locked body{visibility:hidden!important;}
+</style>
+<script id="ms-password-gate">
+(function(){
+  'use strict';
+  var KEY='ms_invoice_auth_v1';
+  var HASH='60d523c99e38a30e4b889688cf2563ae6b745aa77b41c3d5b7a7fa9606aaa4cf';
+  try{ if(sessionStorage.getItem(KEY)==='ok') return; }catch(e){}
+  document.documentElement.classList.add('ms-password-locked');
+  function hex(buf){return Array.from(new Uint8Array(buf)).map(function(b){return b.toString(16).padStart(2,'0');}).join('');}
+  async function check(pw){
+    if(!window.crypto || !window.crypto.subtle){ return false; }
+    var data=new TextEncoder().encode(pw);
+    return hex(await crypto.subtle.digest('SHA-256',data))===HASH;
+  }
+  async function ask(){
+    while(true){
+      var pw=window.prompt('MS請求書システム\nパスワードを入力してください。');
+      if(pw===null){ document.body && (document.body.innerHTML=''); return; }
+      try{
+        if(await check(pw)){
+          try{sessionStorage.setItem(KEY,'ok');}catch(e){}
+          document.documentElement.classList.remove('ms-password-locked');
+          return;
+        }
+      }catch(e){}
+      window.alert('パスワードが違います。');
+    }
+  }
+  if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',ask,{once:true});}else{ask();}
+})();
+</script>
+
+</head>
+<body class="ms-invoice-page">
+<header class="invoice-monthly-header">
+<div class="inner">
+<div>
+<h1>MS請求書システム</h1>
+<div class="sub">今月の請求　―　出来高入力・請求状況・履歴</div>
+</div>
+<a class="invoice-back" href="index.html">🏠 メイン画面に戻る</a>
+</div>
+</header>
+<main class="invoice-monthly-wrap">
+<div class="invoice-monthly-grid">
+<section class="month-card">
+<h2>今月の請求</h2>
+<div class="body">
+<section class="month-section">
+<div class="month-section-title"><span>①</span>対象工事</div>
+<div class="month-form-grid">
+<label>対象月<input id="m_month" type="month"/></label>
+<label>工事を選択<select id="m_site"></select></label>
+</div>
+<div class="month-project-info">
+<div class="wide"><span>工事名</span><b id="msm_siteName">—</b></div>
+<div class="wide"><span>請求先</span><b id="msm_client">—</b></div>
+<div><span>発注担当者</span><b id="msm_orderManager">—</b></div>
+<div><span>請求担当者</span><b id="msm_billingManager">—</b></div>
+</div>
+<div aria-label="発注先マスター請求条件" class="month-client-terms">
+<div><span>締日</span><b id="msm_closingDay">—</b></div>
+<div><span>支払条件</span><b id="msm_paymentTerms">—</b></div>
+<div><span>保留金</span><b id="msm_retention">—</b></div>
+<div><span>安全管理費</span><b id="msm_safetyFee">—</b></div>
+</div>
+</section>
+<section class="month-section">
+<div class="month-section-title"><span>②</span>注文・請求状況</div>
+<div class="month-status-grid primary">
+<div class="status-box primary-final"><span>最終注文金額</span><b id="sum_displayContract">—</b><small id="sum_displayContractNote" class="ms-final-contract-note"></small></div>
+<div class="status-box primary-billed"><span>実請求済累計（税抜）</span><b id="sum_actualBilled">—</b></div>
+<div class="status-box primary-balance">
+<span>未請求額</span>
+<b id="sum_balance">—</b>
+</div>
+<div class="status-box"><span>残工事（通常請求上限到達後は0）</span><b id="sum_workBalance">—</b></div>
+</div>
+<div class="month-billing-highlight">
+<span>今月の請求額（税抜）</span>
+<b id="sum_thisRetHeld">—</b>
+</div>
+<details class="month-detail-toggle">
+<summary>計算詳細を表示</summary>
+<div class="month-detail-grid">
+<div class="status-box"><span>当初注文金額</span><b id="sum_contract">—</b></div>
+<div class="status-box"><span>増額</span><b id="sum_increase">—</b></div>
+<div class="status-box"><span>減額</span><b id="sum_reduction">—</b></div>
+<div class="status-box"><span>保留金判定額</span><b id="sum_effective">—</b></div>
+<div class="status-box"><span>保留金発生基準額</span><b id="sum_retMin">—</b></div>
+<div class="status-box"><span>保留上限</span><b id="sum_retCap">—</b></div>
+<div class="status-box"><span>通常請求上限</span><b id="sum_trigger">—</b></div>
+<div class="status-box retention"><span>保留金</span><b id="sum_retRemain">—</b></div>
+<div class="status-box"><span>前月まで出来高</span><b id="sum_prevCum">—</b></div>
+<div class="status-box"><span>出来高累計</span><b id="sum_workCum">—</b></div>
+</div>
+</details>
+</section>
+<section class="month-section">
+<div class="month-section-title"><span>③</span>今月の入力</div>
+<div class="month-main-inputs ms-monthly-new-order">
+<label>請求区分
+  <select id="m_isFinal" onchange="if(typeof refreshSiteSummaryAndHistory==='function') refreshSiteSummaryAndHistory()">
+    <option selected="" value="0">通常月</option>
+    <option value="1">工事完了（最終請求）</option>
+  </select>
+</label>
+<label class="amount-input">追加工事（税抜）
+  <input class="money" id="m_increaseNet" inputmode="numeric" oninput="formatCommaInput(this);if(typeof refreshSiteSummaryAndHistory==='function') refreshSiteSummaryAndHistory()" value="0"/>
+</label>
+<label class="amount-input">減額工事（税抜）
+  <input class="money" id="m_reductionNet" inputmode="numeric" oninput="formatCommaInput(this);if(typeof refreshSiteSummaryAndHistory==='function') refreshSiteSummaryAndHistory()" value="0"/>
+</label>
+<label class="amount-input">
+  <span class="ms-thismonth-heading">
+    <span>今月の出来高（税抜）</span>
+    <span id="msFinalAmountCard" class="ms-final-inline-guide hide" aria-live="polite">
+      工事完了時 <b id="msFinalAmountCardValue">—</b>
+      <small id="msFinalAmountCardNote"></small>
+    </span>
+  </span>
+  <input class="money" id="m_thisMonthNet" inputmode="numeric" oninput="formatCommaInput(this);if(typeof refreshSiteSummaryAndHistory==='function') refreshSiteSummaryAndHistory()" value="0"/>
+  <span style="font-size:9px;font-weight:500;color:#71808b;line-height:1.35;">工事完了時も、上の未請求額を確認して入力してください。</span>
+</label>
+</div>
+<div id="msAdjustmentTimingNote" class="month-help" style="margin-top:7px;">増減の反映時期：—</div>
+<div id="msSafetyConditions" class="ms-safety-conditions" aria-live="polite">
+  <div class="ms-safety-title">今回の計算条件</div>
+  <div id="msSafetyConditionText">工事を選択すると表示します。</div>
+</div>
+<div id="msSafetyWarning" class="ms-safety-warning hide" aria-live="assertive"></div>
+<div class="ret-alert ret-claim-ready hide" id="retAlert" role="alert">
+<div class="ret-claim-row">
+<div>
+<div class="title">保留金待ち　<span class="amt" id="retAlertAmt">0</span> 円</div>
+<div class="ret-claim-note">出来高は計上済みです。</div>
+</div>
+
+</div>
+</div>
+<div class="ret-input-warning hide" id="retInputWarning">
+            この工事は保留金待ちです。保留金だけを請求する場合、今月の出来高へ保留金額を入力しないでください。
+          </div>
+<div class="month-actions ms-final-actions">
+  <div class="ms-final-actions-title">請求書の保存・印刷</div>
+  <div class="ms-final-actions-main">
+    <button class="ret-claim-button hide" id="retClaimBtn" onclick="prepareRetentionOnlyClaim()" type="button">保留金を請求</button>
+    <button id="btnSaveMonthly" onclick="safeSaveMonthly()">今月の請求を保存</button>
+    <button class="secondary ms-direct-print" id="btnDirectInvoicePrint" onclick="openCurrentInvoicePrint()" type="button">工事別請求書を印刷</button>
+  </div>
+  <div class="ms-final-actions-sub">
+  </div>
+</div>
+<div class="month-help">
+            保留金ありの工事は、会社ごとの保留金条件と増減額の取扱設定から通常請求上限を計算し、その上限に達すると通常月の請求を停止します。工事完了月に「工事完了（最終請求）」を選ぶと、最終請求として増減と保留金を確定します。
+          </div>
+<div class="hide" id="siteSummary"></div>
+</section>
+</div>
+</section>
+<section class="month-card">
+<h2>請求履歴</h2>
+<div class="body">
+<div class="month-history-guide">選択中の工事について、保存済みの請求履歴を確認できます。修正する場合は、最新月から順番に削除し、修正する月から入力し直してください。</div>
+<div class="month-list-title">この工事の月別履歴</div>
+<div class="table-scroll">
+<table class="list" id="siteHistoryTable">
+<thead>
+<tr><th>年月</th><th class="right">当月出来高（税抜）</th><th class="right">保留金</th><th class="right">実請求額（税抜）</th><th>状態</th><th class="right">操作</th></tr>
+</thead>
+<tbody></tbody>
+</table>
+</div>
+<div class="month-list-title second">この月の請求一覧</div>
+<div class="month-summary" id="monthSummary">
+<div class="box"><span>出来高合計</span><b id="monthSumWork">—</b></div>
+<div class="box claim"><span>実請求額合計</span><b id="monthSumActual">—</b></div>
+<div class="box retention"><span>保留金残合計</span><b id="monthSumRetention">—</b></div>
+<div class="box"><span>保留金あり工事</span><b id="monthSumRetentionCount">—</b></div>
+</div>
+<div class="table-scroll">
+<table class="list" id="monthlyTable">
+<thead>
+<tr><th>工事名</th><th class="right">今月出来高</th><th class="right">実請求額</th><th class="right">保留金残</th><th>状態</th></tr>
+</thead>
+<tbody></tbody>
+</table>
+</div>
+</div>
+</section>
+</div>
+</main>
+<script src="invoice_storage.js"></script>
+<script src="invoice_common.js"></script>
+<script id="invoice-monthly-site-edit-link">
+function goToSiteEdit(){
+  const site=document.getElementById("m_site");
+  const month=document.getElementById("m_month");
+  const siteId=site?.value||"";
+  const monthValue=month?.value||"";
+
+  if(!siteId){
+    alert("先に工事を選択してください。");
+    try{ site?.focus(); }catch(e){}
+    return;
+  }
+
+  const params=new URLSearchParams();
+  params.set("site",siteId);
+  params.set("from","monthly");
+  if(monthValue) params.set("month",monthValue);
+
+  location.href="invoice_app.html?"+params.toString();
+}
+</script>
+<script id="invoice-retention-claim-action-script">
+(function(){
+  "use strict";
+
+  function numValue(el){
+    return Number(String(el?.value||"0").replace(/,/g,""))||0;
+  }
+
+  function currentSiteId(){
+    return document.getElementById("m_site")?.value||"";
+  }
+
+  function currentMonth(){
+    return document.getElementById("m_month")?.value||"";
+  }
+
+  function currentMonthHasSavedRecord(){
+    try{
+      const sid=currentSiteId(), month=currentMonth();
+      return !!(sid && month && typeof state!=="undefined" && state.monthly?.[month]?.[sid]);
+    }catch(e){ return false; }
+  }
+
+  function updateRetentionClaimUI(){
+    const alertBox=document.getElementById("retAlert");
+    const warning=document.getElementById("retInputWarning");
+    const btn=document.getElementById("retClaimBtn");
+    const amt=document.getElementById("retAlertAmt");
+    const input=document.getElementById("m_thisMonthNet");
+    const amountLabel=input?.closest(".amount-input");
+    if(!warning) return;
+
+    // 保留金残の判定は、工事選択欄と同じ共通判定を最優先にする。
+    // これにより「工事完了済みだが保留金が残っている翌月」でも
+    // 保留金請求ボタンを正しく表示できる。
+    let waitingAmount=0;
+    try{
+      const sid=currentSiteId();
+      const site=(typeof state!=="undefined" && Array.isArray(state.sites))
+        ? state.sites.find(s=>String(s.id)===String(sid))
+        : null;
+      if(site && typeof window.__monthlyRetentionWaiting==="function"){
+        waitingAmount=Math.max(0,Number(window.__monthlyRetentionWaiting(site)||0));
+      }
+    }catch(e){ waitingAmount=0; }
+
+    const savedThisMonth=currentMonthHasSavedRecord();
+    const retentionActive=waitingAmount>0;
+
+    // 保留金サインは保存済みデータから保留金残が確認できた場合だけ表示する。
+    // 未保存の入力による「保留予定」はここでは表示しない。
+    if(alertBox){
+      if(retentionActive){
+        alertBox.classList.remove("hide");
+        const amountEl=document.getElementById("retAlertAmt");
+        if(amountEl){
+          try{ amountEl.textContent=(typeof yen==="function" ? yen(waitingAmount) : Math.round(waitingAmount).toLocaleString("ja-JP")); }
+          catch(e){ amountEl.textContent=Math.round(waitingAmount).toLocaleString("ja-JP"); }
+        }
+      }else{
+        alertBox.classList.add("hide");
+        alertBox.classList.remove("ret-info-only","ret-actionable","ret-calculation-preview","ret-saved-confirmed");
+      }
+    }
+
+    // 今月の通常請求を保存した月は「保留金あり」という情報表示だけ。
+    // 次の未登録月で出来高0円なら「保留金請求」という操作表示へ切り替える。
+    const canClaimRetention=retentionActive && !savedThisMonth && numValue(input)===0;
+
+    // 当月が保存済みなら再保存はさせない。印刷は保存済み請求のため有効のまま。
+    const saveBtn=document.getElementById("btnSaveMonthly");
+    if(saveBtn){
+      saveBtn.disabled=!!savedThisMonth;
+      saveBtn.setAttribute("aria-disabled",savedThisMonth?"true":"false");
+      saveBtn.title=savedThisMonth ? "この月の請求は登録済みです。" : "";
+      saveBtn.textContent=savedThisMonth ? "保存済み" : "今月の請求を保存";
+    }
+
+    if(alertBox){
+      alertBox.classList.toggle("ret-info-only",retentionActive && !canClaimRetention);
+      alertBox.classList.toggle("ret-actionable",canClaimRetention);
+
+      const title=alertBox.querySelector(".title");
+      const note=alertBox.querySelector(".ret-claim-note");
+      const a=(amt?.textContent||"0").trim();
+
+      alertBox.classList.remove("ret-calculation-preview");
+      alertBox.classList.toggle("ret-saved-confirmed",retentionActive && savedThisMonth);
+
+      if(title){
+        if(canClaimRetention){
+          title.innerHTML=`保留金請求　<span class="amt" id="retAlertAmt">${a}</span> 円`;
+        }else if(savedThisMonth){
+          title.innerHTML=`保留金あり　<span class="amt" id="retAlertAmt">${a}</span> 円`;
+        }
+      }
+      if(note){
+        note.textContent=canClaimRetention
+          ? "保留金だけを請求できます。"
+          : savedThisMonth
+            ? "今月の請求は保存済みです。"
+            : "";
+      }
+    }
+
+    if(btn) btn.classList.toggle("hide",!canClaimRetention);
+    const normalSaveBtn=document.getElementById("btnSaveMonthly");
+    if(normalSaveBtn){
+      normalSaveBtn.classList.toggle("hide",canClaimRetention || savedThisMonth);
+      normalSaveBtn.disabled=!!savedThisMonth;
+      normalSaveBtn.setAttribute("aria-disabled",savedThisMonth?"true":"false");
+      normalSaveBtn.textContent="今月の請求を保存";
+    }
+
+    const finalActions=document.querySelector(".month-actions.ms-final-actions");
+    if(finalActions){
+      finalActions.classList.remove("retention-save-guide");
+      const actionTitle=finalActions.querySelector(".ms-final-actions-title");
+      if(actionTitle) actionTitle.textContent="請求書の保存・印刷";
+    }
+
+    // 出来高欄を薄くするのは、保留金だけを請求できる月だけ。
+    if(amountLabel) amountLabel.classList.toggle("retention-only-ready",canClaimRetention);
+
+    // 保留金だけの月なのに出来高を入れた場合だけ誤入力警告。
+    warning.classList.toggle("hide",!(retentionActive && !savedThisMonth && numValue(input)>0));
+
+    if(canClaimRetention && btn){
+      const a=(document.getElementById("retAlertAmt")?.textContent||"0").trim();
+      btn.textContent="保留金 "+a+"円を請求";
+    }
+  }
+
+  window.__updateRetentionClaimUI=updateRetentionClaimUI;
+
+  window.prepareRetentionOnlyClaim=function(){
+    if(currentMonthHasSavedRecord()){
+      alert("この月はすでに通常請求が登録されています。保留金は次の未登録月で請求してください。");
+      return;
+    }
+
+    const amt=(document.getElementById("retAlertAmt")?.textContent||"0").trim();
+    if(!confirm("保留金 "+amt+"円を請求して工事完了にします。よろしいですか？")) return;
+
+    const input=document.getElementById("m_thisMonthNet");
+    const finalSel=document.getElementById("m_isFinal");
+    if(input){
+      input.value="0";
+      try{ if(typeof formatCommaInput==="function") formatCommaInput(input); }catch(e){}
+    }
+    if(finalSel){
+      finalSel.value="1";
+      // 専用ボタンからの保存だけを「保留金のみ請求」として共通計算へ伝える。
+      finalSel.dataset.retentionOnlyClaim="1";
+    }
+
+    const saveBtn=document.getElementById("btnSaveMonthly") ||
+                  document.getElementById("m_save") ||
+                  document.getElementById("btnMonthlySave");
+    if(saveBtn){
+      saveBtn.click();
+    }else if(typeof safeSaveMonthly==="function"){
+      safeSaveMonthly();
+    }else if(typeof saveMonthly==="function"){
+      saveMonthly();
+    }else{
+      alert("保存処理を呼び出せませんでした。通常の保存ボタンで保存してください。");
+    }
+
+    // 保留金請求の保存直後に、工事選択の【済】表示まで即時更新する。
+    setTimeout(()=>{
+      try{
+        if(typeof refreshSiteSelects==="function") refreshSiteSelects();
+      }catch(e){}
+      try{
+        const siteEl=document.getElementById("m_site");
+        if(siteEl){
+          // 保留金請求の保存直後は、自動再描画による「今月すでに登録済み」警告を出さない。
+          // ユーザーが後から通常の保存済み月を選び直した場合の警告は従来どおり残す。
+          if(typeof window.__monthlySuppressSavedWarning==="function"){
+            window.__monthlySuppressSavedWarning(()=>{
+              siteEl.dispatchEvent(new Event("change",{bubbles:true}));
+            });
+          }else{
+            siteEl.dispatchEvent(new Event("change",{bubbles:true}));
+          }
+        }
+      }catch(e){}
+      updateRetentionClaimUI();
+    },180);
+  };
+
+  document.addEventListener("input",(e)=>{
+    if(e.target?.id==="m_thisMonthNet") setTimeout(updateRetentionClaimUI,30);
+  });
+  document.addEventListener("change",(e)=>{
+    if(["m_site","m_month","m_isFinal"].includes(e.target?.id)) setTimeout(updateRetentionClaimUI,70);
+  });
+  document.addEventListener("DOMContentLoaded",()=>{
+    setTimeout(updateRetentionClaimUI,450);
+  });
+
+  // 保存・再描画後にも表示条件を再判定する。
+  document.addEventListener("click",(e)=>{
+    if((e.target?.textContent||"").includes("保存")) setTimeout(updateRetentionClaimUI,180);
+  });
+})();
+</script>
+<script id="invoice-monthly-site-retention-status-script">
+(function(){
+  "use strict";
+
+  let suppressSavedWarning=false;
+
+  function monthKeys(){
+    try{
+      if(typeof state==="undefined" || !state.monthly) return [];
+      return Object.keys(state.monthly).sort();
+    }catch(e){ return []; }
+  }
+
+  function getRec(month,siteId){
+    try{ return state.monthly?.[month]?.[siteId] || null; }catch(e){ return null; }
+  }
+
+  function currentMonth(){
+    return document.getElementById("m_month")?.value||"";
+  }
+
+  function isCompletedBefore(siteId,monthKey){
+    for(const m of monthKeys()){
+      if(monthKey && m>=monthKey) break;
+      const rec=getRec(m,siteId);
+      if(rec?.isFinal) return true;
+    }
+    return false;
+  }
+
+  function isCompletedAny(siteId){
+    for(const m of monthKeys()){
+      if(getRec(m,siteId)?.isFinal) return true;
+    }
+    return false;
+  }
+
+  function workCum(siteId){
+    let total=0;
+    for(const m of monthKeys()){
+      const rec=getRec(m,siteId);
+      if(rec) total+=Number(rec.thisMonthNet||0);
+    }
+    return total;
+  }
+
+  function billedCum(site){
+    let total=0;
+    for(const m of monthKeys()){
+      const rec=getRec(m,site.id);
+      if(!rec) continue;
+      try{
+        if(typeof calcBillForSite==="function"){
+          total+=Number(calcBillForSite(m,site)?.billNet||0);
+        }
+      }catch(e){}
+    }
+    return total;
+  }
+
+  function retentionWaiting(site){
+    try{
+      if(!site) return 0;
+      if(typeof triggerLine!=="function" || typeof retentionCap!=="function") return 0;
+
+      // 保留金カードも月次一覧と同じく、最新の保存済み月までの増減を反映して判定する。
+      // 工事完了月がまだ無い通常月でも、月次で入力済みの追加・減額を無視しない。
+      let latestMonth="";
+      let latestRec=null;
+      for(const m of monthKeys()){
+        const rec=getRec(m,site.id);
+        if(rec){ latestMonth=m; latestRec=rec; }
+      }
+
+      let calcSite=site;
+      if(latestMonth && typeof getSiteForCalc==="function"){
+        try{ calcSite=getSiteForCalc(site,!!latestRec?.isFinal,latestMonth); }catch(e){ calcSite=site; }
+      }
+
+      const cap=Math.max(0,Number(retentionCap(calcSite)||0));
+      if(cap<=0) return 0;
+
+      // 工事完了を選んでいても、出来高累計が通常請求上限に達していない間は
+      // 保留金待ちにしない。残額は通常の未請求額として扱う。
+      const trigger=Number(triggerLine(calcSite));
+      if(!Number.isFinite(trigger) || workCum(site.id)<trigger) return 0;
+
+      let finalOrder=0;
+      if(latestMonth){
+        finalOrder=Math.max(0,
+          Number(calcSite?.contractNet||0) +
+          Number(calcSite?.increaseNet||0) -
+          Number(calcSite?.reductionNet||0)
+        );
+      }else{
+        try{
+          if(typeof displayContract==="function"){
+            finalOrder=Math.max(0,Number(displayContract(site)||0));
+          }
+        }catch(e){}
+      }
+
+      const unpaid=Math.max(0,finalOrder-billedCum(site));
+      return Math.max(0,Math.min(cap,unpaid));
+    }catch(e){ return 0; }
+  }
+
+  window.__monthlyRetentionWaiting=retentionWaiting;
+
+  function decorateSiteOptions(){
+    const sel=document.getElementById("m_site");
+    if(!sel || typeof state==="undefined" || !Array.isArray(state.sites)) return;
+    const month=currentMonth();
+    let hasRetention=false;
+
+    [...sel.options].forEach(opt=>{
+      if(!opt.value){
+        opt.textContent="工事を選択してください";
+        opt.disabled=false;
+        return;
+      }
+      const site=state.sites.find(s=>String(s.id)===String(opt.value));
+      if(!site) return;
+
+      const currentRec=month ? getRec(month,site.id) : null;
+      const completedBefore=isCompletedBefore(site.id,month);
+      const wait=retentionWaiting(site);
+
+      opt.disabled=false;
+      if(currentRec){
+        opt.textContent=`【済】${site.name||"工事"}`;
+      }else if(wait>0){
+        opt.textContent=`【保留】${site.name||"工事"}`;
+        opt.disabled=false;
+        hasRetention=true;
+      }else if(completedBefore){
+        // 工事完了を選んだ月があっても、通常請求上限へ達しておらず未請求額が残る場合は
+        // 次月以降も通常請求を続けられるようにする。
+        let finalOrder=0, billed=0;
+        try{ finalOrder=Math.max(0,Number(displayContract(site)||0)); }catch(e){}
+        try{ billed=Math.max(0,Number(billedCum(site)||0)); }catch(e){}
+        const normalUnpaid=Math.max(0,finalOrder-billed);
+        if(normalUnpaid>0){
+          opt.textContent=`【未請求】${site.name||"工事"}`;
+          opt.disabled=false;
+        }else{
+          opt.textContent=`【完了】${site.name||"工事"}`;
+          opt.disabled=true;
+        }
+      }else{
+        opt.textContent=site.name||"工事";
+      }
+    });
+
+    sel.classList.toggle("ms-has-retention-options",hasRetention);
+  }
+
+  function clearHistoryWhenNoSite(){
+    const site=document.getElementById("m_site");
+    if(site?.value) return;
+    const hist=document.querySelector("#siteHistoryTable tbody");
+    if(hist){
+      const cols=document.querySelectorAll("#siteHistoryTable thead th").length || 6;
+      hist.innerHTML=`<tr><td colspan="${cols}" class="hint">工事を選択すると請求履歴が表示されます。</td></tr>`;
+    }
+  }
+
+  function install(){
+    if(typeof window.refreshSiteSelects==="function" && !window.refreshSiteSelects.__statusDecorated){
+      const old=window.refreshSiteSelects;
+      window.refreshSiteSelects=function(){
+        const r=old.apply(this,arguments);
+        setTimeout(decorateSiteOptions,0);
+        return r;
+      };
+      window.refreshSiteSelects.__statusDecorated=true;
+    }
+    decorateSiteOptions();
+    clearHistoryWhenNoSite();
+    setTimeout(()=>{ try{ if(typeof window.__updateRetentionClaimUI==="function") window.__updateRetentionClaimUI(); }catch(e){} },30);
+  }
+
+  document.addEventListener("DOMContentLoaded",()=>{
+    setTimeout(install,280);
+    setTimeout(()=>{decorateSiteOptions();clearHistoryWhenNoSite();},430);
+  });
+
+  document.addEventListener("change",(e)=>{
+    if(e.target?.id==="m_month"){
+      setTimeout(()=>{decorateSiteOptions();clearHistoryWhenNoSite();},70);
+      return;
+    }
+    if(e.target?.id!=="m_site") return;
+
+    const siteId=e.target.value||"";
+    if(!siteId){
+      setTimeout(clearHistoryWhenNoSite,30);
+      return;
+    }
+
+    const rec=getRec(currentMonth(),siteId);
+    if(rec && !suppressSavedWarning){
+      alert("【済】この工事は今月すでに登録されています。修正する場合は、月別履歴の「編集」から行ってください。");
+    }
+    setTimeout(decorateSiteOptions,50);
+  });
+
+  window.__monthlySuppressSavedWarning=function(fn){
+    suppressSavedWarning=true;
+    try{return fn();}finally{setTimeout(()=>{suppressSavedWarning=false;},100);}
+  };
+
+  document.addEventListener("change",(e)=>{
+    if(["m_site","m_month"].includes(e.target?.id)){
+      setTimeout(()=>{ try{ if(typeof window.__updateRetentionClaimUI==="function") window.__updateRetentionClaimUI(); }catch(err){} },120);
+    }
+  });
+})();
+</script>
+<script id="invoice-monthly-init">
+(function(){
+  "use strict";
+
+  function currentSite(){
+    if(typeof state==="undefined" || !Array.isArray(state.sites)) return null;
+    const id=document.getElementById("m_site")?.value||"";
+    return state.sites.find(s=>s.id===id)||null;
+  }
+
+  function put(id,v){
+    const el=document.getElementById(id);
+    if(el) el.textContent=v||"—";
+  }
+
+  function refreshIdentity(){
+    const s=currentSite();
+    if(!s){
+      put("msm_siteName","—");
+      put("msm_client","—");
+      put("msm_orderManager","—");
+      put("msm_billingManager","—");
+      put("msm_closingDay","—");
+      put("msm_paymentTerms","—");
+      put("msm_retention","—");
+      put("msm_safetyFee","—");
+
+      // 工事未選択時は前回の保留金警告を必ず消す
+      const alertBox=document.getElementById("retAlert");
+      const alertAmt=document.getElementById("retAlertAmt");
+      if(alertBox) alertBox.classList.add("hide");
+      if(alertAmt) alertAmt.textContent="0";
+      return;
+    }
+    put("msm_siteName",s.name||"—");
+    put("msm_client",s.clientName||"—");
+    put("msm_orderManager",s.orderManager||s.manager||"—");
+    put("msm_billingManager",s.billingManager||"—");
+    const t = (typeof getEffectiveClientTerms==="function") ? getEffectiveClientTerms(s) : (s.clientTerms||{});
+    put("msm_closingDay",t.closingDay||"—");
+    put("msm_paymentTerms",t.paymentTerms||"—");
+    put("msm_retention",t.retention||"—");
+    put("msm_safetyFee",t.safetyFee||"—");
+  }
+
+  function ensureBlankSiteOption(){
+    const siteEl=document.getElementById("m_site");
+    if(!siteEl) return;
+    let blank=[...siteEl.options].find(o=>o.value==="");
+    if(!blank){
+      blank=document.createElement("option");
+      blank.value="";
+      siteEl.insertBefore(blank,siteEl.firstChild);
+    }
+    blank.textContent="工事を選択してください";
+  }
+
+  function refreshAll(){
+    try{ if(typeof refreshSiteSelects==="function") refreshSiteSelects(); }catch(e){}
+    ensureBlankSiteOption();
+    refreshIdentity();
+    try{ if(typeof refreshSiteSummaryAndHistory==="function") refreshSiteSummaryAndHistory(); }catch(e){}
+    try{ if(typeof refreshMonthlyTable==="function") refreshMonthlyTable(); }catch(e){}
+  }
+
+  document.addEventListener("DOMContentLoaded",()=>{
+    const site=document.getElementById("m_site");
+    const month=document.getElementById("m_month");
+    const amount=document.getElementById("m_thisMonthNet");
+    const finalType=document.getElementById("m_isFinal");
+    const saveBtn=document.querySelector('.month-actions button[onclick="saveMonthly()"]');
+
+    if(!month?.value){
+      const d=new Date();
+      month.value=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");
+    }
+
+    function focusAndSelect(el){
+      if(!el) return;
+      el.focus();
+      if(el.tagName==="INPUT"){
+        try{ el.select(); }catch(e){}
+      }
+    }
+
+    function fireChange(el){
+      try{ el.dispatchEvent(new Event("change",{bubbles:true})); }catch(e){}
+    }
+
+    function setChoiceMode(el,on){
+      if(!el) return;
+      el.dataset.msChoiceMode=on?"1":"0";
+      el.classList.toggle("ms-select-editing",!!on);
+    }
+
+    function inChoiceMode(el){
+      return !!el && el.dataset.msChoiceMode==="1";
+    }
+
+    function stepChoice(el,step){
+      if(!el || !el.options || !el.options.length) return;
+      let i=el.selectedIndex;
+      if(i<0) i=0;
+      const next=Math.max(0,Math.min(el.options.length-1,i+step));
+      if(next!==i){
+        el.selectedIndex=next;
+        fireChange(el);
+      }
+    }
+
+    function bindChoice(el,nextEl){
+      if(!el) return;
+
+      setChoiceMode(el,false);
+
+      el.addEventListener("keydown",(e)=>{
+        if(e.altKey || e.ctrlKey || e.metaKey) return;
+
+        const active=inChoiceMode(el);
+
+        // Space：選択モード開始／解除
+        if(e.key===" " || e.code==="Space"){
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          setChoiceMode(el,!active);
+          return;
+        }
+
+        if(active){
+          // 選択中だけ上下矢印で候補を変更
+          if(e.key==="ArrowDown" || e.key==="ArrowUp"){
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            stepChoice(el,e.key==="ArrowDown" ? 1 : -1);
+            return;
+          }
+
+          // Enter：現在値を決定 → 色を戻す → 次へ
+          if(e.key==="Enter"){
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            fireChange(el);
+            setChoiceMode(el,false);
+            setTimeout(()=>focusAndSelect(nextEl),20);
+            return;
+          }
+
+          // Tab：現在値を確定して通常のTab移動
+          if(e.key==="Tab"){
+            fireChange(el);
+            setChoiceMode(el,false);
+            return;
+          }
+
+          if(e.key==="Escape"){
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            setChoiceMode(el,false);
+            return;
+          }
+
+          // 選択モード中は文字キーなどでnative selectを開かせない
+          return;
+        }
+
+        // 選択モードでないときは Enter / ↓ で次へ、↑ で前へ
+        if(e.key==="Enter" || e.key==="ArrowDown"){
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          setTimeout(()=>focusAndSelect(nextEl),20);
+          return;
+        }
+      });
+
+      el.addEventListener("blur",()=>setChoiceMode(el,false));
+    }
+
+    // 工事または対象月を変えたときは、その組み合わせの保存済み月次を自動読込。
+    // invoice_common.js の loadMonthlyToForm() は、
+    // 保存済みデータがなければ「出来高 0 / 通常月」へ戻す既存仕様。
+    function syncMonthlyFormForSelection(){
+      try{
+        if(typeof loadMonthlyToForm==="function") loadMonthlyToForm();
+      }catch(e){
+        console.warn("月次データ自動読込:",e);
+      }
+      setTimeout(refreshAll,0);
+    }
+
+    if(site){
+      site.addEventListener("change",()=>setTimeout(syncMonthlyFormForSelection,0));
+    }
+    if(month){
+      month.addEventListener("change",()=>setTimeout(syncMonthlyFormForSelection,0));
+    }
+
+    // 金額欄：Enter / ↓ で請求区分へ、↑ で工事選択へ
+    if(amount){
+      amount.addEventListener("keydown",(e)=>{
+        if(e.altKey || e.ctrlKey || e.metaKey) return;
+        if(e.key==="Enter" || e.key==="ArrowDown"){
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          focusAndSelect(finalType);
+        }else if(e.key==="ArrowUp"){
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          focusAndSelect(site);
+        }
+      });
+    }
+
+    // 共通選択ルールを両方へ適用
+    bindChoice(site,amount);
+    bindChoice(finalType,saveBtn);
+
+    setTimeout(refreshAll,80);
+    setTimeout(refreshAll,220);
+
+    // 初回表示は必ず「工事未選択」。
+    // 共通側の初期選択処理が終わった後で最後に空欄へ戻す。
+    setTimeout(()=>{
+      ensureBlankSiteOption();
+      if(site) site.value="";
+      const amountEl=document.getElementById("m_thisMonthNet");
+      const finalEl=document.getElementById("m_isFinal");
+      if(amountEl){
+        amountEl.value="0";
+        try{ if(typeof formatCommaInput==="function") formatCommaInput(amountEl); }catch(e){}
+      }
+      if(finalEl) finalEl.value="0";
+      refreshIdentity();
+      try{ if(typeof refreshSiteSummaryAndHistory==="function") refreshSiteSummaryAndHistory(); }catch(e){}
+      try{ if(typeof refreshMonthlyTable==="function") refreshMonthlyTable(); }catch(e){}
+
+      const alertBox=document.getElementById("retAlert");
+      const alertAmt=document.getElementById("retAlertAmt");
+      if(alertBox) alertBox.classList.add("hide");
+      if(alertAmt) alertAmt.textContent="0";
+
+      focusAndSelect(site);
+    },360);
+  });
+})();
+</script>
+<script id="invoice-monthly-delete-refresh-fix">
+(function(){
+  "use strict";
+
+  function refreshAfterDelete(){
+    setTimeout(()=>{
+      try{
+        const siteEl=document.getElementById("m_site");
+        const monthEl=document.getElementById("m_month");
+        const siteId=siteEl?.value||"";
+        const month=monthEl?.value||"";
+
+        // 元の削除処理には触れず、削除後の表示だけ更新
+        try{ if(typeof refreshSiteSelects==="function") refreshSiteSelects(); }catch(e){}
+        try{ if(typeof refreshMonthlyTable==="function") refreshMonthlyTable(); }catch(e){}
+        try{ if(typeof refreshSiteSummaryAndHistory==="function") refreshSiteSummaryAndHistory(); }catch(e){}
+        // 削除後は「保存済み3ボタン1行」状態も解除・再判定する。
+        try{
+          if(typeof window.__syncSavedActionsOneRow==="function") window.__syncSavedActionsOneRow();
+          else document.querySelector(".month-actions.ms-final-actions")?.classList.remove("ms-saved-one-row");
+        }catch(e){}
+        // 最後の保留金請求を削除した場合は、保留金待ち状態へ即時復帰させる。
+        try{
+          if(typeof window.__updateRetentionClaimUI==="function") window.__updateRetentionClaimUI();
+          else if(typeof updateRetentionClaimUI==="function") updateRetentionClaimUI();
+        }catch(e){}
+
+        // 今開いている工事・月のデータが削除済みなら入力欄を新規状態へ
+        let exists=false;
+        try{
+          exists=!!(siteId && month && typeof state!=="undefined" && state.monthly?.[month]?.[siteId]);
+        }catch(e){}
+
+        if(siteId && month && !exists){
+          const amount=document.getElementById("m_thisMonthNet");
+          const finalSel=document.getElementById("m_isFinal");
+          const increase=document.getElementById("m_increaseNet");
+          const reduction=document.getElementById("m_reductionNet");
+          [amount,increase,reduction].forEach(input=>{
+            if(!input) return;
+            input.value="0";
+            try{ if(typeof formatCommaInput==="function") formatCommaInput(input); }catch(e){}
+          });
+          if(finalSel) finalSel.value="0";
+
+          // 表示をもう一度更新して削除後の状態を反映
+          try{ if(typeof refreshSiteSummaryAndHistory==="function") refreshSiteSummaryAndHistory(); }catch(e){}
+        }
+      }catch(e){
+        console.warn("削除後表示更新:",e);
+      }
+    },120);
+  }
+
+  // 削除そのものは既存の onclick / deleteMonthly() に完全に任せる。
+  // ここでは削除ボタンを押した「後」に表示更新だけ行う。
+  document.addEventListener("click",(e)=>{
+    const btn=e.target.closest("#siteHistoryTable button");
+    if(!btn) return;
+    if(!(btn.textContent||"").trim().includes("削除")) return;
+
+    refreshAfterDelete();
+    setTimeout(refreshAfterDelete,180);
+  },false);
+})();
+</script>
+<script id="invoice-monthly-summary-script">
+(function(){
+  "use strict";
+
+  function money(n){
+    return Number(n||0).toLocaleString("ja-JP") + "円";
+  }
+
+  function getMonthData(monthKey, siteId){
+    try{
+      if(typeof state==="undefined" || !state.monthly) return null;
+      return state.monthly?.[monthKey]?.[siteId] || null;
+    }catch(e){ return null; }
+  }
+
+  function monthKeysUntil(monthKey){
+    try{
+      if(typeof state==="undefined" || !state.monthly) return [];
+      return Object.keys(state.monthly).filter(m=>m<=monthKey).sort();
+    }catch(e){ return []; }
+  }
+
+  function workCumUntil(siteId,monthKey){
+    let total=0;
+    for(const m of monthKeysUntil(monthKey)){
+      const rec=getMonthData(m,siteId);
+      if(rec) total+=Number(rec.thisMonthNet||0);
+    }
+    return total;
+  }
+
+  function billedCumUntil(site,monthKey){
+    let total=0;
+    for(const m of monthKeysUntil(monthKey)){
+      const rec=getMonthData(m,site.id);
+      if(!rec) continue;
+      try{
+        if(typeof calcBillForSite==="function"){
+          total+=Number(calcBillForSite(m,site)?.billNet||0);
+        }
+      }catch(e){}
+    }
+    return total;
+  }
+
+  function completedByMonth(siteId,monthKey){
+    for(const m of monthKeysUntil(monthKey)){
+      const rec=getMonthData(m,siteId);
+      if(rec?.isFinal) return true;
+    }
+    return false;
+  }
+
+  // 個別画面の「保留金待ち」と同じ考え方で算出
+  function retentionStatusAtMonth(site,monthKey){
+    try{
+      if(typeof triggerLine!=="function" || typeof retentionCap!=="function"){
+        return {remain:0,reached:false};
+      }
+
+      const rec=getMonthData(monthKey,site.id);
+      let calcSite=site;
+      if(typeof getSiteForCalc==="function"){
+        try{ calcSite=getSiteForCalc(site,!!rec?.isFinal,monthKey)||site; }catch(e){ calcSite=site; }
+      }
+
+      const trigger=Number(triggerLine(calcSite));
+      const cap=Math.max(0,Number(retentionCap(calcSite)||0));
+      if(!Number.isFinite(trigger) || cap<=0) return {remain:0,reached:false};
+
+      const workCum=workCumUntil(site.id,monthKey);
+      const reached=workCum>=trigger;
+
+      // 工事完了の指定だけでは保留金待ちにしない。
+      // 出来高累計が通常請求上限へ達した時だけ保留金を発生させる。
+      if(!reached) return {remain:0,reached};
+
+      const finalOrder=Math.max(0,
+        Number(calcSite?.contractNet||0) +
+        Number(calcSite?.increaseNet||0) -
+        Number(calcSite?.reductionNet||0)
+      );
+
+      const billedCum=billedCumUntil(site,monthKey);
+      const unpaid=Math.max(0,finalOrder-billedCum);
+
+      // 基準保留金より残金が少ない場合は、残金を保留金残とする
+      const remain=Math.max(0,Math.min(cap,unpaid));
+      return {remain,reached};
+    }catch(e){
+      return {remain:0,reached:false};
+    }
+  }
+
+  function actualBill(monthKey,site){
+    try{
+      if(typeof calcBillForSite==="function"){
+        return Math.max(0,Number(calcBillForSite(monthKey,site)?.billNet||0));
+      }
+    }catch(e){}
+    return 0;
+  }
+
+  function rebuildMonthlyOverview(){
+    const table=document.getElementById("monthlyTable");
+    const monthEl=document.getElementById("m_month");
+    if(!table || !monthEl || typeof state==="undefined" || !Array.isArray(state.sites)) return;
+
+    const monthKey=monthEl.value||"";
+    const tbody=table.querySelector("tbody");
+    if(!tbody) return;
+
+    let workTotal=0;
+    let actualTotal=0;
+    let retentionTotal=0;
+    let retentionCount=0;
+    const rows=[];
+
+    state.sites.forEach(site=>{
+      const rec=getMonthData(monthKey,site.id);
+      if(!rec) return;
+
+      const work=Math.max(0,Number(rec.thisMonthNet||0));
+      const actual=actualBill(monthKey,site);
+      const ret=retentionStatusAtMonth(site,monthKey);
+      const retention=ret.remain;
+      const completed=completedByMonth(site.id,monthKey);
+
+      let status="通常";
+      if(retention>0) status="保留金あり";
+      else if(completed) status="工事完了";
+
+      workTotal+=work;
+      actualTotal+=actual;
+      retentionTotal+=retention;
+      if(retention>0) retentionCount++;
+
+      rows.push(
+        '<tr>'+
+          '<td><b>'+String(site.name||"")+'</b></td>'+
+          '<td class="right mono">'+money(work)+'</td>'+
+          '<td class="right mono">'+money(actual)+'</td>'+
+          '<td class="right mono">'+money(retention)+'</td>'+
+          '<td>'+status+'</td>'+
+        '</tr>'
+      );
+    });
+
+    tbody.innerHTML=rows.length
+      ? rows.join("")
+      : '<tr><td colspan="5" style="text-align:center;color:#7b8b96">この月の保存済み請求はありません</td></tr>';
+
+    const put=(id,v)=>{
+      const el=document.getElementById(id);
+      if(el) el.textContent=v;
+    };
+
+    put("monthSumWork",money(workTotal));
+    put("monthSumActual",money(actualTotal));
+    put("monthSumRetention",money(retentionTotal));
+    put("monthSumRetentionCount",retentionCount+"件");
+  }
+
+  function install(){
+    if(typeof window.refreshMonthlyTable==="function" && !window.refreshMonthlyTable.__overviewWrapped){
+      const old=window.refreshMonthlyTable;
+      window.refreshMonthlyTable=function(){
+        const r=old.apply(this,arguments);
+        setTimeout(rebuildMonthlyOverview,0);
+        return r;
+      };
+      window.refreshMonthlyTable.__overviewWrapped=true;
+    }
+    rebuildMonthlyOverview();
+  }
+
+  document.addEventListener("DOMContentLoaded",()=>setTimeout(install,300));
+})();
+</script>
+<script id="invoice-history-edit-label-force">
+(function(){
+  "use strict";
+  function fixHistoryEditLabels(){
+    const root=document.getElementById("siteHistoryTable") || document;
+    root.querySelectorAll("button,a").forEach(el=>{
+      const s=(el.textContent||"").trim();
+      if(s==="この"+"月へ"){
+        el.textContent="編集";
+        el.setAttribute("aria-label","編集");
+        el.title="この月の請求を編集";
+      }
+    });
+  }
+
+  document.addEventListener("DOMContentLoaded",()=>{
+    setTimeout(fixHistoryEditLabels,200);
+    setTimeout(fixHistoryEditLabels,500);
+  });
+
+  const obs=new MutationObserver(()=>fixHistoryEditLabels());
+  document.addEventListener("DOMContentLoaded",()=>{
+    const target=document.getElementById("siteHistoryTable");
+    if(target) obs.observe(target,{childList:true,subtree:true,characterData:true});
+  });
+
+  document.addEventListener("change",()=>setTimeout(fixHistoryEditLabels,50));
+})();
+</script>
+<script id="retention-info-copy-unbilled-colors">
+(function(){
+  "use strict";
+  function syncRetentionInfoColors(){
+    const source=document.querySelector(".status-box.primary-balance");
+    const target=document.querySelector("#retAlert.ret-info-only");
+    if(!source || !target) return;
+    if(target.classList.contains("ret-calculation-preview")){
+      target.style.removeProperty("background");
+      target.style.removeProperty("border-color");
+      target.style.removeProperty("color");
+      const title=target.querySelector(".title");
+      const amount=target.querySelector(".amt");
+      const note=target.querySelector(".ret-claim-note");
+      [title,amount,note].forEach(el=>{if(el){el.style.removeProperty("color");}});
+      return;
+    }
+    const cs=getComputedStyle(source);
+    target.style.setProperty("background",cs.backgroundColor,"important");
+    target.style.setProperty("border-color",cs.borderTopColor,"important");
+    target.style.setProperty("color",cs.color,"important");
+
+    const srcLabel=source.querySelector("span");
+    const srcAmount=source.querySelector("b");
+    const title=target.querySelector(".title");
+    const amount=target.querySelector(".amt");
+    const note=target.querySelector(".ret-claim-note");
+    if(title && srcLabel) title.style.setProperty("color",getComputedStyle(srcLabel).color,"important");
+    if(amount && srcAmount) amount.style.setProperty("color",getComputedStyle(srcAmount).color,"important");
+    if(note && srcLabel) note.style.setProperty("color",getComputedStyle(srcLabel).color,"important");
+  }
+  document.addEventListener("DOMContentLoaded",()=>{
+    setTimeout(syncRetentionInfoColors,300);
+    setTimeout(syncRetentionInfoColors,600);
+  });
+  const observer=new MutationObserver(()=>setTimeout(syncRetentionInfoColors,0));
+  document.addEventListener("DOMContentLoaded",()=>{
+    const target=document.getElementById("retAlert");
+    if(target) observer.observe(target,{attributes:true,subtree:true,childList:true});
+  });
+  document.addEventListener("change",()=>setTimeout(syncRetentionInfoColors,60));
+})();
+</script>
+<script id="invoice-monthly-saved-label-refresh">
+document.addEventListener("click",(e)=>{
+  const btn=e.target.closest("button");
+  if(!btn) return;
+  const label=(btn.textContent||"").trim();
+  if(label.includes("今月の請求を保存") || label.includes("保留金") && label.includes("請求")){
+    setTimeout(()=>{
+      try{ if(typeof refreshSiteSelects==="function") refreshSiteSelects(); }catch(e){}
+    },220);
+  }
+});
+</script>
+
+
+<script id="invoice-monthly-direct-print-script">
+(function(){
+  "use strict";
+
+  function currentSiteId(){ return document.getElementById("m_site")?.value || ""; }
+  function currentMonth(){ return document.getElementById("m_month")?.value || ""; }
+  function hasSaved(month,siteId){
+    try{return !!(month && siteId && state?.monthly?.[month]?.[siteId]);}catch(e){return false;}
+  }
+
+  function updateDirectPrintButton(){
+    const b=document.getElementById("btnDirectInvoicePrint");
+    if(!b) return;
+    const ok=hasSaved(currentMonth(),currentSiteId());
+    b.disabled=!ok;
+    b.title=ok ? "保存したこの工事の請求書を開きます" : "先に今月の請求を保存してください";
+  }
+
+  window.openCurrentInvoicePrint=function(){
+    const siteId=currentSiteId();
+    const month=currentMonth();
+    if(!siteId){ alert("先に工事を選択してください。"); return; }
+    if(!month){ alert("対象月を選択してください。"); return; }
+    if(!hasSaved(month,siteId)){
+      alert("先に『今月の請求を保存』してください。");
+      return;
+    }
+    const q=new URLSearchParams();
+    q.set("print","1");
+    q.set("site",siteId);
+    q.set("month",month);
+    q.set("from","monthly");
+    location.href="invoice_app.html?"+q.toString();
+  };
+
+  window.reprintMonthlyInvoice=function(month){
+    const siteId=currentSiteId();
+    if(!siteId || !month) return;
+    const q=new URLSearchParams();
+    q.set("print","1");
+    q.set("site",siteId);
+    q.set("month",month);
+    q.set("from","history");
+    location.href="invoice_app.html?"+q.toString();
+  };
+
+  function addReprintButtons(){
+    const tb=document.querySelector("#siteHistoryTable tbody");
+    if(!tb) return;
+    tb.querySelectorAll("tr").forEach(tr=>{
+      const cells=tr.querySelectorAll("td");
+      if(cells.length<6) return;
+      const month=(cells[0].textContent||"").trim();
+      if(!/^\\d{4}-\\d{2}$/.test(month)) return;
+      const action=cells[cells.length-1];
+      if(action.querySelector(".ms-reprint-btn")) return;
+      const b=document.createElement("button");
+      b.type="button";
+      b.className="ms-reprint-btn";
+      b.textContent="再印刷";
+      b.title="この月の工事別請求書を再表示";
+      b.addEventListener("click",function(e){
+        e.preventDefault(); e.stopPropagation();
+        window.reprintMonthlyInvoice(month);
+      });
+      action.appendChild(b);
+    });
+  }
+
+  function refresh(){
+    updateDirectPrintButton();
+    addReprintButtons();
+  }
+
+  document.addEventListener("DOMContentLoaded",()=>{
+    setTimeout(refresh,250);
+    setTimeout(refresh,600);
+    const table=document.getElementById("siteHistoryTable");
+    if(table){ new MutationObserver(()=>setTimeout(refresh,0)).observe(table,{childList:true,subtree:true}); }
+  });
+  document.addEventListener("change",e=>{
+    if(e.target?.id==="m_site" || e.target?.id==="m_month") setTimeout(refresh,60);
+  });
+  document.addEventListener("click",e=>{
+    if(e.target?.closest('.month-actions button[onclick="saveMonthly()"]')){
+      setTimeout(refresh,180); setTimeout(refresh,500);
+    }
+  });
+})();
+</script>
+
+<style id="monthly-adjustment-input-style">
+.ms-monthly-new-order{grid-template-columns:minmax(160px,.8fr) minmax(180px,1fr) minmax(180px,1fr) !important;align-items:end;}
+.ms-monthly-new-order label:first-child{grid-column:auto !important;}
+.ms-monthly-new-order label:nth-child(4){grid-column:1/-1;}
+#m_increaseNet,#m_reductionNet{border-left:5px solid #8A4653 !important;background:#fffafb !important;}
+@media(max-width:760px){.ms-monthly-new-order{grid-template-columns:1fr !important;}.ms-monthly-new-order label:nth-child(4){grid-column:auto;}}
+</style>
+<script id="monthly-adjustment-final-rule">
+(function(){
+  "use strict";
+  function currentSite(){
+    const id=document.getElementById("m_site")?.value||"";
+    return (typeof state!=="undefined"&&Array.isArray(state.sites)) ? state.sites.find(x=>String(x.id)===String(id)) : null;
+  }
+  function updateNote(){
+    const s=currentSite();
+    const t=s&&typeof getEffectiveClientTerms==="function" ? getEffectiveClientTerms(s) : (s?.clientTerms||{});
+    const finalOnly=(t.adjustmentTiming||s?.adjustmentTiming)==="final";
+    const el=document.getElementById("msAdjustmentTimingNote");
+    if(el) el.textContent="増減の反映時期："+(finalOnly?"工事完了時に反映（通常月は記録のみ）":"随時反映");
+  }
+  function bind(){
+    ["m_site","m_month","m_isFinal"].forEach(id=>document.getElementById(id)?.addEventListener("change",()=>setTimeout(updateNote,0)));
+    const seq=["m_isFinal","m_increaseNet","m_reductionNet","m_thisMonthNet"].map(id=>document.getElementById(id));
+    seq.forEach((el,i)=>el?.addEventListener("keydown",e=>{
+      if(e.altKey||e.ctrlKey||e.metaKey)return;
+      if(e.key==="Enter"||e.key==="ArrowDown"){
+        e.preventDefault(); e.stopImmediatePropagation();
+        const nx=seq[i+1]; if(nx){nx.focus(); try{nx.select?.();}catch(_){}}
+      }else if(e.key==="ArrowUp"&&i>0){
+        e.preventDefault(); e.stopImmediatePropagation();
+        const pv=seq[i-1]; if(pv){pv.focus(); try{pv.select?.();}catch(_){}}
+      }
+    },true));
+    updateNote();
+  }
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",()=>setTimeout(bind,250),{once:true});
+  else setTimeout(bind,250);
+})();
+</script>
+<script id="monthly-adjustment-live-recalc-fix">
+(function(){
+  "use strict";
+  function recalc(){
+    try{ if(typeof refreshSiteSummaryAndHistory==="function") refreshSiteSummaryAndHistory(); }catch(e){ console.warn("月次増減再計算",e); }
+  }
+  document.addEventListener("input",function(e){
+    if(["m_increaseNet","m_reductionNet","m_thisMonthNet"].includes(e.target?.id)) recalc();
+  });
+  document.addEventListener("change",function(e){
+    if(["m_isFinal","m_site","m_month"].includes(e.target?.id)) setTimeout(recalc,0);
+  });
+})();
+</script>
+
+
+<!-- ===== 今月の入力：キーボード操作 最終統一 2026-08-30 ===== -->
+<style id="monthly-keyboard-final-style">
+#m_site.ms-kb-choice,#m_isFinal.ms-kb-choice{
+  border:2px solid #8A4653 !important;
+  background:#fff8f9 !important;
+  box-shadow:0 0 0 3px rgba(138,70,83,.14) !important;
+}
+.ms-site-choice-popup{
+  position:fixed; z-index:10000; display:none; max-height:320px; overflow:auto;
+  background:#fff; border:2px solid #8A4653; border-radius:8px;
+  box-shadow:0 10px 28px rgba(0,0,0,.18); padding:4px; font-size:12px;
+}
+.ms-site-choice-popup.show{display:block}
+.ms-site-choice-item{padding:7px 9px;border-radius:5px;white-space:nowrap;cursor:pointer}
+.ms-site-choice-item.active{background:#8A4653;color:#fff;font-weight:800}
+.ms-site-choice-item.disabled{color:#9aa5ad;background:#f5f6f7;cursor:default}
+.ms-site-choice-item.disabled.active{background:#d9dde1;color:#69747c}
+</style>
+<script id="monthly-keyboard-final">
+(function(){
+  "use strict";
+  const choiceIds=new Set(["m_site","m_isFinal"]);
+  const order=["m_site","m_isFinal","m_increaseNet","m_reductionNet","m_thisMonthNet","btnSaveMonthly","btnDirectInvoicePrint"];
+
+  function el(id){ return document.getElementById(id); }
+  function focusField(id){
+    const x=el(id); if(!x) return;
+    x.focus();
+    if(x.tagName!=="SELECT"){
+      try{x.select?.();}catch(_){ }
+    }
+  }
+  function siteOptionSelectable(opt){
+    if(!opt || opt.disabled) return false;
+    const text=String(opt.textContent||"").trim();
+    return !(text.startsWith("【済】") || text.startsWith("【完了】"));
+  }
+  function getSitePopup(){
+    let box=document.getElementById("msSiteChoicePopup");
+    if(box) return box;
+    box=document.createElement("div");
+    box.id="msSiteChoicePopup";
+    box.className="ms-site-choice-popup";
+    document.body.appendChild(box);
+    box.addEventListener("mousedown",function(e){
+      const item=e.target.closest("[data-ms-site-index]");
+      if(!item) return;
+      e.preventDefault();
+      const site=el("m_site");
+      const idx=Number(item.dataset.msSiteIndex);
+      const opt=site?.options?.[idx];
+      if(!site || !opt || !siteOptionSelectable(opt)) return;
+      site.selectedIndex=idx;
+      fireChange(site);
+      renderSitePopup(site,true);
+      site.focus();
+    });
+    return box;
+  }
+  function renderSitePopup(site,show){
+    const box=getSitePopup();
+    if(!show || !site){ box.classList.remove("show"); return; }
+    const r=site.getBoundingClientRect();
+    box.style.left=Math.round(r.left)+"px";
+    box.style.top=Math.round(r.bottom+4)+"px";
+    box.style.width=Math.max(260,Math.round(r.width))+"px";
+    box.innerHTML=[...site.options].map((opt,i)=>{
+      const selectable=siteOptionSelectable(opt);
+      const active=i===site.selectedIndex;
+      return `<div class="ms-site-choice-item${active?" active":""}${selectable?"":" disabled"}" data-ms-site-index="${i}">${String(opt.textContent||"").replace(/[&<>]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[m]))}</div>`;
+    }).join("");
+    box.classList.add("show");
+    const a=box.querySelector(".active");
+    if(a) a.scrollIntoView({block:"nearest"});
+  }
+  function setChoice(x,on){
+    if(!x) return;
+    x.dataset.msKbChoice=on?"1":"0";
+    x.classList.toggle("ms-kb-choice",!!on);
+    // 旧選択表示とも同期し、二重の色変化を防ぐ
+    x.dataset.msChoiceMode="0";
+    x.classList.remove("ms-select-editing");
+    if(x.id==="m_site") renderSitePopup(x,!!on);
+  }
+  function inChoice(x){ return x?.dataset.msKbChoice==="1"; }
+  function fireChange(x){
+    try{x.dispatchEvent(new Event("change",{bubbles:true}));}catch(_){ }
+  }
+  function stepSelect(x,step){
+    if(!x?.options?.length) return;
+    let i=x.selectedIndex;
+    if(i<0) i=0;
+
+    // 工事選択では「済」「完了」など選択不可の候補を自動で飛ばす。
+    // 一覧表示自体は残すので、保存済み工事の存在は確認できる。
+    const canChoose=(opt)=>{
+      if(!opt || opt.disabled) return false;
+      if(x.id!=="m_site") return true;
+      const text=String(opt.textContent||"").trim();
+      if(text.startsWith("【済】") || text.startsWith("【完了】")) return false;
+      return true;
+    };
+
+    let n=i;
+    while(true){
+      n += step;
+      if(n<0 || n>=x.options.length) return;
+      if(canChoose(x.options[n])) break;
+    }
+    x.selectedIndex=n;
+    fireChange(x);
+    if(x.id==="m_site" && inChoice(x)) renderSitePopup(x,true);
+  }
+  function moveFrom(id,dir){
+    const i=order.indexOf(id); if(i<0) return;
+    const ni=i+dir;
+    if(ni>=0 && ni<order.length) focusField(order[ni]);
+  }
+
+  // 既存の複数キーボード処理より先に捕まえて、月次入力だけを一本化する。
+  document.addEventListener("keydown",function(e){
+    const x=e.target;
+    const id=x?.id||"";
+    if(!order.includes(id)) return;
+    if(e.altKey||e.ctrlKey||e.metaKey) return;
+
+    if(choiceIds.has(id)){
+      const active=inChoice(x);
+      if(e.key===" " || e.code==="Space"){
+        e.preventDefault(); e.stopImmediatePropagation();
+        setChoice(x,!active);
+        return;
+      }
+      if(active){
+        if(e.key==="ArrowDown" || e.key==="ArrowUp"){
+          e.preventDefault(); e.stopImmediatePropagation();
+          stepSelect(x,e.key==="ArrowDown"?1:-1);
+          return;
+        }
+        if(e.key==="Enter"){
+          e.preventDefault(); e.stopImmediatePropagation();
+          fireChange(x); setChoice(x,false); moveFrom(id,1);
+          return;
+        }
+        if(e.key==="Tab"){
+          e.preventDefault(); e.stopImmediatePropagation();
+          fireChange(x); setChoice(x,false); moveFrom(id,e.shiftKey?-1:1);
+          return;
+        }
+        if(e.key==="Escape"){
+          e.preventDefault(); e.stopImmediatePropagation(); setChoice(x,false); return;
+        }
+        return;
+      }
+      if(e.key==="Enter" || e.key==="ArrowDown" || e.key==="Tab"){
+        e.preventDefault(); e.stopImmediatePropagation(); moveFrom(id,e.shiftKey?-1:1); return;
+      }
+      if(e.key==="ArrowUp"){
+        e.preventDefault(); e.stopImmediatePropagation(); moveFrom(id,-1); return;
+      }
+      return;
+    }
+
+    // 保存ボタン：Enterで保存して印刷ボタンへ。
+    if(id==="btnSaveMonthly"){
+      if(e.key==="Enter"){
+        e.preventDefault(); e.stopImmediatePropagation();
+        // Enter保存もマウスクリックと同じ安全チェック経路を必ず通す。
+        try{
+          if(typeof safeSaveMonthly==="function") safeSaveMonthly();
+          else x.click();
+        }catch(_){ x.click(); }
+        // 保存が実際に完了した場合だけ印刷ボタンへ移動する。
+        setTimeout(()=>{
+          try{
+            const sid=document.getElementById("m_site")?.value||"";
+            const mon=document.getElementById("m_month")?.value||"";
+            if(sid && mon && typeof state!=="undefined" && state?.monthly?.[mon]?.[sid]){
+              focusField("btnDirectInvoicePrint");
+            }
+          }catch(_){ }
+        },120);
+        return;
+      }
+      if(e.key==="ArrowDown" || (e.key==="Tab" && !e.shiftKey)){
+        e.preventDefault(); e.stopImmediatePropagation(); focusField("btnDirectInvoicePrint"); return;
+      }
+      if(e.key==="ArrowUp" || (e.key==="Tab" && e.shiftKey)){
+        e.preventDefault(); e.stopImmediatePropagation(); focusField("m_thisMonthNet"); return;
+      }
+      return;
+    }
+
+    // 工事別請求書ボタン：Enterで印刷へ。
+    if(id==="btnDirectInvoicePrint"){
+      if(e.key==="Enter"){
+        e.preventDefault(); e.stopImmediatePropagation();
+        try{ if(typeof openCurrentInvoicePrint==="function") openCurrentInvoicePrint(); else x.click(); }catch(_){ x.click(); }
+        return;
+      }
+      if(e.key==="ArrowUp" || (e.key==="Tab" && e.shiftKey)){
+        e.preventDefault(); e.stopImmediatePropagation(); focusField("btnSaveMonthly"); return;
+      }
+      return;
+    }
+
+    // 金額欄：Enter / ↓ / Tab で次、↑ / Shift+Tab で前。
+    if(e.key==="Enter" || e.key==="ArrowDown" || e.key==="Tab"){
+      const dir=e.shiftKey?-1:1;
+      const i=order.indexOf(id);
+      if(i===order.length-1 && dir===1 && e.key==="Tab") return; // 最後のTabは通常移動
+      e.preventDefault(); e.stopImmediatePropagation(); moveFrom(id,dir); return;
+    }
+    if(e.key==="ArrowUp"){
+      e.preventDefault(); e.stopImmediatePropagation(); moveFrom(id,-1); return;
+    }
+  },true);
+
+  document.addEventListener("focusout",function(e){
+    if(choiceIds.has(e.target?.id)) setChoice(e.target,false);
+  },true);
+
+  function initialFocus(){
+    const site=el("m_site");
+    if(site){
+      setChoice(site,false);
+      setTimeout(()=>site.focus(),60);
+    }
+  }
+  if(document.readyState==="loading"){
+    document.addEventListener("DOMContentLoaded",()=>setTimeout(initialFocus,350),{once:true});
+  }else setTimeout(initialFocus,350);
+  window.addEventListener("pageshow",()=>setTimeout(initialFocus,180));
+})();
+</script>
+
+<!-- ===== 月次削除・済工事キー移動 補正 2026-08-30 ===== -->
+<script id="monthly-delete-adjustment-reset-final">
+(function(){
+  "use strict";
+  function resetAdjustmentIfBlankSite(){
+    const site=document.getElementById("m_site");
+    if(site?.value) return;
+    ["m_increaseNet","m_reductionNet","m_thisMonthNet"].forEach(id=>{
+      const x=document.getElementById(id);
+      if(!x) return;
+      x.value="0";
+      try{ if(typeof formatCommaInput==="function") formatCommaInput(x); }catch(e){}
+    });
+    const fin=document.getElementById("m_isFinal");
+    if(fin) fin.value="0";
+  }
+  document.addEventListener("change",e=>{
+    if(e.target?.id==="m_site") setTimeout(resetAdjustmentIfBlankSite,20);
+  });
+})();
+</script>
+
+<script id="retention-only-flag-reset-fix">
+(function(){
+  "use strict";
+  function clearRetentionOnlyFlag(){
+    const fin=document.getElementById("m_isFinal");
+    if(fin && fin.dataset) delete fin.dataset.retentionOnlyClaim;
+  }
+  // 保留金請求専用フラグは、その請求を保存する瞬間だけ有効。
+  // 月・工事を切り替えたり、通常の増減/出来高入力へ戻ったら必ず解除する。
+  document.addEventListener("change",function(e){
+    if(["m_month","m_site"].includes(e.target?.id)) clearRetentionOnlyFlag();
+  },true);
+  document.addEventListener("input",function(e){
+    if(["m_increaseNet","m_reductionNet","m_thisMonthNet"].includes(e.target?.id)) clearRetentionOnlyFlag();
+  },true);
+})();
+</script>
+
+<script id="retention-final-action-key-minimal-fix">
+(function(){
+  "use strict";
+  document.addEventListener("keydown",function(e){
+    if(e.target?.id!=="m_thisMonthNet" || e.key!=="Enter") return;
+    const ret=document.getElementById("retClaimBtn");
+    const save=document.getElementById("btnSaveMonthly");
+    const target=(ret && !ret.classList.contains("hide")) ? ret : save;
+    if(!target || target.disabled || target.classList.contains("hide")) return;
+    e.preventDefault(); e.stopImmediatePropagation(); target.focus();
+  },true);
+})();
+</script>
+
+<style id="monthly-human-error-prevention-style">
+.ms-safety-conditions{margin:0 10px 8px;padding:8px 10px;border:1px solid #c7dce9;border-radius:8px;background:#eef6fb;color:#355f78;font-size:10.5px;line-height:1.55}
+.ms-safety-title{font-weight:900;color:#245b80;margin-bottom:2px}
+.ms-safety-warning{margin:0 10px 8px;padding:9px 10px;border-radius:8px;font-size:11px;font-weight:800;line-height:1.55}
+.ms-safety-warning.info{display:block!important;border:1px solid #b9d5e6;background:#eef7fc;color:#2e627f}
+.ms-safety-warning.warn{display:block!important;border:1px solid #e0c27d;background:#fff8e7;color:#805900}
+.ms-safety-warning.danger{display:block!important;border:2px solid #b65a5a;background:#fff2f2;color:#833838}
+.ms-safety-warning .strong{font-weight:900}
+.ms-completion-overlay{position:fixed;inset:0;z-index:10000;background:rgba(15,23,42,.38);display:flex;align-items:center;justify-content:center;padding:18px}
+.ms-completion-dialog{width:min(560px,94vw);background:#fff;border:1px solid #cbd8e2;border-radius:13px;box-shadow:0 18px 45px rgba(15,23,42,.24);overflow:hidden}
+.ms-completion-head{padding:12px 15px;background:linear-gradient(180deg,#0e74b7,#075f9d);color:#fff;font-size:15px;font-weight:900}
+.ms-completion-body{padding:15px;color:#344f60;font-size:12px;line-height:1.7}
+.ms-completion-body b{color:#7a3b48}
+.ms-completion-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;padding:0 15px 15px}
+.ms-completion-actions button{height:42px;border-radius:8px;font-size:12px;font-weight:900}
+.ms-completion-normal{background:#eef5fa!important;color:#245b80!important;border:1px solid #9fc5dc!important}
+.ms-completion-final{background:#8A4653!important;color:#fff!important;border:1px solid #743945!important}
+@media(max-width:560px){.ms-completion-actions{grid-template-columns:1fr}}
+</style>
+<script id="monthly-human-error-prevention-script">
+(function(){
+  "use strict";
+  const money=v=>Number(String(v??0).replace(/,/g,""))||0;
+  const fmt=n=>Math.round(Number(n)||0).toLocaleString("ja-JP")+"円";
+  function currentSite(){
+    const id=document.getElementById("m_site")?.value||"";
+    try{return Array.isArray(state?.sites)?state.sites.find(x=>String(x.id)===String(id)):null}catch(_){return null}
+  }
+  function termsOf(s){
+    try{return typeof getEffectiveClientTerms==="function" ? (getEffectiveClientTerms(s)||{}) : (s?.clientTerms||{})}catch(_){return s?.clientTerms||{}}
+  }
+  function retentionWait(s){
+    try{return Math.max(0,Number(window.__monthlyRetentionWaiting?.(s)||0))}catch(_){return 0}
+  }
+  function currentMonthSaved(){
+    try{
+      const sid=document.getElementById("m_site")?.value||"";
+      const month=document.getElementById("m_month")?.value||"";
+      return !!(sid && month && state?.monthly?.[month]?.[sid]);
+    }catch(_){return false}
+  }
+  function retentionRateText(t){return t?.retention || t?.retentionRate || "なし"}
+  function minAmount(t,s){return Number(t?.retentionMinAmount ?? s?.retentionMinAmount ?? 0)||0}
+  function includeText(v){return v===false||String(v)==="0" ? "含めない" : "含める"}
+  function finalOnly(t,s){return (t?.adjustmentTiming||s?.adjustmentTiming)==="final"}
+  function getFlags(){
+    const s=currentSite(); if(!s) return {site:null,issues:[]};
+    const t=termsOf(s), inc=money(document.getElementById("m_increaseNet")?.value), red=money(document.getElementById("m_reductionNet")?.value), work=money(document.getElementById("m_thisMonthNet")?.value);
+    const isFinal=document.getElementById("m_isFinal")?.value==="1";
+    const wait=retentionWait(s);
+    const savedThisMonth=currentMonthSaved();
+    const incIncl=!(t?.retentionIncludeIncrease===false||String(t?.retentionIncludeIncrease)==="0");
+    const redIncl=!(t?.retentionIncludeReduction===false||String(t?.retentionIncludeReduction)==="0");
+    const issues=[];
+    // 保存済みの同じ月は、今回の通常請求によって発生した保留金を
+    // 「保存前の誤入力」として再警告しない。保留金は次の未登録月で扱う。
+    if(!savedThisMonth){
+      if(wait>0 && !isFinal && work>0) issues.push({level:"danger",text:`前月までに発生した保留金 ${fmt(wait)} が残っていますが、請求区分が「通常月」のまま出来高が入力されています。工事完了（最終請求）か、保留金請求の扱いを確認してください。`});
+      else if(wait>0 && !isFinal) issues.push({level:"warn",text:`前月までの保留金 ${fmt(wait)} が残っています。通常月のまま保存する前に、工事完了（最終請求）ではないか確認してください。`});
+      if(inc>0 && !incIncl) issues.push({level:"warn",text:`追加工事 ${fmt(inc)} が入力されていますが、この発注先は「増額を保留金計算に含めない」設定です。`});
+      if(red>0 && !redIncl) issues.push({level:"warn",text:`減額工事 ${fmt(red)} が入力されていますが、この発注先は「減額を保留金計算に含めない」設定です。`});
+      if((inc>0||red>0) && finalOnly(t,s) && !isFinal) issues.push({level:"info",text:"この発注先は増減を「工事完了時に反映」する設定です。今回入力した追加工事・減額工事は記録しますが、通常月の請求計算には反映せず、工事完了（最終請求）時に反映します。"});
+    }
+    // 今回の入力で通常請求上限（保留金発生ライン）へ到達する場合は、
+    // 保存ボタンを押した瞬間に「工事完了ではないか」を確認する。
+    const parseDisplayed=id=>money((document.getElementById(id)?.textContent||"").replace(/[^0-9.-]/g,""));
+    const trigger=parseDisplayed("sum_trigger");
+    const prevWork=parseDisplayed("sum_prevCum");
+    const projectedWork=Math.max(0,prevWork+work);
+    // 保留金対象工事は通常請求上限（95%等）、保留金免除工事は最終注文金額（100%）への到達で確認する。
+    const finalContractForCompletion=parseDisplayed("sum_displayContract");
+    const minRetentionAmount=minAmount(t,s);
+    const retentionBaseForThreshold=Math.max(0, Number(s.contractNet||0) + ((!finalOnly(t,s)||isFinal)&&incIncl?inc:0) - ((!finalOnly(t,s)||isFinal)&&redIncl?red:0));
+    const isRetentionExempt=(minRetentionAmount>0 && retentionBaseForThreshold<minRetentionAmount) || trigger<=0;
+    const completionTarget=isRetentionExempt ? finalContractForCompletion : trigger;
+
+    // 通常の保留金ラインだけでなく、「増減は工事完了時に反映」の会社では
+    // 最終増減を反映した注文金額へ今回の出来高で到達する場合も工事完了確認を出す。
+    // ここは警告判定だけの追加で、請求額・保留金・最終注文金額の計算式は変更しない。
+    let finalCompletionTarget=0;
+    if(finalOnly(t,s) && !isFinal && typeof getSiteForCalc==="function"){
+      try{
+        const monthKey=document.getElementById("m_month")?.value||"";
+        const cs=getSiteForCalc(s,true,monthKey)||s;
+        finalCompletionTarget=Math.max(0,
+          Number(cs.contractNet||0)+Number(cs.increaseNet||0)-Number(cs.reductionNet||0)
+        );
+      }catch(_){}
+    }
+    const reachesNormalTarget=completionTarget>0 && projectedWork>=completionTarget;
+    const reachesFinalAdjustmentTarget=finalCompletionTarget>0 && projectedWork>=finalCompletionTarget;
+    const completionCheck=!savedThisMonth && !isFinal && work>0 &&
+      (reachesNormalTarget || reachesFinalAdjustmentTarget);
+
+    // 工事完了時増減による到達の場合は、確認画面にも正しい最終注文金額を渡す。
+    const completionTargetForDialog=reachesFinalAdjustmentTarget
+      ? finalCompletionTarget
+      : completionTarget;
+    // 工事完了を選んでいるのに、累計出来高が最終注文金額へ届かない場合も保存前に確認する。
+    // 保留金だけの最終請求は、通常は出来高累計が最終注文金額まで到達済みなので対象外になる。
+    let finalContract=parseDisplayed("sum_displayContract");
+    // 工事完了時反映の増減がある場合、画面再描画の途中値ではなく
+    // 実際の最終請求計算と同じ getSiteForCalc() を使って判定する。
+    if(isFinal && finalOnly(t,s) && typeof getSiteForCalc==="function"){
+      try{
+        const monthKey=document.getElementById("m_month")?.value||"";
+        const cs=getSiteForCalc(s,true,monthKey)||s;
+        finalContract=Math.max(0,
+          Number(cs.contractNet||0)+Number(cs.increaseNet||0)-Number(cs.reductionNet||0)
+        );
+      }catch(_){}
+    }
+    // 出来高累計が、増減をすべて反映した最終注文金額そのものを超える入力は保存しない。
+    // 既存の請求額上限処理は残し、入力ミスだけを保存前に止める。
+    let inputLimitContract=finalContract;
+    let rawFinalContract=inputLimitContract;
+    if(typeof getSiteForCalc==="function"){
+      try{
+        const monthKey=document.getElementById("m_month")?.value||"";
+        const cs=getSiteForCalc(s,true,monthKey)||s;
+        rawFinalContract=
+          Number(cs.contractNet||0)+Number(cs.increaseNet||0)-Number(cs.reductionNet||0);
+        inputLimitContract=Math.max(0,rawFinalContract);
+      }catch(_){}
+    }
+    const negativeFinalContractCheck=!savedThisMonth && rawFinalContract<0;
+
+    /* 出来高超過の保存前チェックだけは、今月入力中の増減も含めて判定する。
+       「随時」で増額と出来高を同じ月に入力した場合の誤警告を防ぐ。 */
+    const directInputLimitContract =
+      Number(s?.contractNet||0) +
+      Number(s?.increaseNet||0) -
+      Number(s?.reductionNet||0) +
+      Number(inc||0) -
+      Number(red||0);
+    if(Number.isFinite(directInputLimitContract)){
+      inputLimitContract=Math.max(0,directInputLimitContract);
+    }
+
+    const overrunAmount=Math.max(0,projectedWork-inputLimitContract);
+    const overrunCheck=!savedThisMonth && document.getElementById("m_isFinal")?.dataset?.retentionOnlyClaim!=="1" && inputLimitContract>0 && projectedWork>inputLimitContract;
+
+    const finalShortfall=Math.max(0,finalContract-projectedWork);
+    // 「保留金を請求」専用ボタンからの保存は、出来高0円で最終請求にするため、
+    // 通常の「工事完了ですが、金額を確認してください」警告の対象外にする。
+    // 通常の工事完了入力では従来どおり警告する。
+    const retentionOnlyClaim=document.getElementById("m_isFinal")?.dataset?.retentionOnlyClaim==="1";
+    const finalShortfallCheck=!savedThisMonth && isFinal && !retentionOnlyClaim && finalContract>0 && projectedWork<finalContract;
+    // 増額・減額が入力された月は、保存直前に必ず「今回どう保留金計算へ反映するか」を確認する。
+    const adjustmentCheck=!savedThisMonth && (inc>0 || red>0);
+    const deferAdjustments=finalOnly(t,s) && !isFinal;
+    const effectiveRetentionBase=Math.max(0, Number(s.contractNet||0) + (!deferAdjustments&&incIncl?inc:0) - (!deferAdjustments&&redIncl?red:0));
+    return {site:s,terms:t,issues,wait,incIncl,redIncl,savedThisMonth,negativeFinalContractCheck,rawFinalContract,overrunCheck,overrunAmount,inputLimitContract,completionCheck,completionTarget:completionTargetForDialog,trigger,projectedWork,finalContract,finalShortfall,finalShortfallCheck,adjustmentCheck,inc,red,effectiveRetentionBase};
+  }
+  function refreshSafety(){
+    const c=document.getElementById("msSafetyConditionText"), w=document.getElementById("msSafetyWarning");
+    if(!c||!w)return;
+    const f=getFlags();
+    if(!f.site){c.textContent="工事を選択すると表示します。";w.className="ms-safety-warning hide";w.innerHTML="";return}
+    const t=f.terms||{};
+    c.textContent=`保留金 ${retentionRateText(t)} ｜ 発生基準 ${fmt(minAmount(t,f.site))}以上 ｜ 増額 ${includeText(t.retentionIncludeIncrease)} ｜ 減額 ${includeText(t.retentionIncludeReduction)} ｜ 増減反映 ${finalOnly(t,f.site)?"工事完了時":"随時"}`;
+    if(f.savedThisMonth){
+      w.className="ms-safety-warning info";
+      w.innerHTML=f.wait>0
+        ? `<span class="strong">✓ この月は保存済みです</span><br>・保留金 ${fmt(f.wait)} は次の未登録月で請求します。`
+        : '<span class="strong">✓ この月は保存済みです</span>';
+      return;
+    }
+    if(!f.issues.length){w.className="ms-safety-warning hide";w.innerHTML="";return}
+    const rank={info:1,warn:2,danger:3}, level=f.issues.reduce((a,x)=>rank[x.level]>rank[a]?x.level:a,"info");
+    w.className="ms-safety-warning "+level;
+    w.innerHTML='<span class="strong">⚠ 保存前チェック</span><br>'+f.issues.map(x=>'・'+x.text).join('<br>');
+  }
+  function showCompletionChoice(f){
+    document.getElementById("msCompletionOverlay")?.remove();
+    const ov=document.createElement("div");
+    ov.id="msCompletionOverlay"; ov.className="ms-completion-overlay";
+    const extra=(f.issues||[]).filter(x=>x.level!=="danger").map(x=>`<div>・${x.text}</div>`).join("");
+    ov.innerHTML=`<div class="ms-completion-dialog" role="dialog" aria-modal="true" aria-labelledby="msCompletionTitle">
+      <div class="ms-completion-head" id="msCompletionTitle">工事完了ではありませんか？</div>
+      <div class="ms-completion-body">
+        今回の入力で、${f.trigger>0 && f.completionTarget===f.trigger ? "通常請求上限（保留金が発生するライン）" : "最終注文金額"}に到達します。<br>
+        ${f.completionTarget===f.finalContract
+          ? '工事が完了している場合は、<b>「工事完了として登録」</b>を押すと、請求区分を工事完了へ変更してそのまま保存します。'
+          : '工事が完了している場合は、<b>「工事完了として登録」</b>を押すと、請求区分を工事完了へ変更してそのまま保存します。'}
+        ${extra?`<div style="margin-top:8px;padding-top:8px;border-top:1px solid #e1e8ee">${extra}</div>`:""}
+        ${f.adjustmentCheck?adjustmentSummaryHtml(f):""}
+      </div>
+      <div class="ms-completion-actions">
+        <button type="button" class="ms-completion-normal" id="msKeepNormal">通常月のまま登録</button>
+        <button type="button" class="ms-completion-final" id="msChangeFinal">工事完了として登録</button>
+      </div>
+    </div>`;
+    document.body.appendChild(ov);
+    ov.querySelector("#msKeepNormal").onclick=()=>{
+      ov.remove();
+      const sel=document.getElementById("m_isFinal");
+      if(sel) sel.dataset.skipNextCompletionCheck="1";
+      try{
+        if(typeof safeSaveMonthly==="function") safeSaveMonthly();
+        else saveMonthly();
+      }catch(e){
+        console.error(e);
+        alert("保存処理を開始できませんでした。");
+      }
+    };
+    ov.querySelector("#msChangeFinal").onclick=()=>{
+      ov.remove();
+      const sel=document.getElementById("m_isFinal");
+      if(sel){
+        sel.value="1";
+        // このダイアログ内ですでに増減内容を確認済みなので、
+        // 直後の safeSaveMonthly() では「増減の取扱い確認」だけを1回省略する。
+        sel.dataset.skipNextAdjustmentCheck="1";
+        try{sel.dispatchEvent(new Event("change",{bubbles:true}))}catch(_){}
+      }
+      // 「工事完了として登録」を選んだ後も、安全チェックを省略しない。
+      // 請求区分を工事完了へ変更して再計算した後、safeSaveMonthly() を通すことで
+      // 増減・保留金・最終金額などの警告を表示し、その確認後に保存する。
+      try{
+        if(typeof refreshSiteSummaryAndHistory==="function") refreshSiteSummaryAndHistory();
+      }catch(_){}
+      setTimeout(()=>{
+        try{
+          if(typeof refreshSiteSummaryAndHistory==="function") refreshSiteSummaryAndHistory();
+          if(typeof window.__updateFinalContractNote==="function") window.__updateFinalContractNote();
+        }catch(_){}
+        setTimeout(()=>{
+          try{
+            if(typeof safeSaveMonthly==="function") safeSaveMonthly();
+            else saveMonthly();
+          }catch(e){
+            console.error(e);
+            alert("保存処理を開始できませんでした。");
+          }
+        },80);
+      },80);
+    };
+    ov.addEventListener("click",e=>{if(e.target===ov)ov.remove()});
+  }
+
+  function showFinalShortfallChoice(f){
+    document.getElementById("msCompletionOverlay")?.remove();
+    const ov=document.createElement("div");
+    ov.id="msCompletionOverlay"; ov.className="ms-completion-overlay";
+    ov.innerHTML=`<div class="ms-completion-dialog" role="dialog" aria-modal="true" aria-labelledby="msCompletionTitle">
+      <div class="ms-completion-head" id="msCompletionTitle">工事完了ですが、金額を確認してください</div>
+      <div class="ms-completion-body">
+        請求区分は <b>「工事完了（最終請求）」</b> ですが、累計出来高が最終注文金額まで達していません。<br>
+        減額工事や出来高の入力漏れがないか確認してください。
+        <div style="margin-top:10px;padding:10px 11px;border:1px solid #dbe5ec;border-radius:8px;background:#f8fbfd;line-height:1.8">
+          最終注文金額：<b>${fmt(f.finalContract)}</b><br>
+          累計出来高：<b>${fmt(f.projectedWork)}</b><br>
+          差額：<b>${fmt(f.finalShortfall)}</b>
+        </div>
+        ${f.adjustmentCheck?adjustmentSummaryHtml(f):""}
+      </div>
+      <div class="ms-completion-actions">
+        <button type="button" class="ms-completion-normal" id="msReturnInput">入力に戻る</button>
+        <button type="button" class="ms-completion-final" id="msSaveFinalShort">この金額で工事完了</button>
+      </div>
+    </div>`;
+    document.body.appendChild(ov);
+    ov.querySelector("#msReturnInput").onclick=()=>{
+      ov.remove();
+      const input=document.getElementById("m_thisMonthNet");
+      if(input){input.focus();try{input.select()}catch(_){}}
+    };
+    ov.querySelector("#msSaveFinalShort").onclick=()=>{
+      ov.remove();
+      const sel=document.getElementById("m_isFinal");
+      if(sel) sel.dataset.skipNextFinalShortfallCheck="1";
+      try{
+        if(typeof safeSaveMonthly==="function") safeSaveMonthly();
+        else saveMonthly();
+      }catch(e){
+        console.error(e);
+        alert("保存処理を開始できませんでした。");
+      }
+    };
+    ov.addEventListener("click",e=>{if(e.target===ov)ov.remove()});
+  }
+
+  function adjustmentSummaryHtml(f){
+    const rows=[];
+    const isFinal=document.getElementById("m_isFinal")?.value==="1";
+    const deferred=finalOnly(f.terms,f.site) && !isFinal;
+    if(f.inc>0){
+      if(deferred) rows.push(`追加工事：<b>${fmt(f.inc)}</b> → <b>記録のみ（通常月の計算には反映しない）</b>`);
+      else rows.push(`追加工事：<b>${fmt(f.inc)}</b> → 保留金計算に <b>${f.incIncl?"含める":"含めない"}</b>`);
+    }
+    if(f.red>0){
+      if(deferred) rows.push(`減額工事：<b>${fmt(f.red)}</b> → <b>記録のみ（通常月の計算には反映しない）</b>`);
+      else rows.push(`減額工事：<b>${fmt(f.red)}</b> → 保留金計算に <b>${f.redIncl?"含める":"含めない"}</b>`);
+    }
+    if(deferred) rows.push(`<b>工事完了（最終請求）時に増減を計算へ反映します。</b>`);
+    rows.push(`今回の保留金判定額：<b>${fmt(f.effectiveRetentionBase)}</b>`);
+    return `<div style="margin-top:10px;padding:10px 11px;border:1px solid #dbe5ec;border-radius:8px;background:#f8fbfd;line-height:1.9">${rows.join("<br>")}</div>`;
+  }
+
+  function showAdjustmentChoice(f){
+    document.getElementById("msCompletionOverlay")?.remove();
+    const ov=document.createElement("div");
+    ov.id="msCompletionOverlay"; ov.className="ms-completion-overlay";
+    ov.innerHTML=`<div class="ms-completion-dialog" role="dialog" aria-modal="true" aria-labelledby="msCompletionTitle">
+      <div class="ms-completion-head" id="msCompletionTitle">増額・減額の取扱いを確認してください</div>
+      <div class="ms-completion-body">
+        今回は増額または減額が入力されています。発注先マスターの設定に従い、下記の条件で保留金を計算します。<br>
+        設定自体に誤りがないか、保存前に確認してください。
+        ${adjustmentSummaryHtml(f)}
+      </div>
+      <div class="ms-completion-actions">
+        <button type="button" class="ms-completion-normal" id="msReturnAdjustment">入力に戻る</button>
+        <button type="button" class="ms-completion-final" id="msAcceptAdjustment">この条件で保存</button>
+      </div>
+    </div>`;
+    document.body.appendChild(ov);
+    ov.querySelector("#msReturnAdjustment").onclick=()=>{
+      ov.remove();
+      const target=(f.inc>0?document.getElementById("m_increaseNet"):document.getElementById("m_reductionNet"));
+      if(target){target.focus();try{target.select()}catch(_){}}
+    };
+    ov.querySelector("#msAcceptAdjustment").onclick=()=>{
+      ov.remove();
+      const sel=document.getElementById("m_isFinal");
+      if(sel) sel.dataset.skipNextAdjustmentCheck="1";
+      try{
+        if(typeof safeSaveMonthly==="function") safeSaveMonthly();
+        else saveMonthly();
+      }catch(e){
+        console.error(e);
+        alert("保存処理を開始できませんでした。");
+      }
+    };
+    ov.addEventListener("click",e=>{if(e.target===ov)ov.remove()});
+  }
+
+  window.safeSaveMonthly=function(){
+    const f=getFlags();
+
+    /* ===== 入力ミス防止：通常請求で出来高0円は登録しない =====
+       保留金請求は専用処理のため、この通常保存チェックの対象外。 */
+    const retentionOnlyClaim=document.getElementById("m_isFinal")?.dataset?.retentionOnlyClaim==="1";
+    const rawWorkNet=Number(String(document.getElementById("m_thisMonthNet")?.value||"0").replace(/,/g,""))||0;
+    if(!f.savedThisMonth && rawWorkNet < 0){
+      alert("保存できません。\n\n今月の出来高にマイナス値は入力できません。");
+      try{document.getElementById("m_thisMonthNet")?.focus();}catch(_){}
+      return false;
+    }
+    if(!f.savedThisMonth && rawWorkNet===0 && !retentionOnlyClaim){
+      alert("保存できません。\n\n今月の出来高が0円です。\n請求がない場合は登録する必要はありません。");
+      try{document.getElementById("m_thisMonthNet")?.focus();}catch(_){}
+      return false;
+    }
+
+    /* ===== 入力ミス防止：増額・減額にマイナス値は保存しない ===== */
+    const rawInc=Number(String(document.getElementById("m_increaseNet")?.value||"0").replace(/,/g,""))||0;
+    const rawRed=Number(String(document.getElementById("m_reductionNet")?.value||"0").replace(/,/g,""))||0;
+    if(rawInc < 0){
+      alert("保存できません。\n\n増額金額にマイナス値は入力できません。\n減額の場合は「減額工事」に入力してください。");
+      document.getElementById("m_increaseNet")?.focus();
+      return false;
+    }
+    if(rawRed < 0){
+      alert("保存できません。\n\n減額金額にマイナス値は入力できません。\n増額の場合は「増額工事」に入力してください。");
+      document.getElementById("m_reductionNet")?.focus();
+      return false;
+    }
+
+    if(f.savedThisMonth){
+      refreshSafety();
+      alert("この月の請求はすでに保存されています。\n変更する場合は『保存済みを読み込み』から編集してください。");
+      return false;
+    }
+    const danger=f.issues?.filter(x=>x.level==="danger")||[];
+    if(danger.length){refreshSafety();alert("保存できません。\n\n"+danger.map(x=>"・"+x.text).join("\n")+"\n\n請求区分または入力金額を確認してください。");return false}
+
+    /* ===== 入力ミス防止：今月入力した増減を含め、最終注文金額がマイナスなら保存しない =====
+       請求額・保留金・増減反映の計算式は変更しない。保存直前の安全確認だけを追加する。 */
+    const directFinalContract =
+      Number(f.site?.contractNet||0) +
+      Number(f.site?.increaseNet||0) -
+      Number(f.site?.reductionNet||0) +
+      Number(f.inc||0) -
+      Number(f.red||0);
+    if(directFinalContract < 0){
+      alert("保存できません。\n\n減額金額が注文金額と増額金額の合計を超えています。\n最終注文金額がマイナスになるため保存できません。\n\n減額金額を確認してください。");
+      try{document.getElementById("m_reductionNet")?.focus();}catch(_){}
+      return false;
+    }
+
+    /* ===== 入力ミス防止：減額後の最終注文金額が既請求額を下回る場合は保存しない =====
+       既存の請求・保留金計算には触れず、保存直前の整合性確認だけを行う。 */
+    let billedBeforeThisMonth=0;
+    try{
+      billedBeforeThisMonth=money(
+        (document.getElementById("sum_actualBilled")?.textContent||"")
+          .replace(/[^0-9.-]/g,"")
+      );
+    }catch(_){}
+    // このチェックは「今月、減額を入力した場合」だけ行う。
+    // 保留金請求や通常請求で減額入力がない場合は対象外。
+    if(rawRed > 0 && directFinalContract < billedBeforeThisMonth){
+      alert(
+        "保存できません。\n\n" +
+        "減額後の最終注文金額 " + fmt(directFinalContract) + " が、\n" +
+        "すでに請求済みの金額 " + fmt(billedBeforeThisMonth) + " を下回ります。\n\n" +
+        "減額金額を確認してください。"
+      );
+      try{document.getElementById("m_reductionNet")?.focus();}catch(_){}
+      return false;
+    }
+
+    if(f.negativeFinalContractCheck){
+      alert("保存できません。\n\n減額金額が注文金額と増額金額の合計を超えています。\n最終注文金額がマイナスになるため保存できません。\n\n減額金額を確認してください。");
+      try{document.getElementById("m_reductionNet")?.focus();}catch(_){}
+      return false;
+    }
+    if(f.overrunCheck){
+      alert("保存できません。\n\n出来高累計が最終注文金額を "+fmt(f.overrunAmount)+" 超えています。\n増額工事がある場合は、先に増額を入力してください。\n\n入力金額を確認してください。");
+      try{document.getElementById("m_thisMonthNet")?.focus();}catch(_){}
+      return false;
+    }
+
+    const finalSel=document.getElementById("m_isFinal");
+
+    const skipCompletionOnce=finalSel?.dataset?.skipNextCompletionCheck==="1";
+    if(skipCompletionOnce) delete finalSel.dataset.skipNextCompletionCheck;
+    if(f.completionCheck && !skipCompletionOnce){showCompletionChoice(f);return false}
+
+    const skipFinalShortfallOnce=finalSel?.dataset?.skipNextFinalShortfallCheck==="1";
+    if(skipFinalShortfallOnce) delete finalSel.dataset.skipNextFinalShortfallCheck;
+    if(f.finalShortfallCheck && !skipFinalShortfallOnce){showFinalShortfallChoice(f);return false}
+
+    const skipAdjustmentOnce=finalSel?.dataset?.skipNextAdjustmentCheck==="1";
+    if(skipAdjustmentOnce){
+      delete finalSel.dataset.skipNextAdjustmentCheck;
+    }
+    if(f.adjustmentCheck && !skipAdjustmentOnce){showAdjustmentChoice(f);return false}
+    const checks=f.issues?.filter(x=>x.level==="warn")||[];
+    if(checks.length){
+      const ok=confirm("保存前に確認してください。\n\n"+checks.map(x=>"・"+x.text).join("\n")+"\n\n内容を確認したうえで、このまま保存しますか？");
+      if(!ok)return false;
+    }
+    try{return typeof saveMonthly==="function" ? saveMonthly() : false}catch(e){console.error(e);alert("保存処理を開始できませんでした。");return false}
+  };
+  function autoSuggestFinal(){
+    const s=currentSite(), sel=document.getElementById("m_isFinal"); if(!s||!sel)return;
+    if(currentMonthSaved()) return;
+    const wait=retentionWait(s);
+    // 保留金だけが残る段階では、未保存の入力画面を最終請求へ安全側に寄せる。
+    if(wait>0 && sel.value==="0" && money(document.getElementById("m_thisMonthNet")?.value)===0){
+      sel.value="1";
+      try{sel.dispatchEvent(new Event("change",{bubbles:true}))}catch(_){}
+    }
+  }
+  document.addEventListener("DOMContentLoaded",()=>{setTimeout(()=>{autoSuggestFinal();refreshSafety()},500)});
+  document.addEventListener("change",e=>{if(["m_site","m_month","m_isFinal"].includes(e.target?.id))setTimeout(()=>{autoSuggestFinal();refreshSafety()},80)});
+  document.addEventListener("input",e=>{if(["m_increaseNet","m_reductionNet","m_thisMonthNet"].includes(e.target?.id))refreshSafety()});
+  const obs=new MutationObserver(()=>setTimeout(refreshSafety,50));
+  document.addEventListener("DOMContentLoaded",()=>{const a=document.getElementById("retAlert");if(a)obs.observe(a,{attributes:true,subtree:true,childList:true})});
+})();
+</script>
+
+
+<style id="ms-final-contract-note-style">
+.ms-final-contract-note{
+  display:block;
+  margin-top:3px;
+  font-size:10px;
+  line-height:1.25;
+  font-weight:700;
+  color:#6b7280;
+  white-space:normal;
+}
+.ms-final-contract-note:empty{display:none;}
+</style>
+<script id="ms-final-contract-note-script">
+(function(){
+  "use strict";
+  function n(v){ return Number(String(v??"").replace(/,/g,""))||0; }
+  function yen(v){ return Math.round(n(v)).toLocaleString("ja-JP")+"円"; }
+  function currentSite(){
+    const sid=document.getElementById("m_site")?.value||"";
+    try{return (state?.sites||[]).find(s=>String(s.id)===String(sid))||null;}catch(e){return null;}
+  }
+  function updateFinalContractNote(){
+    const note=document.getElementById("sum_displayContractNote");
+    if(!note) return;
+    const site=currentSite();
+    if(!site){note.textContent="";return;}
+
+    const t=(typeof getEffectiveClientTerms==="function") ? (getEffectiveClientTerms(site)||{}) : (site.clientTerms||{});
+    const timing=(t.adjustmentTiming||site.adjustmentTiming||"anytime");
+    if(timing!=="final"){note.textContent="";return;}
+
+    const month=document.getElementById("m_month")?.value||"";
+    let calcSite=site;
+    try{
+      if(typeof getSiteForCalc==="function") calcSite=getSiteForCalc(site,true,month)||site;
+    }catch(e){calcSite=site;}
+
+    const inc=n(calcSite.increaseNet);
+    const red=n(calcSite.reductionNet);
+    if(inc<=0 && red<=0){note.textContent="";return;}
+
+    const isFinal=document.getElementById("m_isFinal")?.value==="1";
+    const parts=[];
+    if(inc>0) parts.push("追加"+yen(inc));
+    if(red>0) parts.push("減額"+yen(red));
+    note.textContent="（"+parts.join("・")+(isFinal?"を反映済み）":"は工事完了時に反映）");
+  }
+
+  window.__updateFinalContractNote=updateFinalContractNote;
+  document.addEventListener("DOMContentLoaded",()=>setTimeout(updateFinalContractNote,420));
+  document.addEventListener("change",e=>{
+    if(["m_site","m_month","m_isFinal","m_increaseNet","m_reductionNet"].includes(e.target?.id)){
+      [30,120,260].forEach(ms=>setTimeout(updateFinalContractNote,ms));
+    }
+  },true);
+  document.addEventListener("input",e=>{
+    if(["m_increaseNet","m_reductionNet"].includes(e.target?.id)){
+      [20,100].forEach(ms=>setTimeout(updateFinalContractNote,ms));
+    }
+  },true);
+  document.addEventListener("DOMContentLoaded",()=>{
+    const x=document.getElementById("sum_displayContract");
+    if(x) new MutationObserver(()=>setTimeout(updateFinalContractNote,20))
+      .observe(x,{childList:true,subtree:true,characterData:true});
+  });
+})();
+</script>
+<script id="ms-retention-finish-refresh-fix">
+(function(){
+  "use strict";
+  function sid(){return document.getElementById("m_site")?.value||"";}
+  function mon(){return document.getElementById("m_month")?.value||"";}
+  function saved(){try{return !!(sid()&&mon()&&state?.monthly?.[mon()]?.[sid()]);}catch(e){return false;}}
+  function finish(){
+    if(!saved()) return;
+    const b=document.getElementById("retClaimBtn"); if(b)b.classList.add("hide");
+    const a=document.getElementById("retAlert"); if(a){a.classList.add("hide");a.classList.remove("ret-actionable");}
+    const w=document.getElementById("retInputWarning"); if(w)w.classList.add("hide");
+    try{if(typeof refreshSiteSelects==="function")refreshSiteSelects();}catch(e){}
+    try{if(typeof renderMonthlyList==="function")renderMonthlyList();}catch(e){}
+    try{if(typeof renderMonthList==="function")renderMonthList();}catch(e){}
+    try{if(typeof renderHistory==="function")renderHistory();}catch(e){}
+    try{if(typeof refreshSiteHistory==="function")refreshSiteHistory();}catch(e){}
+    setTimeout(()=>{const x=document.getElementById("retClaimBtn");if(x&&saved())x.classList.add("hide");},50);
+  }
+  let flow=false;
+  document.addEventListener("click",e=>{
+    const b=e.target.closest("button");if(!b)return;const t=(b.textContent||"").replace(/\s+/g," ").trim();
+    if(b.id==="retClaimBtn"||(/保留金/.test(t)&&/請求/.test(t))){flow=true;[250,600].forEach(ms=>setTimeout(finish,ms));return;}
+    if(flow&&(/この金額で工事完了/.test(t)||/この条件で保存/.test(t)||/今月の請求を保存/.test(t))){[80,350,800].forEach(ms=>setTimeout(()=>{finish();if(saved())flow=false;},ms));}
+  },true);
+})();
+</script>
+
+<script id="ms-monthly-saved-status-immediate-refresh">
+(function(){
+  "use strict";
+  function savedCurrent(){
+    try{
+      const sid=document.getElementById("m_site")?.value||"";
+      const mon=document.getElementById("m_month")?.value||"";
+      return !!(sid&&mon&&state?.monthly?.[mon]?.[sid]);
+    }catch(e){return false;}
+  }
+  function refreshSavedStatus(){
+    if(!savedCurrent()) return false;
+    try{if(typeof refreshSiteSelects==="function")refreshSiteSelects();}catch(e){}
+    try{if(typeof refreshMonthlyTable==="function")refreshMonthlyTable();}catch(e){}
+    try{if(typeof refreshSiteSummaryAndHistory==="function")refreshSiteSummaryAndHistory();}catch(e){}
+    try{if(typeof updateRetentionClaimUI==="function")updateRetentionClaimUI();}catch(e){}
+    try{if(typeof window.__updateFinalContractNote==="function")window.__updateFinalContractNote();}catch(e){}
+    return true;
+  }
+  function afterPossibleSave(){
+    [40,120,280,600].forEach(ms=>setTimeout(refreshSavedStatus,ms));
+  }
+  document.addEventListener("click",e=>{
+    const b=e.target.closest("button"); if(!b)return;
+    const t=(b.textContent||"").replace(/\s+/g," ").trim();
+    if(/今月の請求を保存|通常月のまま登録|工事完了として登録|この条件で保存|この金額で工事完了/.test(t)) afterPossibleSave();
+  },true);
+  // state 保存後のDOM再描画が遅れても「済」表示を追従させる。
+  document.addEventListener("change",e=>{
+    if(["m_month","m_site"].includes(e.target?.id)) setTimeout(refreshSavedStatus,80);
+  },true);
+})();
+</script>
+
+<script id="ms-final-adjustment-doublecount-fix">
+(function(){
+  "use strict";
+  const num=v=>Number(String(v??"").replace(/,/g,""))||0;
+  let userInc=false, userRed=false;
+
+  function currentSite(){
+    const id=document.getElementById("m_site")?.value||"";
+    try{return (state?.sites||[]).find(x=>String(x.id)===String(id))||null;}catch(e){return null;}
+  }
+  function isFinalOnly(site){
+    const t=site?.clientTerms||{};
+    return (site?.adjustmentTiming||t.adjustmentTiming)==="final";
+  }
+  function priorTotals(siteId,month){
+    let inc=0,red=0;
+    try{
+      for(const m of Object.keys(state?.monthly||{}).sort()){
+        if(month && m>=month) break;
+        const r=state.monthly?.[m]?.[siteId];
+        if(!r) continue;
+        inc+=num(r.increaseNet);
+        red+=num(r.reductionNet);
+      }
+    }catch(e){}
+    return {inc,red};
+  }
+  function dedupeCarriedAdjustments(){
+    const site=currentSite();
+    const month=document.getElementById("m_month")?.value||"";
+    const fin=document.getElementById("m_isFinal");
+    if(!site||!month||fin?.value!=="1"||!isFinalOnly(site)) return;
+
+    const p=priorTotals(String(site.id),month);
+    const ie=document.getElementById("m_increaseNet");
+    const re=document.getElementById("m_reductionNet");
+
+    // 前月までの記録済み増減が、工事完了切替時に当月入力欄へ
+    // 自動コピーされた場合だけ0へ戻す。履歴側に既に1回あるため、
+    // そのままだと最終注文金額で二重計上される。
+    if(ie && !userInc && p.inc>0 && num(ie.value)===p.inc){
+      ie.value="0";
+      try{if(typeof formatCommaInput==="function")formatCommaInput(ie);}catch(e){}
+    }
+    if(re && !userRed && p.red>0 && num(re.value)===p.red){
+      re.value="0";
+      try{if(typeof formatCommaInput==="function")formatCommaInput(re);}catch(e){}
+    }
+
+    try{if(typeof refreshSiteSummaryAndHistory==="function")refreshSiteSummaryAndHistory();}catch(e){}
+    try{if(typeof window.__updateFinalContractNote==="function")window.__updateFinalContractNote();}catch(e){}
+  }
+
+  document.addEventListener("input",e=>{
+    if(e.target?.id==="m_increaseNet") userInc=true;
+    if(e.target?.id==="m_reductionNet") userRed=true;
+  },true);
+
+  document.addEventListener("change",e=>{
+    if(["m_site","m_month"].includes(e.target?.id)){ userInc=false; userRed=false; }
+    if(e.target?.id==="m_isFinal" && e.target.value==="1"){
+      [0,30,100,220].forEach(ms=>setTimeout(dedupeCarriedAdjustments,ms));
+    }
+  },true);
+})();
+</script>
+
+<script id="ms-final-adjustment-core-fix">
+(function(){
+  "use strict";
+  const n=v=>Number(String(v??"").replace(/,/g,""))||0;
+  let userIncEdited=false, userRedEdited=false;
+
+  function terms(site){
+    try{return typeof getEffectiveClientTerms==="function" ? (getEffectiveClientTerms(site)||{}) : (site?.clientTerms||{});}
+    catch(e){return site?.clientTerms||{};}
+  }
+  function finalOnly(site){
+    const t=terms(site);
+    return (t.adjustmentTiming||site?.adjustmentTiming)==="final";
+  }
+  function selectedId(){ return String(document.getElementById("m_site")?.value||""); }
+  function selectedFinal(){ return document.getElementById("m_isFinal")?.value==="1"; }
+  function currentInc(){ return n(document.getElementById("m_increaseNet")?.value); }
+  function currentRed(){ return n(document.getElementById("m_reductionNet")?.value); }
+
+  function canonicalSite(site,isFinal){
+    if(!site || !finalOnly(site)) return site;
+    const c=Object.assign({},site);
+    if(!isFinal){
+      // 「工事完了時に反映」の会社は、通常月では増減を計算へ入れない。
+      c.increaseNet=0;
+      c.reductionNet=0;
+      return c;
+    }
+
+    // 「工事完了時に反映」の増減は、通常月の月次履歴に記録してある。
+    // 工事データ site.increaseNet だけを基準にすると、通常月で記録した増減が
+    // 最終請求へ反映されないケースがあるため、最終月より前の月次履歴を正本として集計する。
+    const month=document.getElementById("m_month")?.value||"";
+    let inc=0, red=0;
+    try{
+      for(const m of Object.keys(state?.monthly||{}).sort()){
+        if(month && m>=month) break;
+        const r=state.monthly?.[m]?.[String(site.id)] ?? state.monthly?.[m]?.[site.id];
+        if(!r) continue;
+        inc+=n(r.increaseNet);
+        red+=n(r.reductionNet);
+      }
+    }catch(e){}
+
+    // 最終月に新しく入力した増減だけを加える。
+    // 過去値が画面へ自動表示されただけの場合は user*Edited=false なので二重計上しない。
+    if(String(site.id)===selectedId()){
+      if(userIncEdited) inc+=currentInc();
+      if(userRedEdited) red+=currentRed();
+    }
+
+    // 履歴がまだ無い旧データ等に限り、工事データ側の集約値をフォールバックとして使う。
+    if(inc===0 && red===0){
+      inc=n(site.increaseNet);
+      red=n(site.reductionNet);
+    }
+
+    c.increaseNet=inc;
+    c.reductionNet=red;
+    return c;
+  }
+
+  function installCoreFix(){
+    if(typeof window.getSiteForCalc==="function" && !window.getSiteForCalc.__msFinalCoreFixed){
+      const old=window.getSiteForCalc;
+      const wrapped=function(site,isFinal,monthKey){
+        if(site && finalOnly(site)){
+          // final-only は履歴加算を経由させず、集約済み工事データを1回だけ使う。
+          return canonicalSite(site,!!isFinal);
+        }
+        return old.apply(this,arguments);
+      };
+      wrapped.__msFinalCoreFixed=true;
+      window.getSiteForCalc=wrapped;
+    }
+
+    if(typeof window.displayContract==="function" && !window.displayContract.__msFinalCoreFixed){
+      const old=window.displayContract;
+      const wrapped=function(site){
+        if(site && finalOnly(site)){
+          const isFinal=(String(site.id)===selectedId()) ? selectedFinal() : false;
+          const c=canonicalSite(site,isFinal);
+          return Math.max(0,n(c.contractNet)+n(c.increaseNet)-n(c.reductionNet));
+        }
+        return old.apply(this,arguments);
+      };
+      wrapped.__msFinalCoreFixed=true;
+      window.displayContract=wrapped;
+    }
+  }
+
+  function refresh(){
+    installCoreFix();
+    try{if(typeof refreshSiteSummaryAndHistory==="function")refreshSiteSummaryAndHistory();}catch(e){}
+    try{if(typeof window.__updateFinalContractNote==="function")window.__updateFinalContractNote();}catch(e){}
+  }
+
+  document.addEventListener("input",e=>{
+    if(e.target?.id==="m_increaseNet") userIncEdited=true;
+    if(e.target?.id==="m_reductionNet") userRedEdited=true;
+  },true);
+
+  document.addEventListener("change",e=>{
+    if(["m_site","m_month"].includes(e.target?.id)){
+      userIncEdited=false; userRedEdited=false;
+      setTimeout(refresh,60);
+    }
+    if(e.target?.id==="m_isFinal"){
+      setTimeout(refresh,0); setTimeout(refresh,80); setTimeout(refresh,200);
+    }
+  },true);
+
+  document.addEventListener("DOMContentLoaded",()=>{
+    setTimeout(installCoreFix,80);
+    setTimeout(refresh,420);
+  });
+})();
+</script>
+
+<script id="ms-final-amount-card-script">
+(function(){
+  "use strict";
+  const n=v=>Number(String(v??"").replace(/[^0-9.-]/g,""))||0;
+  const fmt=v=>Math.round(v).toLocaleString("ja-JP")+"円";
+
+  function site(){
+    const sid=document.getElementById("m_site")?.value||"";
+    try{return (state?.sites||[]).find(s=>String(s.id)===String(sid))||null;}catch(e){return null;}
+  }
+  function terms(s){
+    try{return typeof getEffectiveClientTerms==="function" ? (getEffectiveClientTerms(s)||{}) : (s?.clientTerms||{});}
+    catch(e){return s?.clientTerms||{};}
+  }
+  function finalOnly(s){
+    const t=terms(s);
+    return (t.adjustmentTiming||s?.adjustmentTiming)==="final";
+  }
+
+  function update(){
+    const card=document.getElementById("msFinalAmountCard");
+    const value=document.getElementById("msFinalAmountCardValue");
+    const note=document.getElementById("msFinalAmountCardNote");
+    if(!card||!value||!note) return;
+
+    const s=site();
+    const month=document.getElementById("m_month")?.value||"";
+    const isFinal=document.getElementById("m_isFinal")?.value==="1";
+
+    card.classList.add("hide");
+    value.textContent="—";
+    note.textContent="";
+    if(!s || !finalOnly(s) || isFinal) return;
+
+    let calcSite=s;
+    try{
+      if(typeof getSiteForCalc==="function") calcSite=getSiteForCalc(s,true,month)||s;
+    }catch(e){calcSite=s;}
+
+    const finalOrder=Math.max(0,n(calcSite.contractNet)+n(calcSite.increaseNet)-n(calcSite.reductionNet));
+    const prevWork=n(document.getElementById("sum_prevCum")?.textContent);
+    const target=Math.max(0,finalOrder-prevWork);
+
+    const inc=n(calcSite.increaseNet);
+    const red=n(calcSite.reductionNet);
+    if(inc<=0 && red<=0) return;
+
+    value.textContent=fmt(target);
+    const parts=[];
+    if(inc>0) parts.push(`追加 ${fmt(inc)}を反映`);
+    if(red>0) parts.push(`減額 ${fmt(red)}を反映`);
+    note.textContent=parts.join("・");
+    card.classList.remove("hide");
+  }
+
+  window.__updateFinalAmountCard=update;
+  document.addEventListener("DOMContentLoaded",()=>setTimeout(update,520));
+  document.addEventListener("change",e=>{
+    if(["m_site","m_month","m_isFinal"].includes(e.target?.id)){
+      [30,130,280].forEach(ms=>setTimeout(update,ms));
+    }
+  });
+  document.addEventListener("input",e=>{
+    if(["m_increaseNet","m_reductionNet","m_thisMonthNet"].includes(e.target?.id)){
+      [30,120].forEach(ms=>setTimeout(update,ms));
+    }
+  });
+  document.addEventListener("DOMContentLoaded",()=>{
+    ["sum_prevCum","sum_displayContract"].forEach(id=>{
+      const x=document.getElementById(id);
+      if(x) new MutationObserver(()=>setTimeout(update,20))
+        .observe(x,{childList:true,characterData:true,subtree:true});
+    });
+  });
+})();
+</script>
+
+
+<script id="ms-dialog-keyboard-navigation-script">
+(function(){
+  "use strict";
+
+  function getOverlay(){
+    return document.querySelector(".ms-completion-overlay");
+  }
+
+  function getButtons(ov){
+    return ov ? Array.from(ov.querySelectorAll(".ms-completion-actions button:not([disabled])")) : [];
+  }
+
+  function preferredIndex(ov,buttons){
+    const head=(ov?.querySelector(".ms-completion-head")?.textContent||"").trim();
+    if(head.includes("工事完了ではありませんか")){
+      const idx=buttons.findIndex(b=>(b.textContent||"").includes("工事完了として登録"));
+      if(idx>=0) return idx;
+    }
+    if(head.includes("工事完了ですが、金額を確認してください")){
+      const idx=buttons.findIndex(b=>(b.textContent||"").includes("この金額で工事完了"));
+      if(idx>=0) return idx;
+    }
+    if(head.includes("増額・減額の取扱いを確認してください")){
+      const idx=buttons.findIndex(b=>(b.textContent||"").includes("この条件で保存"));
+      if(idx>=0) return idx;
+    }
+    return 0;
+  }
+
+  function markSelected(buttons,index){
+    buttons.forEach((b,i)=>{
+      b.classList.toggle("ms-dialog-key-selected",i===index);
+      b.classList.toggle("ms-dialog-unselected",i!==index);
+    });
+    const b=buttons[index];
+    if(b){
+      try{b.focus({preventScroll:true});}catch(_){try{b.focus();}catch(__){}}
+    }
+  }
+
+  function prepareOverlay(ov){
+    if(!ov || ov.dataset.msKeyboardReady==="1") return;
+    ov.dataset.msKeyboardReady="1";
+    const buttons=getButtons(ov);
+    if(!buttons.length) return;
+    markSelected(buttons,preferredIndex(ov,buttons));
+    buttons.forEach((b,i)=>{
+      b.addEventListener("focus",()=>markSelected(buttons,i));
+      b.addEventListener("mouseenter",()=>markSelected(buttons,i));
+    });
+  }
+
+  const observer=new MutationObserver(()=>{
+    const ov=getOverlay();
+    if(ov) prepareOverlay(ov);
+  });
+  observer.observe(document.body,{childList:true,subtree:false});
+
+  document.addEventListener("keydown",function(e){
+    const ov=getOverlay();
+    if(!ov) return;
+    const buttons=getButtons(ov);
+    if(!buttons.length) return;
+
+    let index=buttons.findIndex(b=>b===document.activeElement || b.classList.contains("ms-dialog-key-selected"));
+    if(index<0) index=preferredIndex(ov,buttons);
+
+    if(["ArrowLeft","ArrowUp"].includes(e.key)){
+      e.preventDefault();
+      markSelected(buttons,(index-1+buttons.length)%buttons.length);
+      return;
+    }
+    if(["ArrowRight","ArrowDown"].includes(e.key)){
+      e.preventDefault();
+      markSelected(buttons,(index+1)%buttons.length);
+      return;
+    }
+    if(e.key==="Enter"){
+      e.preventDefault();
+      (buttons[index]||buttons[preferredIndex(ov,buttons)])?.click();
+      return;
+    }
+    if(e.key==="Escape"){
+      e.preventDefault();
+      ov.remove();
+      const save=document.getElementById("btnSaveMonthly");
+      if(save){try{save.focus();}catch(_){}}
+      return;
+    }
+    if(e.key===" " || e.code==="Space"){
+      e.preventDefault();
+    }
+  },true);
+})();
+</script>
+
+
+<script id="ms-save-button-final-visibility-sync">
+(function(){
+  "use strict";
+
+  function savedCurrent(){
+    try{
+      const sid=document.getElementById("m_site")?.value||"";
+      const mon=document.getElementById("m_month")?.value||"";
+      return !!(sid && mon && state?.monthly?.[mon]?.[sid]);
+    }catch(e){return false;}
+  }
+
+  function sync(){
+    const save=document.getElementById("btnSaveMonthly");
+    const print=document.getElementById("btnDirectInvoicePrint");
+    const saved=savedCurrent();
+
+    /*
+      保存ボタンの「表示／非表示」は保留金制御
+      window.__updateRetentionClaimUI に一本化する。
+      ここでは再表示しない。
+      これにより、
+        ・通常未保存月 → 保存表示
+        ・通常保存済み → 保存非表示、印刷可
+        ・保留金請求待ち → 保留金請求のみ表示
+        ・保留金請求保存済み → 保存非表示、印刷可
+      の既存判定を壊さない。
+    */
+    if(save){
+      save.disabled=saved;
+      save.setAttribute("aria-disabled",saved?"true":"false");
+      save.textContent="今月の請求を保存";
+    }
+
+    // 印刷は保存済み請求だけ有効。
+    if(print){
+      print.disabled=!saved;
+    }
+
+    // 最後に既存の保留金UI判定を正として再適用する。
+    try{
+      if(typeof window.__updateRetentionClaimUI==="function"){
+        window.__updateRetentionClaimUI();
+      }
+    }catch(e){}
+  }
+
+  window.__syncMonthlySavePrintButtons=sync;
+
+  document.addEventListener("DOMContentLoaded",()=>setTimeout(sync,500));
+  document.addEventListener("change",e=>{
+    if(["m_site","m_month"].includes(e.target?.id)){
+      [50,180,450].forEach(ms=>setTimeout(sync,ms));
+    }
+  },true);
+
+  document.addEventListener("click",e=>{
+    const txt=(e.target?.textContent||"").trim();
+    if(txt.includes("保存") || txt.includes("工事完了") || txt.includes("保留金")){
+      [60,160,320,700].forEach(ms=>setTimeout(sync,ms));
+    }
+  },true);
+})();
+</script>
+
+
+<script id="ms-saved-actions-one-row-script">
+(function(){
+  "use strict";
+  function savedCurrent(){
+    try{
+      const sid=document.getElementById("m_site")?.value||"";
+      const mon=document.getElementById("m_month")?.value||"";
+      return !!(sid && mon && state?.monthly?.[mon]?.[sid]);
+    }catch(_){return false;}
+  }
+  function sync(){
+    const box=document.querySelector(".month-actions.ms-final-actions");
+    if(!box) return;
+    box.classList.toggle("ms-saved-one-row",savedCurrent());
+  }
+  window.__syncSavedActionsOneRow=sync;
+  document.addEventListener("DOMContentLoaded",()=>setTimeout(sync,520));
+  document.addEventListener("change",e=>{
+    if(["m_site","m_month"].includes(e.target?.id)){
+      [40,160,420].forEach(ms=>setTimeout(sync,ms));
+    }
+  },true);
+  document.addEventListener("click",e=>{
+    const s=(e.target?.textContent||"");
+    if(s.includes("保存")||s.includes("工事完了")||s.includes("読み込み")){
+      [80,200,500].forEach(ms=>setTimeout(sync,ms));
+    }
+  },true);
+})();
+</script>
+
+
+
+<script id="ms-history-delete-latest-only-rule">
+(function(){
+  "use strict";
+
+  function monthKeysForSite(siteId){
+    const keys=[];
+    try{
+      for(const m of Object.keys(state?.monthly||{}).sort()){
+        if(state?.monthly?.[m]?.[siteId]) keys.push(m);
+      }
+    }catch(e){}
+    return keys;
+  }
+
+  function latestMonthForSite(siteId){
+    const keys=monthKeysForSite(siteId);
+    return keys.length ? keys[keys.length-1] : "";
+  }
+
+  function decorateHistoryButtons(){
+    const table=document.getElementById("siteHistoryTable");
+    if(!table) return;
+
+    table.querySelectorAll("tbody tr").forEach(tr=>{
+      const firstTd=tr.querySelector("td");
+      const monthKey=(firstTd?.textContent||"").trim();
+      tr.querySelectorAll("button").forEach(btn=>{
+        const txt=(btn.textContent||"").trim();
+        if(txt.includes("編集")){
+          btn.dataset.msHistoryEdit="1";
+          btn.classList.add("ms-history-edit-hidden");
+          btn.setAttribute("aria-hidden","true");
+          btn.tabIndex=-1;
+        }
+        if(txt.includes("削除")){
+          btn.dataset.msHistoryDelete="1";
+          btn.dataset.monthKey=monthKey;
+        }
+      });
+    });
+  }
+
+  function showNotLatestMessage(monthKey, latest){
+    alert(
+      "この月より後に請求履歴があります。\n\n"+
+      "途中の月を削除すると、その後の未請求額・累計・保留金計算が変わるため削除できません。\n\n"+
+      "先に最新月 "+latest+" から順番に削除してください。"
+    );
+  }
+
+  document.addEventListener("click",function(e){
+    const btn=e.target.closest("#siteHistoryTable button");
+    if(!btn) return;
+
+    const txt=(btn.textContent||"").trim();
+
+    // 編集は完全に使用しない。
+    if(txt.includes("編集")){
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      return;
+    }
+
+    if(!txt.includes("削除")) return;
+
+    const siteId=document.getElementById("m_site")?.value||"";
+    if(!siteId) return;
+
+    const tr=btn.closest("tr");
+    const monthKey=(tr?.querySelector("td")?.textContent||"").trim();
+    const latest=latestMonthForSite(siteId);
+
+    if(monthKey && latest && monthKey!==latest){
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      showNotLatestMessage(monthKey,latest);
+      return;
+    }
+
+    // 最新月の削除は既存 deleteMonthly() に任せる。
+    // ここでは計算・保存ロジックには触れない。
+  },true);
+
+  document.addEventListener("DOMContentLoaded",()=>{
+    setTimeout(decorateHistoryButtons,400);
+    const table=document.getElementById("siteHistoryTable");
+    if(table){
+      new MutationObserver(()=>setTimeout(decorateHistoryButtons,20))
+        .observe(table,{childList:true,subtree:true});
+    }
+  });
+
+  document.addEventListener("change",e=>{
+    if(["m_site","m_month"].includes(e.target?.id)){
+      setTimeout(decorateHistoryButtons,80);
+    }
+  },true);
+})();
+</script>
+
+
+<script id="ms-retention-delete-restore-final">
+(function(){
+  "use strict";
+  document.addEventListener("click",function(e){
+    const btn=e.target.closest("#siteHistoryTable button");
+    if(!btn) return;
+    if(!(btn.textContent||"").trim().includes("削除")) return;
+
+    [160,320,700].forEach(ms=>setTimeout(()=>{
+      try{
+        if(typeof refreshSiteSelects==="function") refreshSiteSelects();
+        if(typeof refreshSiteSummaryAndHistory==="function") refreshSiteSummaryAndHistory();
+        if(typeof window.__syncSavedActionsOneRow==="function") window.__syncSavedActionsOneRow();
+        if(typeof window.__updateRetentionClaimUI==="function") window.__updateRetentionClaimUI();
+      }catch(_){}
+    },ms));
+  },false);
+})();
+</script>
+
+
+<script id="ms-monthly-direct-entry-once">
+(function(){
+  "use strict";
+
+  function query(name){
+    try{return new URLSearchParams(location.search||"").get(name)||"";}
+    catch(e){return "";}
+  }
+
+  function applyDirectEntry(){
+    const siteId=query("site");
+    const monthKey=query("month");
+    if(!siteId) return;
+
+    let tries=0;
+    function run(){
+      tries++;
+      const site=document.getElementById("m_site");
+      const month=document.getElementById("m_month");
+      if(!site || !month){
+        if(tries<20) setTimeout(run,80);
+        return;
+      }
+
+      // 既存の初回「工事未選択」処理が終わってから、1回だけ適用する。
+      if(/^\d{4}-\d{2}$/.test(monthKey)){
+        month.value=monthKey;
+      }
+
+      try{
+        if(typeof refreshSiteSelects==="function") refreshSiteSelects();
+      }catch(e){}
+
+      const exists=[...site.options].some(o=>String(o.value)===String(siteId));
+      if(!exists){
+        if(tries<20) setTimeout(run,100);
+        return;
+      }
+
+      site.value=siteId;
+
+      // 手動で工事を選んだ場合と同じ既存change経路を1回だけ通す。
+      site.dispatchEvent(new Event("change",{bubbles:true}));
+    }
+
+    setTimeout(run,430);
+  }
+
+  if(document.readyState==="loading"){
+    document.addEventListener("DOMContentLoaded",applyDirectEntry,{once:true});
+  }else{
+    applyDirectEntry();
+  }
+})();
+</script>
+
+
+<script id="ms-negative-adjustment-input-guard">
+/* 増額・減額欄：マイナス記号は入力段階で拒否する。
+   負数を正数へ自動変換はしない。保存時にも別途チェックする。 */
+(function(){
+  const ids=["m_increaseNet","m_reductionNet"];
+  function warn(el){
+    if(el.dataset.msNegativeWarn==="1") return;
+    el.dataset.msNegativeWarn="1";
+    alert(el.id.includes("increase")
+      ? "増額金額にマイナス値は入力できません。\n減額の場合は「減額工事」に入力してください。"
+      : "減額金額にマイナス値は入力できません。\n増額の場合は「増額工事」に入力してください。");
+    setTimeout(()=>{ el.dataset.msNegativeWarn=""; },0);
+  }
+  function setup(){
+    ids.forEach(id=>{
+      const el=document.getElementById(id);
+      if(!el || el.dataset.msNegativeGuard==="1") return;
+      el.dataset.msNegativeGuard="1";
+
+      el.addEventListener("keydown",e=>{
+        if(e.key==="-" || e.key==="Subtract" || e.key==="−" || e.key==="－"){
+          e.preventDefault();
+          warn(el);
+        }
+      });
+
+      el.addEventListener("paste",e=>{
+        const s=(e.clipboardData?.getData("text")||"");
+        if(/[-−－]/.test(s)){
+          e.preventDefault();
+          warn(el);
+        }
+      });
+
+      el.addEventListener("input",()=>{
+        const s=String(el.value||"");
+        if(/[-−－]/.test(s)){
+          el.value="";
+          warn(el);
+          try{ if(typeof formatCommaInput==="function") formatCommaInput(el); }catch(_){}
+          try{ if(typeof refreshSiteSummaryAndHistory==="function") refreshSiteSummaryAndHistory(); }catch(_){}
+        }
+      });
+    });
+  }
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",setup);
+  else setup();
+})();
+</script>
+
+
+<script id="ms-negative-work-input-guard">
+/* 今月の出来高：マイナス記号は入力段階で拒否する。
+   負数を0円や正数へ自動変換せず、保存時にも別途チェックする。 */
+(function(){
+  function setup(){
+    const el=document.getElementById("m_thisMonthNet");
+    if(!el || el.dataset.msNegativeWorkGuard==="1") return;
+    el.dataset.msNegativeWorkGuard="1";
+
+    function warn(){
+      if(el.dataset.msNegativeWorkWarn==="1") return;
+      el.dataset.msNegativeWorkWarn="1";
+      alert("今月の出来高にマイナス値は入力できません。");
+      setTimeout(()=>{ el.dataset.msNegativeWorkWarn=""; },0);
+    }
+
+    el.addEventListener("keydown",e=>{
+      if(e.key==="-" || e.key==="Subtract" || e.key==="−" || e.key==="－"){
+        e.preventDefault();
+        warn();
+      }
+    });
+
+    el.addEventListener("paste",e=>{
+      const s=(e.clipboardData?.getData("text")||"");
+      if(/[-−－]/.test(s)){
+        e.preventDefault();
+        warn();
+      }
+    });
+
+    el.addEventListener("input",()=>{
+      const s=String(el.value||"");
+      if(/[-−－]/.test(s)){
+        el.value="";
+        warn();
+        try{ el.dispatchEvent(new Event("change",{bubbles:true})); }catch(_){}
+      }
+    });
+  }
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",setup);
+  else setup();
+})();
+</script>
+
+</body>
+</html>
+<script id="ms-monthly-print-state-preserve-v2">
+(function(){
+  "use strict";
+  const KEY="ms_invoice_monthly_print_draft_v1";
+  let restoring=false;
+
+  function val(id){ return document.getElementById(id)?.value ?? ""; }
+
+  function savePrintDraft(){
+    try{
+      sessionStorage.setItem(KEY,JSON.stringify({
+        month:val("m_month"),
+        site:val("m_site"),
+        isFinal:val("m_isFinal"),
+        increase:val("m_increaseNet"),
+        reduction:val("m_reductionNet"),
+        thisMonth:val("m_thisMonthNet"),
+        scrollY:window.scrollY||0,
+        at:Date.now()
+      }));
+    }catch(e){}
+  }
+
+  function readDraft(){
+    try{
+      const d=JSON.parse(sessionStorage.getItem(KEY)||"null");
+      if(!d || !d.at || Date.now()-d.at>10*60*1000) return null;
+      return d;
+    }catch(e){ return null; }
+  }
+
+  function restorePrintDraft(){
+    if(restoring) return;
+    const d=readDraft();
+    if(!d) return;
+    restoring=true;
+    let tries=0;
+
+    const apply=()=>{
+      tries++;
+      const month=document.getElementById("m_month");
+      const site=document.getElementById("m_site");
+      const fin=document.getElementById("m_isFinal");
+      const inc=document.getElementById("m_increaseNet");
+      const dec=document.getElementById("m_reductionNet");
+      const amt=document.getElementById("m_thisMonthNet");
+      if(!month||!site||!fin||!inc||!dec||!amt){
+        if(tries<30) return setTimeout(apply,80);
+        restoring=false;
+        return;
+      }
+
+      // 共通初期化で候補が作られた後に、印刷前の工事を必ず復元する。
+      try{ if(typeof ensureBlankSiteOption==="function") ensureBlankSiteOption(); }catch(e){}
+      if(d.site && ![...site.options].some(o=>String(o.value)===String(d.site))){
+        try{ if(typeof refreshSiteSelects==="function") refreshSiteSelects(); }catch(e){}
+        try{ if(typeof ensureBlankSiteOption==="function") ensureBlankSiteOption(); }catch(e){}
+      }
+      if(d.site && ![...site.options].some(o=>String(o.value)===String(d.site))){
+        if(tries<30) return setTimeout(apply,100);
+        // 工事が本当に存在しない場合だけ、増減も0へ戻す。
+        site.value="";
+        inc.value="0"; dec.value="0"; amt.value="0"; fin.value="0";
+        [inc,dec,amt].forEach(el=>{ try{ if(typeof formatCommaInput==="function") formatCommaInput(el); }catch(e){} });
+        try{ sessionStorage.removeItem(KEY); }catch(e){}
+        restoring=false;
+        return;
+      }
+
+      month.value=d.month||month.value;
+      if(d.site) site.value=d.site;
+
+      // 先に選択工事の保存済み月次を読み込み、工事名・履歴などを正しく復元。
+      try{ if(typeof loadMonthlyToForm==="function") loadMonthlyToForm(); }catch(e){}
+
+      // loadMonthlyToForm の後で、印刷直前の未保存入力値を上書き復元する。
+      setTimeout(()=>{
+        if(d.site) site.value=d.site;
+        month.value=d.month||month.value;
+        fin.value=d.isFinal||"0";
+        inc.value=d.increase||"0";
+        dec.value=d.reduction||"0";
+        amt.value=d.thisMonth||"0";
+        [inc,dec,amt].forEach(el=>{ try{ if(typeof formatCommaInput==="function") formatCommaInput(el); }catch(e){} });
+        try{
+          if(typeof refreshIdentity==="function") refreshIdentity();
+          if(typeof refreshSiteSummaryAndHistory==="function") refreshSiteSummaryAndHistory();
+          if(typeof refreshMonthlyTable==="function") refreshMonthlyTable();
+        }catch(e){}
+        setTimeout(()=>{
+          // 他の初期化処理が遅れて走っても、最後にもう一度工事IDを保証する。
+          if(d.site && [...site.options].some(o=>String(o.value)===String(d.site))) site.value=d.site;
+          try{
+            if(typeof refreshIdentity==="function") refreshIdentity();
+            if(typeof refreshSiteSummaryAndHistory==="function") refreshSiteSummaryAndHistory();
+          }catch(e){}
+          window.scrollTo(0,Number(d.scrollY||0));
+          // 印刷復帰後も保存済み判定を再適用する。
+          // 計算・保存処理は変更せず、ボタン表示だけ現在の保存状態に合わせる。
+          try{
+            if(typeof window.__updateRetentionClaimUI==="function") window.__updateRetentionClaimUI();
+          }catch(e){}
+          try{ sessionStorage.removeItem(KEY); }catch(e){}
+          try{ site.focus(); }catch(e){}
+          restoring=false;
+        },180);
+      },80);
+    };
+
+    // 既存の「初回は工事未選択」処理（約360ms）が終わってから復元する。
+    setTimeout(apply,520);
+  }
+
+  const originalOpen=window.openCurrentInvoicePrint;
+  window.openCurrentInvoicePrint=function(){
+    savePrintDraft();
+    return originalOpen.apply(this,arguments);
+  };
+  const originalReprint=window.reprintMonthlyInvoice;
+  window.reprintMonthlyInvoice=function(){
+    savePrintDraft();
+    return originalReprint.apply(this,arguments);
+  };
+
+  window.addEventListener("pageshow",restorePrintDraft);
+  if(document.readyState!=="loading") restorePrintDraft();
+  else document.addEventListener("DOMContentLoaded",restorePrintDraft,{once:true});
+})();
+</script>

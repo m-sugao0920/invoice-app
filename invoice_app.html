@@ -1,0 +1,3131 @@
+<!-- MS請求書システム 基礎整理版 2026-08-27 -->
+<!DOCTYPE html>
+
+<html lang="ja">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width,initial-scale=1" name="viewport"/>
+<title>MS請求書作成システム</title>
+<link href="invoice_style.css" rel="stylesheet"/>
+<style>
+#view-sites .grid{display:grid!important;grid-template-columns:minmax(320px,1fr) minmax(0,2fr)!important;gap:12px;max-width:1400px;margin:0 auto;align-items:start}
+#view-sites .basic-grid,#view-sites .money-grid,#view-sites .condition-grid{grid-template-columns:1fr!important}
+#view-sites .ms-band-field.span-2{grid-column:auto!important}
+#view-sites .ms-calc-strip{grid-template-columns:1fr 1fr!important}
+.ms-sites-list-card{min-width:0;border-radius:14px;overflow:hidden}
+.ms-sites-list-card>h2{background:linear-gradient(180deg,#0e74b7,#075f9d);color:#fff;font-family:var(--fontNum);font-size:15px;font-weight:900;padding:10px 14px;margin:0}
+.ms-sites-list-card .body{padding:10px 12px 12px}
+.ms-sites-list-note{margin-bottom:8px;padding:7px 9px;border:1px solid #d6e3ec;border-radius:8px;background:#f5f9fc;color:#657a88;font-size:10px;font-family:var(--fontNum)}
+.table-scroll{overflow-x:auto}
+@media(max-width:980px){#view-sites .grid{grid-template-columns:1fr!important}}
+</style>
+<style>
+/* ===== 工事情報：請求条件を提出先設定へ移行 ===== */
+.ms-site-condition-note{
+  margin:8px 0 10px;
+  padding:7px 9px;
+  background:#f5f8fa;
+  border:1px solid #d7e2e9;
+  border-radius:8px;
+  color:#6a7c88;
+  font-size:10px;
+  line-height:1.5;
+  font-family:var(--fontNum);
+}
+
+/* 右側：MS積算風 工事一覧 */
+.ms-sites-toolbar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:8px 10px;
+  margin-bottom:9px;
+  background:#f6faff;
+  border:1px solid #d4e5f4;
+  border-radius:9px;
+  font-family:var(--fontNum);
+}
+.ms-sites-toolbar-title{
+  color:#245b80;
+  font-size:12px;
+  font-weight:900;
+}
+.ms-sites-toolbar-sub{
+  margin-top:2px;
+  color:#748695;
+  font-size:9.5px;
+}
+.ms-sites-count{
+  flex:0 0 auto;
+  min-width:48px;
+  padding:5px 9px;
+  border-radius:999px;
+  background:#e6f2fb;
+  color:#17638f;
+  text-align:center;
+  font-size:11px;
+  font-weight:900;
+}
+
+.ms-sites-card-list{
+  display:grid;
+  gap:8px;
+  max-height:520px;
+  overflow:auto;
+  padding-right:2px;
+}
+.ms-site-card{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:10px;
+  align-items:center;
+  border:1px solid #d3e4f1;
+  border-radius:11px;
+  background:#fff;
+  padding:10px 11px;
+  box-shadow:0 3px 10px rgba(20,80,120,.06);
+}
+.ms-site-card.selected{
+  background:#eef7fd;
+  border-color:#84b9da;
+  box-shadow:inset 4px 0 0 #177bb5;
+}
+.ms-site-card-name{
+  color:#1f5577;
+  font-family:var(--fontNum);
+  font-size:13px;
+  font-weight:900;
+  line-height:1.35;
+}
+.ms-site-card-meta{
+  margin-top:4px;
+  display:flex;
+  flex-wrap:wrap;
+  gap:5px 10px;
+  color:#6a7d89;
+  font-family:var(--fontNum);
+  font-size:9.5px;
+}
+.ms-site-card-money{
+  margin-top:5px;
+  color:#405d70;
+  font-family:var(--fontNum);
+  font-size:10px;
+}
+.ms-site-card-money b{
+  color:#174f73;
+  font-size:12px;
+}
+.ms-site-card-actions{
+  display:flex;
+  gap:6px;
+  align-items:center;
+}
+.ms-site-card-actions button{
+  min-width:52px;
+  height:29px;
+  padding:0 9px;
+  border-radius:7px;
+  font-size:10px;
+  font-weight:900;
+  font-family:var(--fontNum);
+}
+.ms-site-edit{
+  background:#eaf5fc;
+  color:#17638f;
+  border:1px solid #9cc7e0;
+}
+.ms-site-delete{
+  background:#fff;
+  color:#a44949;
+  border:1px solid #d8aaaa;
+}
+
+.ms-sites-legacy{display:none !important;}
+.ms-sites-bottom-actions{
+  display:flex;
+  justify-content:flex-end;
+  gap:7px;
+  margin-top:10px;
+}
+.ms-sites-bottom-actions button{
+  width:auto;
+  min-width:120px;
+  height:32px;
+  padding:0 10px;
+  border-radius:7px;
+  font-size:10px;
+  font-family:var(--fontNum);
+}
+</style>
+<style>
+/* 工事情報・登録済み工事一覧のすぐ上に置くシンプルな帯 */
+#view-sites .ms-simple-topband{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  width:100%;
+  max-width:1400px;
+  height:42px;
+  box-sizing:border-box;
+  margin:0 auto 8px;
+  padding:0 12px;
+  border-radius:10px;
+  background:linear-gradient(180deg,#0e74b7,#075f9d);
+  color:#fff;
+  font-family:var(--fontNum);
+}
+.ms-simple-topband-title{
+  font-size:14px;
+  font-weight:900;
+  letter-spacing:.02em;
+}
+.ms-simple-back{
+  width:auto;
+  min-width:125px;
+  height:30px;
+  padding:0 11px;
+  border:1px solid rgba(255,255,255,.85);
+  border-radius:7px;
+  background:rgba(255,255,255,.12);
+  color:#fff;
+  font-size:10.5px;
+  font-weight:900;
+  font-family:var(--fontNum);
+  cursor:pointer;
+}
+.ms-simple-back:hover{
+  background:#fff;
+  color:#075f9d;
+}
+</style>
+<style>
+/* ===== 工事情報：ご指定の行構成 ===== */
+
+/* 基本情報は2列 */
+#view-sites .basic-grid{
+  grid-template-columns:1fr 1fr !important;
+}
+/* 工事名・請求先はそれぞれ1行全部 */
+#view-sites .basic-grid .span-2{
+  grid-column:1 / -1 !important;
+}
+
+/* 注文金額も2列 */
+#view-sites .money-grid{
+  grid-template-columns:1fr 1fr !important;
+}
+/* 当初金額と最終注文金額はそれぞれ1行全部 */
+#view-sites .money-grid .span-2{
+  grid-column:1 / -1 !important;
+}
+</style>
+<style>
+/* 一番上のブルー帯を少し厚く */
+#view-sites .ms-simple-topband{
+  height:54px !important;
+  padding-left:14px !important;
+  padding-right:14px !important;
+}
+.ms-simple-topband-title{
+  font-size:15px !important;
+}
+.ms-simple-back{
+  height:32px !important;
+}
+</style>
+<style>
+/* ===== MS積算と同じ、画面端から端までのブルー帯 ===== */
+#view-sites .ms-simple-topband{
+  width:calc(100vw - 0px) !important;
+  max-width:none !important;
+  margin-left:calc(50% - 50vw) !important;
+  margin-right:calc(50% - 50vw) !important;
+  border-radius:0 !important;
+  padding-left:18px !important;
+  padding-right:18px !important;
+  box-sizing:border-box !important;
+}
+
+/* 工事場所は工事名・請求先と同じ1行全幅 */
+#view-sites #p_workLocation{
+  width:100%;
+}
+</style>
+<style>
+/* ===== L型擁壁アプリと同じ考え方の上部ヘッダー ===== */
+#view-sites .invoice-lwall-header{
+  position:relative;
+  width:100vw;
+  margin-left:calc(50% - 50vw);
+  margin-right:calc(50% - 50vw);
+  background:linear-gradient(135deg,#0070C0,#2b8ae2);
+  color:#fff;
+  padding:18px 4px;
+  box-sizing:border-box;
+  border-radius:0;
+}
+
+#view-sites .invoice-lwall-wrap{
+  max-width:1500px;
+  margin:0 auto;
+  display:flex;
+  gap:12px;
+  align-items:center;
+  justify-content:space-between;
+  flex-wrap:wrap;
+}
+
+#view-sites .invoice-lwall-header h1{
+  font-size:18px;
+  margin:0;
+  color:#fff;
+  font-weight:900;
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans JP","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;
+}
+
+#view-sites .invoice-lwall-header .sub{
+  margin-top:3px;
+  font-size:12px;
+  opacity:.95;
+  color:#fff;
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans JP","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;
+}
+
+#view-sites .invoice-home-link{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  min-width:150px;
+  height:38px;
+  padding:0 14px;
+  border-radius:999px;
+  background:rgba(255,255,255,.18);
+  color:#fff;
+  border:1px solid rgba(255,255,255,.55);
+  text-decoration:none;
+  font-size:13px;
+  font-weight:900;
+  box-shadow:0 6px 14px rgba(0,0,0,.12);
+  white-space:nowrap;
+  box-sizing:border-box;
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans JP","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;
+}
+
+#view-sites .invoice-home-link:hover{
+  background:rgba(255,255,255,.28);
+}
+
+/* ヘッダーと下の工事情報の間隔 */
+#view-sites .invoice-lwall-header + .grid{
+  margin-top:16px !important;
+}
+
+@media(max-width:700px){
+  #view-sites .invoice-home-link{
+    width:100%;
+    margin-top:8px;
+  }
+}
+
+@media print{
+  #view-sites .invoice-lwall-header{
+    display:none !important;
+  }
+}
+</style>
+<style id="invoice-header-position-final">
+/* =========================================================
+   上部ブルー帯：位置調整はここだけ変更してください
+   ========================================================= */
+#view-sites{
+  --invoice-header-left: 830px;   /* ← MS請求書システムを右へ: 数字を大きく / 左へ: 小さく */
+  --invoice-header-right: 830px;  /* ← 戻るボタンを左へ: 数字を大きく / 右へ: 小さく */
+}
+
+#view-sites .invoice-lwall-header{
+  width:100vw !important;
+  margin-left:calc(50% - 50vw) !important;
+  margin-right:calc(50% - 50vw) !important;
+  padding:18px 0 !important;
+  box-sizing:border-box !important;
+  background:linear-gradient(135deg,#0070C0,#2b8ae2) !important;
+}
+
+#view-sites .invoice-lwall-wrap{
+  width:100% !important;
+  max-width:none !important;
+  margin:0 !important;
+  padding-left:var(--invoice-header-left) !important;
+  padding-right:var(--invoice-header-right) !important;
+  box-sizing:border-box !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:space-between !important;
+  gap:12px !important;
+  flex-wrap:nowrap !important;
+}
+
+#view-sites .invoice-lwall-wrap > div:first-child{
+  margin:0 !important;
+  min-width:0 !important;
+}
+
+#view-sites .invoice-home-link{
+  margin:0 !important;
+  flex:0 0 auto !important;
+}
+
+@media(max-width:700px){
+  #view-sites{
+    --invoice-header-left: 16px;
+    --invoice-header-right: 16px;
+  }
+  #view-sites .invoice-lwall-wrap{
+    flex-wrap:wrap !important;
+  }
+}
+</style>
+<style id="client-master-link-style">
+#view-sites #p_clientName,#view-sites #p_orderManager{width:100%;min-height:34px;border:1px solid #c9dce9;border-radius:7px;padding:7px 9px;background:#fff;color:#263f50;font:inherit}
+.ms-client-condition-preview{grid-column:1/-1;padding:7px 9px;border:1px solid #d6e3ec;border-radius:8px;background:#f5f9fc;color:#657a88;font-size:9.5px;line-height:1.55}
+</style>
+<style id="ms-font-size-up-20260826">
+/* ===== 全体文字サイズを少し大きくして見やすく ===== */
+.ms-invoice-page{font-size:15px;}
+.ms-invoice-page input,
+.ms-invoice-page select,
+.ms-invoice-page textarea,
+.ms-invoice-page button{font-size:13px;}
+.ms-invoice-page label{font-size:12px;}
+.ms-invoice-page .hint,
+.ms-invoice-page .ms-sites-toolbar-sub,
+.ms-invoice-page .ms-site-card-meta,
+.ms-invoice-page .ms-site-condition-note{font-size:11px;}
+.ms-invoice-page .ms-sites-toolbar-title{font-size:13px;}
+.ms-invoice-page .ms-site-card-name{font-size:14px;}
+.ms-invoice-page .ms-site-card-money{font-size:11px;}
+.ms-invoice-page .ms-site-card-money b{font-size:13px;}
+.ms-invoice-page .ms-band-title,
+.ms-invoice-page .card>h2,
+.ms-invoice-page .ms-sites-list-card>h2{font-size:16px;}
+.ms-invoice-page .ms-band-field>span{font-size:12px;}
+.ms-invoice-page .ms-calc-strip span{font-size:11px;}
+.ms-invoice-page .ms-calc-strip b{font-size:14px;}
+.ms-invoice-page .ms-nav .tab,
+.ms-invoice-page .ms-action{font-size:12px;}
+.ms-invoice-page .ms-current-label{font-size:11px;}
+.ms-invoice-page .ms-current-name{font-size:15px;}
+.ms-invoice-page .ms-current-note,
+.ms-invoice-page .ms-notice,
+.ms-invoice-page .ms-work-guide{font-size:11px;}
+</style>
+<style id="invoice-app-edit-actions-one-row">
+#view-sites .ms-threeband-actions{
+  display:grid !important;
+  grid-template-columns:repeat(3,minmax(0,1fr)) !important;
+  align-items:center !important;
+  gap:6px !important;
+  width:100% !important;
+  box-sizing:border-box !important;
+}
+#view-sites .ms-threeband-actions button{
+  width:100% !important;
+  min-width:0 !important;
+  height:34px !important;
+  padding:0 6px !important;
+  margin:0 !important;
+  white-space:nowrap !important;
+  overflow:hidden !important;
+  text-overflow:ellipsis !important;
+  box-sizing:border-box !important;
+  font-size:10px !important;
+}
+@media(max-width:700px){
+  #view-sites .ms-threeband-actions{
+    grid-template-columns:1fr !important;
+  }
+}
+</style>
+<style id="invoice-app-update-message-style">
+#view-sites .ms-save-message{
+  display:none;
+  margin:9px 0 0;
+  padding:10px 12px 10px 14px;
+  border:1px solid #74ad82;
+  border-left:6px solid #3f8b52;
+  border-radius:9px;
+  background:#e4f4e8;
+  color:#245f35;
+  box-shadow:0 3px 10px rgba(63,139,82,.14);
+  box-sizing:border-box;
+}
+#view-sites .ms-save-message.show{
+  display:block;
+}
+#view-sites .ms-save-message .ms-save-title{
+  display:block;
+  font-size:13px;
+  font-weight:900;
+  line-height:1.35;
+}
+#view-sites .ms-save-message .ms-save-amount{
+  display:block;
+  margin-top:3px;
+  font-size:12px;
+  font-weight:900;
+  line-height:1.35;
+  color:#1f5630;
+}
+</style>
+<style id="vector-invoice-print-style">
+#view-print .paper.vector-ready{
+  width:210mm !important;
+  min-height:297mm !important;
+  padding:0 !important;
+  margin:0 auto !important;
+  box-sizing:border-box !important;
+  background:#fff !important;
+}
+#view-print .paper.vector-ready #vectorInvoiceSheet{
+  display:block;
+  width:210mm;
+  height:297mm;
+}
+@media print{
+  #view-print .paper.vector-ready{
+    width:210mm !important;
+    height:297mm !important;
+    min-height:297mm !important;
+    margin:0 !important;
+    padding:0 !important;
+    box-shadow:none !important;
+  }
+  #view-print .paper.vector-ready #vectorInvoiceSheet{
+    width:210mm !important;
+    height:297mm !important;
+  }
+}
+</style><style id="direct-print-clean-ui">
+body.ms-direct-print .ms-topbar,
+body.ms-direct-print .ms-nav,
+body.ms-direct-print .ms-current,
+body.ms-direct-print .ms-notice,
+body.ms-direct-print .ms-work-guide{display:none !important;}
+
+/* 直接印刷時：旧「印刷（現場別）」カードを完全に隠す */
+body.ms-direct-print #view-print > .card{display:none !important;}
+body.ms-direct-print #view-print #printControlCard{display:none !important;}
+
+
+
+body.ms-direct-print .wrap.wrap-wide{padding-top:0 !important;}
+
+@media print{
+  #directPrintActions{display:none !important;}
+}
+</style>
+
+
+
+
+
+
+
+
+
+<style id="vector-print-clone-style">
+@page{
+  size:A4 portrait;
+  margin:0;
+}
+
+#msVectorPrintOnly{
+  display:none;
+}
+
+@media print{
+  html,body{
+    margin:0 !important;
+    padding:0 !important;
+    width:210mm !important;
+    height:297mm !important;
+    background:#fff !important;
+  }
+
+  body > #appRoot{
+    display:none !important;
+  }
+
+  body > #msVectorPrintOnly{
+    display:block !important;
+    position:absolute !important;
+    left:0 !important;
+    top:0 !important;
+    width:210mm !important;
+    height:297mm !important;
+    margin:0 !important;
+    padding:0 !important;
+    overflow:hidden !important;
+    background:#fff !important;
+  }
+
+  #msVectorPrintOnly svg{
+    display:block !important;
+    width:210mm !important;
+    height:297mm !important;
+    margin:0 !important;
+    padding:0 !important;
+  }
+}
+</style>
+
+
+<style id="legacy-print-initial-hide-fix">
+/* 旧印刷画面は現在の通常操作では使用しないため、初期描画から完全非表示 */
+#view-print{display:none !important;}
+body.ms-direct-print #view-print{display:block !important;}
+</style>
+
+<style id="invoice-own-preview-actions-style">
+body.ms-direct-print #view-print #directPrintActions{
+  display:flex !important;
+  position:static !important;
+  justify-content:flex-end !important;
+  gap:8px !important;
+  margin:10px 0 12px !important;
+  padding:0 !important;
+  border:none !important;
+  background:transparent !important;
+  box-shadow:none !important;
+}
+body.ms-direct-print #directPrintActions button{
+  width:auto !important;
+  min-width:100px !important;
+  height:34px !important;
+  padding:0 14px !important;
+  border-radius:7px !important;
+  font-size:12px !important;
+  font-weight:800 !important;
+}
+body.ms-direct-print #directPrintActions .print-cancel{
+  background:#eef3f7 !important;
+  color:#40586a !important;
+  border:1px solid #bdcbd6 !important;
+}
+body.ms-direct-print #directPrintActions .print-now{
+  background:#177bb5 !important;
+  color:#fff !important;
+  border:1px solid #116b9f !important;
+}
+@media print{
+  #directPrintActions{display:none !important;}
+}
+</style>
+
+
+<!-- MS請求書システム 簡易パスワード保護（SHA-256 / セッション中のみ認証保持） -->
+<style id="ms-password-gate-style">
+html.ms-password-locked body{visibility:hidden!important;}
+</style>
+<script id="ms-password-gate">
+(function(){
+  'use strict';
+  var KEY='ms_invoice_auth_v1';
+  var HASH='60d523c99e38a30e4b889688cf2563ae6b745aa77b41c3d5b7a7fa9606aaa4cf';
+  try{ if(sessionStorage.getItem(KEY)==='ok') return; }catch(e){}
+  document.documentElement.classList.add('ms-password-locked');
+  function hex(buf){return Array.from(new Uint8Array(buf)).map(function(b){return b.toString(16).padStart(2,'0');}).join('');}
+  async function check(pw){
+    if(!window.crypto || !window.crypto.subtle){ return false; }
+    var data=new TextEncoder().encode(pw);
+    return hex(await crypto.subtle.digest('SHA-256',data))===HASH;
+  }
+  async function ask(){
+    while(true){
+      var pw=window.prompt('MS請求書システム\nパスワードを入力してください。');
+      if(pw===null){ document.body && (document.body.innerHTML=''); return; }
+      try{
+        if(await check(pw)){
+          try{sessionStorage.setItem(KEY,'ok');}catch(e){}
+          document.documentElement.classList.remove('ms-password-locked');
+          return;
+        }
+      }catch(e){}
+      window.alert('パスワードが違います。');
+    }
+  }
+  if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',ask,{once:true});}else{ask();}
+})();
+</script>
+
+</head>
+<body class="ms-invoice-page">
+<div id="appRoot">
+<div class="ms-topbar">
+<div class="ms-brand">
+<div class="ms-logo">MS</div>
+<div>
+<div class="ms-title">MS 請求書作成システム</div>
+<div class="ms-subtitle">工事別の請求・履歴・印刷を一元管理</div>
+</div>
+</div>
+<div class="ms-actions">
+<button class="ms-action" onclick="showMsNotice()">お知らせ</button>
+<button class="ms-action" onclick="switchView('sites')">保存データ</button>
+<button class="ms-action" onclick="switchView('settings')">設定</button>
+</div>
+</div>
+<div class="ms-nav">
+<button class="tab active" data-view="home" onclick="switchView('home')">ホーム</button>
+<button class="tab" data-view="sites" onclick="switchView('sites')">工事情報</button>
+<button class="tab" data-view="monthly" onclick="switchView('monthly')">開く</button>
+<button class="tab" data-view="print" onclick="switchView('print')" style="display:none!important;">請求書印刷</button>
+<button class="tab" data-view="summary" onclick="switchView('summary')">総括請求書</button>
+</div>
+<div class="ms-current">
+<div class="ms-current-box">
+<div>
+<div class="ms-current-label">選択中の工事</div>
+<div class="ms-current-name" id="msCurrentSite">工事を選択してください</div>
+</div>
+<div class="ms-current-note" id="msCurrentDetail">未請求工事一覧から「今月の請求」を選ぶと、対象工事へ直接移動します。</div>
+</div>
+</div>
+<div class="ms-notice">
+<div class="ms-notice-box">
+<div class="ms-notice-mark">●</div>
+<div><b>お知らせ</b>　工事は請求状況に応じて「未請求の工事」と「請求完了した工事」に自動整理されます。</div>
+</div>
+</div>
+<div class="ms-work-guide">
+<div class="ms-work-guide-inner">
+<span>操作の流れ</span>
+<span class="ms-guide-chip">① 工事情報</span>
+<span>→</span>
+<span class="ms-guide-chip">② 今月の請求</span>
+<span>→</span>
+<span class="ms-guide-chip">③ 請求書印刷</span>
+<span>→</span>
+<span class="ms-guide-chip">④ 総括請求書</span>
+</div>
+</div>
+<div class="wrap wrap-wide">
+<!-- ホーム：MS積算システム風 請求ダッシュボード -->
+<!-- 設定 -->
+<section class="hide" id="view-settings">
+<div class="grid">
+<div class="card">
+<h2>自社情報（マスタ）</h2>
+<div class="body">
+<label>自社名</label>
+<input id="s_myName" value="エムエス・ランドスケープ"/>
+<label>住所</label>
+<input id="s_myAddr" value="静岡県伊豆の国市田京1021-5"/>
+<div class="row">
+<div>
+<label>TEL</label>
+<input id="s_myTel" value="055-999-9999"/>
+</div>
+<div>
+<label>署名（担当者）</label>
+<input id="s_mySigner" value="菅尾基弘"/>
+</div>
+</div>
+<div class="row">
+<div>
+<label>印表示</label>
+<select id="s_useStamp">
+<option selected="" value="1">表示する</option>
+<option value="0">表示しない</option>
+</select>
+</div>
+<div>
+<label>税率（%）</label>
+<input id="s_taxRate" step="0.1" type="number" value="10"/>
+</div>
+</div>
+<label>振込先（表示文）</label>
+<input id="s_bankText" value="【振込先】 静岡銀行　三島支店　普通　9999999　菅尾基弘"/>
+<div class="btns">
+<button onclick="saveAll()">保存</button>
+<button class="secondary" onclick="loadAll(true)">読み込み</button>
+</div>
+<div class="hint">※ここで入力した内容は印刷レイアウトに自動反映します。</div>
+</div>
+</div>
+<div class="card">
+<h2>請求先（会社）</h2>
+<div class="body">
+<label>請求先名（例：○○株式会社 御中）</label>
+<input id="s_clientName" value="鶴よし建設株式会社 御中"/>
+<div class="hint">※現場ごとに請求先が違う場合は、次段階で「現場側」に持たせます（今は共通）。</div>
+<div class="btns">
+<button onclick="saveAll()">保存</button>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- 現場 -->
+<section class="hide" id="view-sites">
+<header class="invoice-lwall-header">
+<div class="invoice-lwall-wrap">
+<div>
+<h1>MS請求書システム</h1>
+<div class="sub">工事情報の登録・編集／登録済み工事の管理</div>
+</div>
+<div class="invoice-header-actions" style="display:flex;gap:8px;align-items:center;">
+<button class="invoice-home-link hide" id="invoiceReturnMonthly" onclick="returnToMonthly()" style="cursor:pointer;" type="button">← 今月の請求に戻る</button>
+<a class="invoice-home-link" href="index.html">🏠 メイン画面に戻る</a>
+</div>
+</div>
+</header>
+<div class="grid">
+<div class="card ms-project-card ms-threeband-input">
+<h2>工事情報</h2>
+<div class="body">
+<!-- ① 基本情報 -->
+<section class="ms-band band-basic">
+<div class="ms-band-title">
+<span class="ms-band-no">①</span>
+<b>基本情報</b>
+</div>
+<div class="ms-band-body">
+<div class="ms-band-grid basic-grid">
+<label class="ms-band-field span-2">
+<span>工事名</span>
+<input id="p_name" placeholder="工事名を入力"/>
+</label>
+<label class="ms-band-field span-2">
+<span>請求先</span>
+<select id="p_clientName" onchange="msApplyClientMaster()"><option value="">発注先マスターから選択してください</option></select>
+</label>
+<label class="ms-band-field span-2">
+<span>工事場所</span>
+<input id="p_workLocation" placeholder="工事場所を入力"/>
+</label>
+<label class="ms-band-field">
+<span>注文番号</span>
+<input id="p_orderNo" placeholder="注文番号"/>
+</label>
+<label class="ms-band-field">
+<span>工事番号</span>
+<input id="p_workNo" placeholder="工事番号"/>
+</label>
+<label class="ms-band-field">
+<span>発注担当者</span>
+<select id="p_orderManager"><option value="">担当者を選択してください</option></select>
+</label>
+<label class="ms-band-field">
+<span>請求担当者</span>
+<select id="p_billingManager"><option value="">請求担当者を選択してください</option></select>
+</label>
+<label class="ms-band-field">
+<span>登録日</span>
+<input id="p_regDate" type="date"/>
+</label>
+</div>
+</div>
+</section>
+<!-- ② 注文金額 -->
+<section class="ms-band band-money">
+<div class="ms-band-title">
+<span class="ms-band-no">②</span>
+<b>注文金額</b>
+</div>
+<div class="ms-band-body">
+<div class="ms-band-grid money-grid">
+<label class="ms-band-field money-field span-2">
+<span>当初金額（税抜）</span>
+<input id="p_contractNet" inputmode="numeric" oninput="formatCommaInput(this)" placeholder="0"/>
+</label>
+<label class="ms-band-field money-field">
+<span>増額（税抜）</span>
+<input id="p_increaseNet" inputmode="numeric" oninput="formatCommaInput(this)" value="0"/>
+</label>
+<label class="ms-band-field money-field">
+<span>減額（税抜）</span>
+<input id="p_reductionNet" inputmode="numeric" oninput="formatCommaInput(this)" value="0"/>
+</label>
+<label class="ms-band-field auto-field span-2">
+<span>最終注文金額（自動）</span>
+<input class="readonly" disabled="" id="p_displayContract" value="—"/>
+</label>
+</div>
+<div class="ms-calc-strip">
+<div>
+<span>最終注文金額</span>
+<b id="p_autoFinal">—</b>
+</div>
+<div>
+<span>請求済額</span>
+<b id="p_autoReceived">—</b>
+</div>
+<div class="important">
+<span>請求残金</span>
+<b id="p_autoBalance">—</b>
+</div>
+<div>
+<span>保留金残</span>
+<b id="p_autoRetention">—</b>
+</div>
+</div>
+</div>
+</section>
+<div class="ms-site-condition-note">
+      ※ 保留金・安全管理費などの請求条件は、提出先（請求先）ごとの設定で管理します。
+    </div>
+<div class="hide" id="msClientTermsRefreshArea" style="margin:8px 0 10px;">
+<button class="secondary" onclick="msRefreshSiteClientTerms()" style="width:100%;height:34px;" type="button">
+        会社情報の最新請求条件をこの工事に反映
+      </button>
+<div style="font-size:10px;color:#667085;margin-top:4px;line-height:1.5;">
+        ※ 請求履歴がある工事は、確認してから反映します。
+      </div>
+</div>
+<div class="ms-threeband-actions">
+<button id="btnSiteSave" onclick="msSaveSite()">工事を登録</button>
+<button class="secondary" onclick="resetSiteForm()">新しい入力を開始</button>
+<button class="secondary hide" id="btnSiteCancel" onclick="cancelEditSite()">編集キャンセル</button>
+</div>
+<div aria-live="polite" class="ms-save-message" id="msSiteSaveMessage" role="status"></div>
+</div>
+</div>
+<div class="card ms-sites-list-card">
+<h2>登録済み工事一覧</h2>
+<div class="body">
+<div class="ms-sites-toolbar">
+<div>
+<div class="ms-sites-toolbar-title">工事を選択して編集・削除できます</div>
+<div class="ms-sites-toolbar-sub">MS積算システムの保存データ一覧と同じ考え方で表示します</div>
+</div>
+<div class="ms-sites-count" id="msSitesCount">0件</div>
+</div>
+<div class="ms-sites-card-list" id="msSitesCardList"></div>
+<!-- 既存JS互換用：従来テーブルは非表示で残す -->
+<div class="ms-sites-legacy">
+<table class="list" id="sitesTable">
+<thead>
+<tr>
+<th>現場</th>
+<th class="nowrap col-order">注文/工事</th>
+<th class="right col-money">最終注文金額（税抜）</th>
+<th class="right col-money">既受領（税抜）</th>
+<th class="right col-money">請求残金（税抜）</th>
+<th class="right">操作</th>
+</tr>
+</thead>
+<tbody></tbody>
+</table>
+</div>
+<div class="ms-sites-bottom-actions">
+<button class="secondary" onclick="msExportData()">データ書き出し（JSON）</button>
+<button class="danger" onclick="msClearAll()">全削除</button>
+</div>
+<textarea class="hide" id="exportBox" spellcheck="false"></textarea>
+</div>
+</div>
+</div>
+</section>
+<!-- 月次 -->
+<section class="hide" id="view-monthly">
+<div class="grid">
+<div class="card">
+<h2>月次入力（当月出来高）</h2>
+<div class="body">
+<div class="row">
+<div>
+<label>対象月（YYYY-MM）</label>
+<input id="m_month" type="month"/>
+</div>
+<div>
+<label>現場を選択</label>
+<select id="m_site"></select>
+</div>
+</div>
+<!-- 現場サマリー -->
+<div class="kv" id="siteSummary">
+<div class="item">
+<div class="k">注文金額（当初金額・税抜）</div>
+<div class="v mono" id="sum_contract">—</div>
+<div class="s">現場マスタ</div>
+</div>
+<div class="item">
+<div class="k">最終注文金額（税抜）</div>
+<div class="v mono" id="sum_displayContract">—</div>
+<div class="s">当初＋増額−減額</div>
+</div>
+<div class="item">
+<div class="k">増額（税抜）</div>
+<div class="v mono" id="sum_increase">—</div>
+<div class="s">発注先マスター設定に従う</div>
+</div>
+<div class="item">
+<div class="k">減額（税抜）</div>
+<div class="v mono" id="sum_reduction">—</div>
+<div class="s">発注先マスター設定に従う</div>
+</div>
+<div class="item">
+<div class="k">保留金判定額（税抜）</div>
+<div class="v mono" id="sum_effective">—</div>
+<div class="s">当初＋対象増額−対象減額</div>
+</div>
+<div class="item">
+<div class="k">保留金残（未請求・税抜）</div>
+<div class="v mono" id="sum_retRemain">—</div>
+<div class="s">95%到達後：上限−控除済み</div>
+</div>
+<div class="item">
+<div class="k">保留上限（税抜）</div>
+<div class="v mono" id="sum_retCap">—</div>
+<div class="s">保留計算用×保留金率</div>
+</div>
+<div class="item">
+<div class="k">発生ライン（税抜）</div>
+<div class="v mono" id="sum_trigger">—</div>
+<div class="s">保留計算用×発生ライン%</div>
+</div>
+<div class="item">
+<div class="k">前月まで累計（税抜）＝既受領</div>
+<div class="v mono" id="sum_prevCum">—</div>
+<div class="s">月次履歴から自動</div>
+</div>
+<div class="item">
+<div class="k">請求残金（税抜）</div>
+<div class="v mono" id="sum_balance">—</div>
+<div class="s">最終注文金額−累計出来高−保留金残</div>
+</div>
+</div>
+<label>当月出来高（税抜）</label>
+<input class="money" id="m_thisMonthNet" inputmode="numeric" oninput="formatCommaInput(this)" value="0"/>
+<label>最終月（保留金を残り請求して完了）</label>
+<select id="m_isFinal">
+<option selected="" value="0">通常月</option>
+<option value="1">最終月</option>
+</select>
+<!-- ★ 保留金アラート（3行コンパクト版：保存ボタン直前）★ -->
+<div aria-live="polite" class="ret-alert hide" id="retAlert" role="alert">
+<div class="title">⚠ 保留金が残っています</div>
+<div>未請求の保留金残： <span class="amt" id="retAlertAmt">0</span> 円</div>
+<div class="hint">※「保留金だけ請求（月次出来高0）」が可能です。</div>
+</div>
+<div class="btns">
+<button onclick="saveMonthly()">月次を保存</button>
+<button class="secondary" onclick="loadMonthlyToForm()">保存済みを読み込み</button>
+</div>
+<div class="hint">
+            ※既受領額（税抜）は <b>前月までの累計出来高</b> として自動計算します。<br/>
+            ※保留金は <b>当初＋対象増額−対象減額</b> の判定額と、発注先マスターの発生基準額で判定します。
+          </div>
+</div>
+</div>
+<div class="card">
+<h2>月別履歴（この現場）</h2>
+<div class="body">
+<div class="hint" style="margin-bottom:8px;">
+            下は現場ごとの月別出来高の履歴です。<br/>
+            「この月へ」で月次入力にジャンプできます。
+          </div>
+<table class="list" id="siteHistoryTable">
+<thead>
+<tr>
+<th>年月</th>
+<th class="right">当月出来高（税抜）</th>
+<th>状態</th>
+<th class="right">操作</th>
+</tr>
+</thead>
+<tbody></tbody>
+</table>
+<hr style="border:none;border-top:1px solid #eee;margin:12px 0;"/>
+<h2 style="margin:0 0 6px;font-size:14px;">月次一覧（この月）</h2>
+<table class="list" id="monthlyTable">
+<thead>
+<tr>
+<th>現場</th>
+<th class="right">既受領(税抜)</th>
+<th class="right">当月出来高(税抜)</th>
+<th>状態</th>
+</tr>
+</thead>
+<tbody></tbody>
+</table>
+</div>
+</div>
+</div>
+</section>
+<!-- 印刷 -->
+<section class="hide" id="view-print" style="display:none!important;">
+<div class="card" id="printControlCard">
+<h2>印刷（現場別）</h2>
+<div class="body">
+<div class="row">
+<div>
+<label>対象月（YYYY-MM）</label>
+<input id="pr_month" type="month"/>
+</div>
+<div>
+<label>現場を選択</label>
+<select id="pr_site"></select>
+</div>
+</div>
+<div class="row">
+<div>
+<label>請求日（表示用）</label>
+<input id="pr_billDate" type="date"/>
+</div>
+<div>
+<label>印刷</label>
+<div class="btns" style="margin-top:6px;">
+<button onclick="renderPrint()">プレビュー更新</button>
+<button class="secondary" onclick="/* 自動印刷を停止：プレビューの［印刷］から実行 */">印刷 / PDF保存</button>
+</div>
+</div>
+</div>
+<div class="hint">※入力は「設定／現場／月次」で行い、ここは出力専用です。</div>
+</div>
+</div>
+<div id="directPrintActions" style="display:none;"><button class="print-cancel" onclick="returnFromInvoicePrint()" type="button">戻る</button><button class="print-now" onclick="printCurrentInvoice()" type="button">印刷</button></div><div class="paperWrap">
+<div class="vector-ready paper"><svg height="297mm" id="vectorInvoiceSheet" viewbox="0 0 210 297" width="210mm" xmlns="http://www.w3.org/2000/svg">
+<title>工事別請求書 ベクトル枠 調整版</title>
+<desc>A4実寸。左・上位置は維持し、右側と下側を拡張。外枠を太線化。</desc>
+<rect fill="#fff" height="297" width="210" x="0" y="0"></rect>
+<style>
+    .thin   { fill:none; stroke:#000; stroke-width:0.22; vector-effect:non-scaling-stroke; }
+    .normal { fill:none; stroke:#000; stroke-width:0.32; vector-effect:non-scaling-stroke; }
+    .strong { fill:none; stroke:#000; stroke-width:0.60; vector-effect:non-scaling-stroke; }
+    .detail-outer { fill:none; stroke:#000; stroke-width:1.20; vector-effect:non-scaling-stroke; }
+    .invoice-title-main { font-family:"Yu Mincho","Hiragino Mincho ProN","MS PMincho",serif; font-size:8px; font-weight:700; fill:#000; text-anchor:middle; letter-spacing:1.1px; }
+    .invoice-title-sub { font-family:"Yu Mincho","Hiragino Mincho ProN","MS PMincho",serif; font-size:4px; font-weight:700; fill:#000; text-anchor:start; }
+    .invoice-guidance { font-family:"Yu Mincho","Hiragino Mincho ProN","MS PMincho",serif; font-size:4.0px; font-weight:400; fill:#000; }
+    .project-label { font-family:"Yu Mincho","Hiragino Mincho ProN","MS PMincho",serif; font-size:3.5px; font-weight:400; fill:#000; }
+    .approval-label { font-family:"Yu Mincho","Hiragino Mincho ProN","MS PMincho",serif; font-size:3px; font-weight:400; fill:#000; text-anchor:middle; }
+    .approval-note { font-family:"Yu Mincho","Hiragino Mincho ProN","MS PMincho",serif; font-size:3px; font-weight:400; fill:#000; text-anchor:end; }
+    .grand-total-label { font-family:"Yu Mincho","Hiragino Mincho ProN","MS PMincho",serif; font-size:5px; font-weight:700; fill:#000; text-anchor:middle; letter-spacing:1.2px; }
+    .grand-total-tax { font-family:"Yu Mincho","Hiragino Mincho ProN","MS PMincho",serif; font-size:4px; font-weight:400; fill:#000; text-anchor:start; }
+    .grand-total-staff { font-family:"Yu Mincho","Hiragino Mincho ProN","MS PMincho",serif; font-size:3.5px; font-weight:400; fill:#000; text-anchor:middle; }
+    .detail-main { font-family:"Yu Mincho","Hiragino Mincho ProN","MS PMincho",serif; font-size:4.5px; font-weight:400; fill:#000; dominant-baseline:middle; }
+    .detail-sub { font-family:"Yu Mincho","Hiragino Mincho ProN","MS PMincho",serif; font-size:3.5px; font-weight:400; fill:#000; dominant-baseline:middle; }
+    .retention-label { font-family:"Yu Mincho","Hiragino Mincho ProN","MS PMincho",serif; font-size:4.5px; font-weight:400; fill:#000; text-anchor:middle; dominant-baseline:middle; }
+    .detail-amount {
+ font-family:"Yu Gothic","Meiryo","Hiragino Kaku Gothic ProN",sans-serif;
+ font-size:4.5px; font-weight:600; fill:#000; text-anchor:end; dominant-baseline:middle;
+}
+.grand-total-amount {
+ font-family:"Yu Gothic","Meiryo","Hiragino Kaku Gothic ProN",sans-serif;
+ font-size:6px; font-weight:700; fill:#000; text-anchor:end; dominant-baseline:middle;
+}
+
+
+    .creation-note { font-family:"Yu Mincho","Hiragino Mincho ProN","MS PMincho",serif; font-size:3.5px; font-weight:400; fill:#000; }
+  
+    .data-client { font-family:"Yu Mincho","Hiragino Mincho ProN","MS PMincho",serif; font-size:5px; font-weight:400; fill:#000; }
+    .data-project { font-family:"Yu Mincho","Hiragino Mincho ProN","MS PMincho",serif; font-size:4.5px; font-weight:400; fill:#000; }
+    .data-meta { font-family:"Yu Mincho","Hiragino Mincho ProN","MS PMincho",serif; font-size:4px; font-weight:400; fill:#000; }
+    .data-date { font-family:"Yu Mincho","Hiragino Mincho ProN","MS PMincho",serif; font-size:3.5px; font-weight:400; fill:#000; }
+    .data-company-name { font-family:"Yu Mincho","Hiragino Mincho ProN","MS PMincho",serif; font-size:4.8px; font-weight:700; fill:#000; }
+    .data-company { font-family:"Yu Mincho","Hiragino Mincho ProN","MS PMincho",serif; font-size:3.7px; font-weight:400; fill:#000; }
+
+    .data-staff { font-family:"Yu Mincho","Hiragino Mincho ProN","MS PMincho",serif; font-size:3.8px; font-weight:400; fill:#000; text-anchor:middle; }
+
+    
+</style>
+<!-- 請求書タイトル文字 -->
+<text class="invoice-title-main" x="105.5" y="35.0">請 求 書</text>
+<text class="invoice-title-sub" x="123.5" y="35.0">（現場別）</text>
+<!-- タイトル下線 -->
+<g id="title-rule">
+<line class="detail-outer" x1="76.5" x2="146.3" y1="38.2" y2="38.2"></line>
+</g>
+<!-- 宛名下線 -->
+<g id="recipient-rule">
+<line class="detail-outer" x1="22.8" x2="112.8" y1="57.4" y2="57.4"></line>
+</g>
+<!-- 固定案内文 -->
+<text class="invoice-guidance" x="22.8" y="68.5">工事代金を下記のとおり御請求いたします。</text>
+<!-- 工事名ラベル -->
+<text class="project-label" x="22.8" y="81.0">工事名</text>
+<!-- 工事名下線 -->
+<g id="project-rule">
+<line class="detail-outer" x1="22.8" x2="111.8" y1="88.2" y2="88.2"></line>
+</g>
+<!-- 注文番号・工事番号ラベル -->
+<text class="project-label" x="22.8" y="98.3">注文番号</text>
+<text class="project-label" x="72.8" y="98.3">工事番号</text>
+<!-- 注文番号・工事番号下線 -->
+<g id="order-project-number-rules">
+<line class="detail-outer" x1="22.8" x2="63.0" y1="105.5" y2="105.5"></line>
+<line class="detail-outer" x1="72.8" x2="103.2" y1="105.5" y2="105.5"></line>
+</g>
+<!-- 自社代表者欄下線 -->
+<g id="company-sign-rule" transform="translate(10 10)">
+<line class="detail-outer" x1="123.0" x2="184.0" y1="72.5" y2="72.5"></line>
+</g>
+<!-- 社内承認欄：右端を広げ、外枠を太線化 -->
+<g id="approval-table" transform="translate(12 10)">
+<rect class="detail-outer" height="20.2" width="77.0" x="105.0" y="78.7"></rect>
+<text class="approval-label" x="128.2" y="82.6">工事部長</text>
+<text class="approval-label" x="143.75" y="82.6">現場担当</text>
+<text class="approval-label" x="159.05" y="82.6">総 務</text>
+<text class="approval-label" x="174.35" y="82.6">経 理</text>
+<line class="thin" x1="105.0" x2="182.0" y1="84.2" y2="84.2"></line>
+<line class="thin" x1="120.3" x2="120.3" y1="78.7" y2="98.9"></line>
+<line class="thin" x1="136.1" x2="136.1" y1="78.7" y2="98.9"></line>
+<line class="thin" x1="151.4" x2="151.4" y1="78.7" y2="98.9"></line>
+<line class="thin" x1="166.7" x2="166.7" y1="78.7" y2="98.9"></line>
+<text class="approval-note" x="180.8" y="102.4">※弊社使用欄</text>
+</g>
+<!-- 請求額合計枠：右端を184mmへ、外枠太線 -->
+<g id="grand-total-box" transform="translate(0 14)">
+<text class="grand-total-label" x="55.0" y="114.0">請 求 額 合 計</text>
+<text class="grand-total-tax" x="77.5" y="114.0">（税込）</text>
+<rect class="detail-outer" height="14.0" width="157.9" x="30.1" y="105.1"></rect>
+<line class="thin" x1="95.0" x2="95.0" y1="105.1" y2="119.1"></line>
+<line class="detail-outer" x1="153.0" x2="153.0" y1="105.1" y2="119.1"></line>
+<text class="grand-total-staff" x="170.5" y="110.3">＜弊社担当者＞</text>
+<text class="data-staff" id="pvStaff" x="170.5" y="116.7">—</text><text class="grand-total-amount" id="pvTotalGross" x="147.0" y="112.95">￥0-</text></g>
+<!-- 明細表：右端184mm、下端228mmへ拡張 -->
+<g id="detail-table" transform="translate(4 16)">
+<rect class="detail-outer" height="109.7" width="157.9" x="26.1" y="122.8"></rect>
+<!-- 明細項目文字 -->
+<text dominant-baseline="middle" x="28.0" y="128.9"><tspan class="detail-main">①　注文金額</tspan><tspan class="detail-sub" dx="2.0">（税抜）</tspan></text>
+<text id="pvRow2Label" dominant-baseline="middle" x="28.0" y="141.1"><tspan class="detail-main">②　追加工事</tspan></text>
+<text class="detail-sub" dominant-baseline="middle" text-anchor="middle" x="72.0" y="139.3">（最終請求時）</text>
+<text class="detail-sub" dominant-baseline="middle" text-anchor="middle" x="72.0" y="143.3">（税抜）</text>
+<text id="pvRow3Label" dominant-baseline="middle" x="28.0" y="153.3"><tspan class="detail-main">③　減額工事</tspan></text>
+<text class="detail-sub" dominant-baseline="middle" text-anchor="middle" x="72.0" y="151.5">（最終請求時）</text>
+<text class="detail-sub" dominant-baseline="middle" text-anchor="middle" x="72.0" y="155.5">（税抜）</text>
+<text id="pvRow4Label" dominant-baseline="middle" x="28.0" y="165.5"><tspan class="detail-main">④　最終注文金額</tspan></text>
+<text class="detail-sub" dominant-baseline="middle" text-anchor="middle" x="76.0" y="163.7">②＋③</text>
+<text class="detail-sub" dominant-baseline="middle" text-anchor="middle" x="76.0" y="167.7">（税抜）</text>
+<text id="pvRow5Label" dominant-baseline="middle" x="28.0" y="177.7"><tspan class="detail-main">⑤　既受領額</tspan><tspan class="detail-sub" dx="2.0">（税抜）</tspan></text>
+<text id="pvRow6Label" dominant-baseline="middle" x="28.0" y="189.9"><tspan class="detail-main">⑥　当月出来高</tspan><tspan class="detail-sub" dx="2.0">（税抜）</tspan></text>
+<text id="pvRow7Label" dominant-baseline="middle" x="28.0" y="202.1"><tspan class="detail-main">⑦　累計出来高</tspan></text>
+<text id="pvCumFormula" class="detail-sub" dominant-baseline="middle" text-anchor="middle" x="70.0" y="200.3">⑤＋⑥</text>
+<text class="detail-sub" dominant-baseline="middle" text-anchor="middle" x="70.0" y="204.3">（税抜）</text>
+<text id="pvRow8Label" dominant-baseline="middle" x="28.0" y="214.3"><tspan class="detail-main">⑧　当月合計金額</tspan></text>
+<text class="detail-sub" dominant-baseline="middle" text-anchor="middle" x="76.0" y="212.5">10％対象</text>
+<text class="detail-sub" dominant-baseline="middle" text-anchor="middle" x="76.0" y="216.5">（税抜）</text>
+<text dominant-baseline="middle" x="37.0" y="226.45"><tspan class="detail-main">消費税</tspan><tspan class="detail-sub" dx="2.0">10％</tspan></text>
+<text class="retention-label" id="pvRetentionLabel" x="166.5" y="128.9">＜保留金額＞</text>
+<text class="detail-amount" id="pvRetentionAmount" x="181.0" y="141.1">　</text>
+<text class="detail-amount" id="pvContractNet" x="146.5" y="128.9">0 円</text>
+<text class="detail-amount" id="pvIncreaseNet" x="146.5" y="141.1">0 円</text>
+<text class="detail-amount" id="pvReductionNet" x="146.5" y="153.3">0 円</text>
+<text class="detail-amount" id="pvFinalOrderNet" x="146.5" y="165.5">0 円</text>
+<text class="detail-amount" id="pvReceivedNet" x="146.5" y="177.7">0 円</text>
+<text class="detail-amount" id="pvThisMonthNet" x="146.5" y="189.9">0 円</text>
+<text class="detail-amount" id="pvCumNet" x="146.5" y="202.1">0 円</text>
+<text class="detail-amount" id="pvBillNet" x="146.5" y="214.3">0 円</text>
+<text class="detail-amount" id="pvTax" x="146.5" y="226.45">0 円</text>
+
+<!-- 主縦線 -->
+<line class="thin" x1="91.0" x2="91.0" y1="122.8" y2="232.5"></line>
+<line class="thin" x1="100.0" x2="100.0" y1="122.8" y2="232.5"></line>
+<line class="detail-outer" x1="149.0" x2="149.0" y1="122.8" y2="232.5"></line>
+<!-- 横線：9段を均等化 -->
+<line class="thin" x1="26.1" x2="184.0" y1="135.0" y2="135.0"></line>
+<line class="thin" x1="26.1" x2="184.0" y1="147.2" y2="147.2"></line>
+<line class="thin" x1="26.1" x2="184.0" y1="159.4" y2="159.4"></line>
+<line class="thin" x1="26.1" x2="184.0" y1="171.6" y2="171.6"></line>
+<line class="thin" x1="26.1" x2="184.0" y1="183.8" y2="183.8"></line>
+<line class="thin" x1="26.1" x2="184.0" y1="196.0" y2="196.0"></line>
+<line class="thin" x1="26.1" x2="184.0" y1="208.2" y2="208.2"></line>
+<line class="thin" x1="26.1" x2="184.0" y1="220.4" y2="220.4"></line>
+</g>
+<!-- 作成上の注意 -->
+<text class="creation-note" x="30.1" y="259.0">（作成上の注意）</text>
+<text class="creation-note" x="30.1" y="264.0">１．注文書単位に請求書を作成してください。</text>
+<text class="creation-note" x="30.1" y="269.0">２．①「注文金額」～⑦「当月合計金額」欄は消費税抜金額で記入してください。</text>
+<text class="creation-note" x="30.1" y="274.0">３．注文№、工事番号の記入の無いものはお支払い出来ない場合があります。</text>
+<text class="creation-note" x="30.1" y="279.0">４．追加工事、減額工事は最終請求時に内訳書を必ず添付してください。</text>
+<text class="creation-note" id="pvRetentionThresholdNote" x="30.1" y="284.0">５．注文金額が30万円以上になる場合は保留金が発生します。</text>
+<g id="dynamic-top-data">
+<text class="data-client" id="pvClient" x="22.8" y="54.2">（請求先）</text>
+<text class="data-project" id="pvSite" x="24.8" y="86.1">（工事名）</text>
+<text class="data-meta" id="pvOrderNo" x="24.8" y="103.3">—</text>
+<text class="data-meta" id="pvWorkNo" x="74.8" y="103.3">—</text>
+<text class="data-date" id="pvDate" x="188.0" y="54.2" text-anchor="end">—</text>
+<text class="data-company-name" id="pvMyName" x="133.0" y="63.0">—</text>
+<text class="data-company" id="pvMyAddr" x="133.0" y="69.0">—</text>
+<text class="data-company" x="133.0" y="75.0">TEL. <tspan id="pvMyTel">—</tspan></text>
+<text class="data-company" x="133.0" y="86.5">登録番号 <tspan id="pvRegistrationNo">—</tspan></text>
+<text class="data-company" id="pvSigner" x="194.0" y="80.5" text-anchor="end">—</text>
+</g></svg><div id="legacyPrintLayout" style="display:none !important;">
+<h2 class="title">請 求 書（現場別）</h2>
+<div class="topGrid">
+<div class="toBlock">
+<div style="font-size:24px; font-weight:800; margin-bottom:0.5mm; line-height:1.2;">
+<span id="legacy_pvClient">（請求先）</span> <span class="toLine"></span>
+</div>
+<div class="midInfo">工事代金を下記のとおり御請求いたします。</div>
+<div class="midInfo" style="margin-top:4mm;">
+<div class="metaLabel" style="font-size:13px; font-weight:800;">工事名</div>
+<div class="metaValue"><span class="pv-uline" id="legacy_pvSite">（現場名）</span></div>
+</div>
+<div class="metaGrid">
+<div class="metaBox">
+<div class="metaLabel">注文番号</div>
+<div class="metaValue" id="legacy_pvOrderNo">—</div>
+</div>
+<div class="metaBox">
+<div class="metaLabel">工事番号</div>
+<div class="metaValue" id="legacy_pvWorkNo">—</div>
+</div>
+</div>
+</div>
+<div class="rightBlock">
+
+
+<div style="font-size:10px; margin-top:1mm;">※弊社使用欄</div>
+<div class="apprBox" style="margin-top:0mm;   /* ← 上に8mm食い込ませる */
+                         border:1px solid #000;height:22mm; /* ← 14mm + 8mm */
+                         display:grid;
+                         grid-template-columns:repeat(4,1fr);">
+<div style="border-right:1px solid #000; padding:2mm; font-size:10px;"><div class="apprLabel">工事部長</div><div class="apprLine"></div></div>
+<div style="border-right:1px solid #000; padding:2mm; font-size:10px;"><div class="apprLabel">現場担当</div><div class="apprLine"></div></div>
+<div style="border-right:1px solid #000; padding:2mm; font-size:10px;"><div class="apprLabel">総務</div><div class="apprLine"></div></div>
+<div style="padding:2mm; font-size:10px;"><div class="apprLabel">経理</div><div class="apprLine"></div></div>
+</div>
+</div>
+</div>
+<div class="bigTotal">
+<div class="left">請求額合計　<small>（税込）</small></div>
+<div class="right"><span id="legacy_pvTotalGross">¥0</span><small>.-</small></div>
+<div style="border-left:1.3px solid #000; padding:5mm; font-size:12px; display:flex; flex-direction:column; justify-content:center; gap:4px;">
+<div style="font-weight:800;">（（弊社担当者名））</div>
+<div id="legacy_pvStaff" style="border-bottom:1px solid #000; padding-bottom:2px; font-size:16px; font-weight:900;">　</div>
+</div>
+</div>
+<table class="sheet" id="pvTableDetailed">
+<tr>
+<th style="width:65mm;">① 注文金額（税抜）</th>
+<td class="num" id="legacy_pvContractNet">0 円</td>
+<th id="legacyPvRetentionLabel" style="width:42mm; text-align:center;">〈保留金額〉</th>
+</tr>
+<tr>
+<th><span id="pvLblIncrease">② 追加工事（税抜）</span></th>
+<td class="num" id="legacy_pvIncreaseNet">0 円</td>
+<td class="num" id="pvRetentionBox" style="text-align:center; font-size:18px; font-weight:900;">　</td>
+</tr>
+<tr>
+<th><span id="pvLblReduction">③ 減額工事（税抜）</span></th>
+<td class="num" id="legacy_pvReductionNet">0 円</td>
+<td rowspan="6"></td>
+</tr>
+<tr>
+<th>④ 最終注文金額（税抜）</th>
+<td class="num" id="legacy_pvFinalOrderNet">0 円</td>
+</tr>
+<tr>
+<th>⑤ 既受領額（税抜）</th>
+<td class="num" id="legacy_pvReceivedNet">0 円</td>
+</tr>
+<tr>
+<th>⑥ 当月出来高（税抜）</th>
+<td class="num" id="legacy_pvThisMonthNet">0 円</td>
+</tr>
+<tr>
+<th>⑦ 累計出来高（税抜）</th>
+<td class="num" id="legacy_pvCumNet">0 円</td>
+</tr>
+<tr>
+<th>⑧ 当月合計金額（税抜）</th>
+<td class="num" id="legacy_pvBillNet">0 円</td>
+</tr>
+<tr>
+<th>消費税額</th>
+<td class="num" id="legacy_pvTax">0 円</td>
+<td></td>
+</tr>
+</table>
+<table class="sheet hide" id="pvTableSimple">
+<tr>
+<th style="width:65mm;">① 注文金額（税抜）</th>
+<td class="num"><span data-bind="pvContractNet">0 円</span></td>
+</tr>
+<tr>
+<th>② 既受領額（税抜）</th>
+<td class="num"><span data-bind="pvReceivedNet">0 円</span></td>
+</tr>
+<tr>
+<th>③ 当月出来高（税抜）</th>
+<td class="num"><span data-bind="pvThisMonthNet">0 円</span></td>
+</tr>
+<tr>
+<th>④ 累計出来高（税抜）</th>
+<td class="num"><span data-bind="pvCumNet">0 円</span></td>
+</tr>
+<tr>
+<th>⑤ 当月合計金額（税抜）</th>
+<td class="num"><span data-bind="pvBillNet">0 円</span></td>
+</tr>
+<tr>
+<th>消費税額</th>
+<td class="num"><span data-bind="pvTax">0 円</span></td>
+</tr>
+</table>
+<div class="note">
+          （作成上の注意）<br/>
+          1．注文書単位に請求書を作成してください。<br/>
+          2．金額欄は原則、消費税抜金額で記入してください。<br/>
+          3．注文No、工事番号の記入の無いものはお支払い出来ない場合があります。<br/>
+          4．追加工事、減額工事は最終請求時に内訳書を必ず添付してください。<br/>
+          5．保留金の扱いは契約条件に従います（本アプリは設定により計算）。<br/>
+          ※保留金は発注先マスターの「発生基準額」「増額・減額の取扱設定」に従います。
+        </div>
+<!--  <div class="bank" id="pvBank">—</div> -->
+<!--<div class="foot">
+          ※請求書は月末締めで翌月5日までに必着でお願いします。<br>
+          ※尚、支払いは翌月末となります。
+        </div>-->
+</div></div>
+</div>
+</section>
+<!-- 総括（一覧） -->
+<section class="hide" id="view-summary">
+<div class="card">
+<h2>印刷（総括請求書）</h2>
+<div class="body">
+<div class="row">
+<div>
+<label>対象月（YYYY-MM）</label>
+<input id="sr_month" type="month"/>
+</div>
+<div>
+<label>請求日（表示用）</label>
+<input id="sr_billDate" type="date"/>
+</div>
+</div>
+<div class="row">
+<div>
+<label>安全管理費率（%）</label>
+<input id="sr_safeRate" onfocus="this.blur();" readonly="" step="0.001" tabindex="-1" type="number" value="0.5"/>
+<div class="hint">※見本どおり 0.5%（= 0.005）です。必要なら変更できます。</div>
+</div>
+<div>
+<label>印刷</label>
+<div class="btns" style="margin-top:6px;">
+<button onclick="renderSummary()">プレビュー更新</button>
+<button class="secondary" onclick="window.print()">印刷 / PDF保存</button>
+</div>
+</div>
+</div>
+<div class="hint">※指定月に請求がある現場を自動で集計します。</div>
+<div class="hint" id="svDebug" style="margin-top:6px;">（データ確認中…）</div>
+</div>
+</div>
+<div class="paperWrap">
+<div class="paper" id="summaryPaper">
+<h2 class="title">総 括 請 求 書</h2>
+<div class="topGrid" style="grid-template-columns: 1.25fr .95fr;">
+<div class="toBlock">
+<div style="font-size:22px; font-weight:800; margin-bottom:0.5mm; line-height:1.2;">
+<span class="pv-uline" id="svClient">（請求先）</span>
+</div>
+<div class="midInfo">下記のとおり御請求申し上げます。</div>
+</div>
+<div class="rightBlock">
+<div id="svDate">—</div>
+<div style="margin-top:3mm;">
+<div class="issuerName" id="svMyName">—</div>
+<div id="svMyAddr">—</div>
+<div>TEL. <span id="svMyTel">—</span></div>
+<div class="signRow">
+<span class="nameLine">
+<span id="svSigner">—</span>
+</span>
+</div>
+</div>
+</div>
+</div>
+<table class="sheet" id="svTable" style="margin-top:8mm;">
+<thead>
+<tr>
+<th style="width:110mm; text-align:center;">工 事 名（現 場 名）</th>
+<th style="width:30mm; text-align:center;">請求回数</th>
+<th style="width:45mm; text-align:center;">請求金額（税込）</th>
+</tr>
+</thead>
+<tbody id="svTbody">
+<tr><td class="hint" colspan="3">対象月を選択してください。</td></tr>
+</tbody>
+<tfoot>
+<tr>
+<th colspan="2">① 請求金額合計</th>
+<td class="num" id="svSum1">0 円</td>
+</tr>
+<tr>
+<th colspan="1">② 安全管理費（①×0.005）</th>
+<td style="text-align:center; font-weight:900;">△</td>
+<td class="num" id="svSafe">0 円</td>
+</tr>
+<tr>
+<th colspan="2">合　計（①−②）</th>
+<td class="num" id="svSumNet">0 円</td>
+</tr>
+</tfoot>
+</table>
+<div class="bank" id="svBank" style="margin-top:8mm;">—</div>
+<div class="foot" style="margin-top:4mm;">
+          ※請求書は月末締めで翌月5日までに必着でお願いします。<br/>
+          ※尚、支払いは翌月末となります。<br/>
+          ※注文金額が30万円以上になる場合は保留金が発生します。
+        </div>
+</div>
+</div>
+</section>
+</div>
+<!-- === 月次：自動読み込み（確定・完全版） === -->
+<!-- === 金額表示：3桁カンマ対応（完全版） === -->
+</div>
+<script id="invoice-print-route-prebootstrap">
+(function(){
+  try{
+    const q=new URLSearchParams(location.search||"");
+    if(q.get("print")==="1"){
+      window.__msDirectPrintRoute=true;
+      localStorage.setItem("ms_invoice_open_view","print");
+      const site=q.get("site")||"";
+      if(site) localStorage.setItem("ms_invoice_selected_site",site);
+    }
+  }catch(e){}
+})();
+</script>
+<script src="invoice_storage.js"></script>
+<script src="invoice_common.js"></script>
+<script>
+(function(){
+  function yen2(n){
+    try{return Math.round(Number(n||0)).toLocaleString("ja-JP");}
+    catch(e){return "0";}
+  }
+
+  window.renderMsSitesCards = function(){
+    const box = document.getElementById("msSitesCardList");
+    const count = document.getElementById("msSitesCount");
+    if(!box || typeof state==="undefined") return;
+
+    const sites = Array.isArray(state.sites) ? state.sites : [];
+    if(count) count.textContent = sites.length + "件";
+    box.innerHTML = "";
+
+    if(!sites.length){
+      box.innerHTML = '<div style="padding:22px;text-align:center;color:#7a8c98;font-size:11px;">登録済み工事はありません。</div>';
+      return;
+    }
+
+    sites.forEach(function(s){
+      let finalOrder = 0, received = 0, balance = 0;
+      try{ finalOrder = typeof displayContract==="function" ? displayContract(s) : Number(s.contractNet||0); }catch(e){}
+      try{ received = typeof sumAllMonths==="function" ? sumAllMonths(s.id) : 0; }catch(e){}
+      balance = Math.max(0, finalOrder - received);
+
+      const card = document.createElement("div");
+      card.className = "ms-site-card" + ((typeof editingSiteId!=="undefined" && editingSiteId===s.id) ? " selected" : "");
+
+      const client = s.clientName || "";
+      const location = s.workLocation || "";
+      const order = s.orderNo || "—";
+      const work = s.workNo || "—";
+
+      card.innerHTML = `
+        <div>
+          <div class="ms-site-card-name">${typeof escapeHtml==="function" ? escapeHtml(s.name||"") : (s.name||"")}</div>
+          <div class="ms-site-card-meta">
+            ${client ? `<span>請求先：${typeof escapeHtml==="function" ? escapeHtml(client) : client}</span>` : ""}
+            ${location ? `<span>工事場所：${typeof escapeHtml==="function" ? escapeHtml(location) : location}</span>` : ""}
+            <span>注文：${typeof escapeHtml==="function" ? escapeHtml(order) : order}</span>
+            <span>工事：${typeof escapeHtml==="function" ? escapeHtml(work) : work}</span>
+          </div>
+          <div class="ms-site-card-money">
+            最終注文 <b>${yen2(finalOrder)}円</b>
+            　請求済 ${yen2(received)}円
+            　残 ${yen2(balance)}円
+          </div>
+        </div>
+        <div class="ms-site-card-actions">
+          <button class="ms-site-edit" type="button" onclick="msEditSite('${s.id}')">編集</button>
+          <button class="ms-site-delete" type="button" onclick="msDeleteSite('${s.id}')">削除</button>
+        </div>`;
+      box.appendChild(card);
+    });
+  };
+
+  document.addEventListener("DOMContentLoaded", function(){
+    setTimeout(function(){
+      try{ renderMsSitesCards(); }catch(e){}
+      if(typeof refreshSiteTable==="function" && !refreshSiteTable.__msWrapped){
+        const old = refreshSiteTable;
+        const wrapped = function(){
+          const r = old.apply(this, arguments);
+          setTimeout(renderMsSitesCards,0);
+          return r;
+        };
+        wrapped.__msWrapped = true;
+        window.refreshSiteTable = wrapped;
+      }
+    },120);
+  });
+})();
+</script>
+<script>
+/* ===== 登録済み工事一覧：操作完成版 ===== */
+(function(){
+
+  function setVal(id, value){
+    const el = document.getElementById(id);
+    if(el) el.value = value ?? "";
+  }
+
+  window.msEditSite = function(id){
+    if(typeof state==="undefined") return;
+    const s = state.sites.find(x=>x.id===id);
+    if(!s) return;
+
+    try{ editingSiteId = id; }catch(e){}
+
+    setVal("p_name", s.name || "");
+    if(typeof msRefreshClientMaster==="function"){
+      let cid=s.clientId||"";
+      if(!cid && s.clientName){try{const a=JSON.parse(localStorage.getItem("ms_invoice_client_master_v1")||"[]");const x=a.find(v=>v.name===s.clientName);if(x)cid=x.id}catch(e){}}
+      msRefreshClientMaster(cid, s.orderManager || s.manager || "");
+    }else setVal("p_clientName", s.clientId || "");
+    setVal("p_workLocation", s.workLocation || "");
+    setVal("p_orderNo", s.orderNo || "");
+    setVal("p_workNo", s.workNo || "");
+    if(typeof msRefreshClientMaster!=="function") setVal("p_orderManager", s.orderManager || s.manager || "");
+    setVal("p_billingManager", s.billingManager || "");
+    setVal("p_contractNet", Number(s.contractNet||0).toLocaleString("ja-JP"));
+    setVal("p_increaseNet", Number(s.increaseNet||0).toLocaleString("ja-JP"));
+    setVal("p_reductionNet", Number(s.reductionNet||0).toLocaleString("ja-JP"));
+    setVal("p_regDate", s.regDate || "");
+
+    const saveBtn = document.getElementById("btnSiteSave");
+    if(saveBtn) saveBtn.textContent = "工事を更新";
+
+    const cancelBtn = document.getElementById("btnSiteCancel");
+    if(cancelBtn) cancelBtn.classList.remove("hide");
+    const refreshArea = document.getElementById("msClientTermsRefreshArea");
+    if(refreshArea) refreshArea.classList.remove("hide");
+
+    try{
+      if(typeof updateDisplayContractPreview==="function") updateDisplayContractPreview();
+      if(typeof updateProjectAutoSummary==="function") updateProjectAutoSummary(s);
+    }catch(e){}
+
+    if(typeof renderMsSitesCards==="function") renderMsSitesCards();
+
+    const inputCard = document.querySelector("#view-sites .ms-project-card");
+    if(inputCard) inputCard.scrollIntoView({behavior:"smooth", block:"start"});
+  };
+
+  window.msDeleteSite = function(id){
+    if(typeof state==="undefined") return;
+    const s = state.sites.find(x=>x.id===id);
+    if(!s) return;
+
+    const name = s.name || "この工事";
+    if(!confirm(`「${name}」を削除しますか？\n関連する月次請求データも削除されます。`)) return;
+
+    state.sites = state.sites.filter(x=>x.id!==id);
+
+    if(state.monthly){
+      Object.keys(state.monthly).forEach(month=>{
+        if(state.monthly[month] && state.monthly[month][id]){
+          delete state.monthly[month][id];
+        }
+        if(state.monthly[month] && Object.keys(state.monthly[month]).length===0){
+          delete state.monthly[month];
+        }
+      });
+    }
+
+    try{
+      if(typeof editingSiteId!=="undefined" && editingSiteId===id){
+        resetSiteForm();
+      }
+    }catch(e){}
+
+    try{ saveAll(); }catch(e){}
+    try{ refreshSiteTable(); }catch(e){}
+    try{ refreshSiteSelects(); }catch(e){}
+    try{ refreshMonthlyTable(); }catch(e){}
+    try{ refreshSiteSummaryAndHistory(); }catch(e){}
+    try{ renderMsSitesCards(); }catch(e){}
+  };
+
+  window.msExportData = function(){
+    if(typeof state==="undefined") return;
+
+    try{ saveAll(); }catch(e){}
+
+    const data = JSON.stringify(state, null, 2);
+    const blob = new Blob([data], {type:"application/json;charset=utf-8"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+
+    const d = new Date();
+    const ymd = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}`;
+
+    a.href = url;
+    a.download = `MS請求書データ_${ymd}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
+  };
+
+  window.msClearAll = function(){
+    if(!confirm("登録済み工事と月次請求データをすべて削除します。\nよろしいですか？")) return;
+    if(!confirm("この操作は元に戻せません。\n本当に全削除しますか？")) return;
+
+    try{
+      state.sites = [];
+      state.monthly = {};
+      saveAll();
+      resetSiteForm();
+      refreshSiteTable();
+      refreshSiteSelects();
+      if(typeof refreshMonthlyTable==="function") refreshMonthlyTable();
+      if(typeof refreshSiteSummaryAndHistory==="function") refreshSiteSummaryAndHistory();
+      renderMsSitesCards();
+    }catch(e){
+      console.error(e);
+      alert("全削除の処理中にエラーが発生しました。");
+    }
+  };
+
+  /* 共通JSの保存・リセット後にもカード一覧を必ず同期 */
+  document.addEventListener("DOMContentLoaded", function(){
+    setTimeout(function(){
+      try{
+        const saveBtn = document.getElementById("btnSiteSave");
+        if(saveBtn && !saveBtn.dataset.msSync){
+          saveBtn.dataset.msSync = "1";
+          saveBtn.addEventListener("click", function(){
+            setTimeout(function(){
+              try{ renderMsSitesCards(); }catch(e){}
+            }, 30);
+          });
+        }
+
+        const resetButtons = document.querySelectorAll(".ms-threeband-actions button");
+        resetButtons.forEach(btn=>{
+          if(btn.textContent.includes("新しい入力") && !btn.dataset.msSync){
+            btn.dataset.msSync = "1";
+            btn.addEventListener("click", function(){
+              setTimeout(function(){
+                try{ renderMsSitesCards(); }catch(e){}
+              }, 30);
+            });
+          }
+        });
+      }catch(e){}
+    },150);
+  });
+
+})();
+</script>
+<script id="site-client-terms-refresh-script">
+(function(){
+  "use strict";
+
+  function monthlyCount(siteId){
+    try{
+      if(typeof state==="undefined" || !state.monthly) return 0;
+      let n=0;
+      Object.keys(state.monthly).forEach(month=>{
+        if(state.monthly[month] && state.monthly[month][siteId]) n++;
+      });
+      return n;
+    }catch(e){ return 0; }
+  }
+
+  window.msRefreshSiteClientTerms=function(){
+    if(typeof state==="undefined" || typeof editingSiteId==="undefined" || !editingSiteId){
+      alert("先に登録済み工事から編集する工事を選択してください。");
+      return;
+    }
+
+    const i=state.sites.findIndex(s=>s.id===editingSiteId);
+    if(i<0) return;
+
+    const site=state.sites[i];
+    const master=(typeof msGetSelectedClientMaster==="function") ? msGetSelectedClientMaster() : null;
+    if(!master){
+      alert("発注先マスターを選択してください。");
+      return;
+    }
+
+    const count=monthlyCount(editingSiteId);
+    if(count>0){
+      const ok=confirm(
+        "この工事には保存済みの請求履歴が "+count+" 件あります。\n\n"+
+        "会社情報の最新請求条件を反映すると、今後表示される保留金・通常請求上限が新しい条件で再計算されます。\n"+
+        "保存済みの各月の請求額そのものは変更しません。\n\n反映しますか？"
+      );
+      if(!ok) return;
+    }else{
+      const ok=confirm("会社情報の最新請求条件をこの工事に反映しますか？");
+      if(!ok) return;
+    }
+
+    const terms={
+      closingDay:master.closingDay||"",
+      paymentTerms:master.paymentTerms||"",
+      retention:master.retention||"",
+      retentionMinAmount:Math.max(0,Number(master.retentionMinAmount||0)),
+      adjustmentTiming:master.adjustmentTiming==="final"?"final":"anytime",
+      retentionIncludeIncrease:master.retentionIncludeIncrease!==false,
+      retentionIncludeReduction:master.retentionIncludeReduction!==false,
+      safetyFee:master.safetyFee||""
+    };
+
+    state.sites[i]={
+      ...site,
+      clientId:master.id||site.clientId||"",
+      clientName:master.name||site.clientName||"",
+      clientTerms:terms,
+      retentionMinAmount:terms.retentionMinAmount,
+      adjustmentTiming:terms.adjustmentTiming||"anytime",
+      retentionIncludeIncrease:terms.retentionIncludeIncrease,
+      retentionIncludeReduction:terms.retentionIncludeReduction
+    };
+
+    try{ if(typeof saveAll==="function") saveAll(); }catch(e){}
+    try{ if(typeof refreshSiteTable==="function") refreshSiteTable(); }catch(e){}
+    try{ if(typeof refreshSiteSelects==="function") refreshSiteSelects(); }catch(e){}
+    try{ if(typeof renderMsSitesCards==="function") renderMsSitesCards(); }catch(e){}
+    try{ if(typeof updateProjectAutoSummary==="function") updateProjectAutoSummary(state.sites[i]); }catch(e){}
+
+    const msg=document.getElementById("msSiteSaveMessage");
+    if(msg){
+      const inc=terms.retentionIncludeIncrease ? "含める" : "含めない";
+      const dec=terms.retentionIncludeReduction ? "含める" : "含めない";
+      const min=Number(terms.retentionMinAmount||0);
+      msg.innerHTML=
+        '<span class="ms-save-title">✓ 会社情報の最新請求条件を反映しました</span>'+
+        '<span class="ms-save-amount">発生基準額：'+(min>0?min.toLocaleString("ja-JP")+'円':'基準なし')+'　増額：'+inc+'　減額：'+dec+'</span>';
+      msg.classList.add("show");
+      clearTimeout(window.__msSiteSaveMessageTimer);
+      window.__msSiteSaveMessageTimer=setTimeout(()=>msg.classList.remove("show"),5000);
+    }
+  };
+})();
+</script>
+<script>
+/* ===== 工事情報保存：工事場所対応版 ===== */
+window.msSaveSite = function(){
+  if(typeof state==="undefined") return;
+
+  const nameEl = document.getElementById("p_name");
+  if(!nameEl || !nameEl.value.trim()){
+    alert("工事名を入力してください。");
+    if(nameEl) nameEl.focus();
+    return;
+  }
+
+  const val = id => {
+    const el=document.getElementById(id);
+    return el ? el.value.trim() : "";
+  };
+  const num = id => {
+    const el=document.getElementById(id);
+    if(!el) return 0;
+    return Number(String(el.value||"").replace(/,/g,"")) || 0;
+  };
+
+  const data = {
+    name: val("p_name"),
+    clientId: val("p_clientName"),
+    clientName: (typeof msGetSelectedClientMaster==="function" && msGetSelectedClientMaster()) ? msGetSelectedClientMaster().name : "",
+    workLocation: val("p_workLocation"),
+    orderNo: val("p_orderNo"),
+    workNo: val("p_workNo"),
+    orderManager: val("p_orderManager"),
+    billingManager: val("p_billingManager"),
+    contractNet: num("p_contractNet"),
+    increaseNet: num("p_increaseNet"),
+    reductionNet: num("p_reductionNet"),
+    regDate: val("p_regDate"),
+    clientTerms: (function(){const x=typeof msGetSelectedClientMaster==="function"?msGetSelectedClientMaster():null;return x?{closingDay:x.closingDay||"",paymentTerms:x.paymentTerms||"",retention:x.retention||"",retentionMinAmount:Math.max(0,Number(x.retentionMinAmount||0)),adjustmentTiming:x.adjustmentTiming==="final"?"final":"anytime",retentionIncludeIncrease:x.retentionIncludeIncrease!==false,retentionIncludeReduction:x.retentionIncludeReduction!==false,safetyFee:x.safetyFee||""}:{};})()
+  };
+
+  /* ===== 入力ミス防止：増額・減額にマイナス値は保存しない ===== */
+  if(data.increaseNet < 0){
+    alert("保存できません。\n\n増額金額にマイナス値は入力できません。\n減額の場合は「減額工事」に入力してください。");
+    document.getElementById("p_increaseNet")?.focus();
+    return;
+  }
+  if(data.reductionNet < 0){
+    alert("保存できません。\n\n減額金額にマイナス値は入力できません。\n増額の場合は「増額工事」に入力してください。");
+    document.getElementById("p_reductionNet")?.focus();
+    return;
+  }
+
+  /* ===== 入力ミス防止：最終注文金額がマイナスになる工事は保存しない ===== */
+  const finalContractNet = data.contractNet + data.increaseNet - data.reductionNet;
+  if(finalContractNet < 0){
+    alert(
+      "減額金額が注文金額を超えています。\n" +
+      "最終注文金額がマイナスになるため登録できません。\n" +
+      "減額金額を確認してください。"
+    );
+    const reductionEl = document.getElementById("p_reductionNet");
+    if(reductionEl) reductionEl.focus();
+    return;
+  }
+
+  try{
+    if(typeof editingSiteId!=="undefined" && editingSiteId){
+      const i=state.sites.findIndex(s=>s.id===editingSiteId);
+      if(i>=0){
+        state.sites[i]={...state.sites[i], ...data};
+      }
+    }else{
+      const id=(typeof uid==="function") ? uid() : ("S"+Date.now());
+      state.sites.push({id, ...data});
+    }
+
+    if(typeof saveAll==="function") saveAll();
+    if(typeof refreshSiteTable==="function") refreshSiteTable();
+    if(typeof refreshSiteSelects==="function") refreshSiteSelects();
+    if(typeof renderMsSitesCards==="function") renderMsSitesCards();
+
+    // 今月の請求から工事情報を変更している場合は、
+    // 更新後もフォームを残して保存内容を確認できるようにする。
+    const fromMonthly = new URLSearchParams(location.search).get("from")==="monthly";
+    const isEditing = (typeof editingSiteId!=="undefined" && !!editingSiteId);
+
+    if(fromMonthly && isEditing){
+      const updated = state.sites.find(s=>s.id===editingSiteId);
+      if(updated){
+        // 編集状態を維持。表示値は現在入力した保存済み内容をそのまま残す。
+        const saveBtn=document.getElementById("btnSiteSave");
+        if(saveBtn) saveBtn.textContent="工事を更新";
+        const cancelBtn=document.getElementById("btnSiteCancel");
+        if(cancelBtn) cancelBtn.classList.remove("hide");
+        try{
+          if(typeof updateDisplayContractPreview==="function") updateDisplayContractPreview();
+          if(typeof updateProjectAutoSummary==="function") updateProjectAutoSummary(updated);
+        }catch(e){}
+
+        // 更新完了を明確に表示
+        const msg=document.getElementById("msSiteSaveMessage");
+        if(msg){
+          const finalAmount =
+            Number(updated.contractNet||0) +
+            Number(updated.increaseNet||0) -
+            Number(updated.reductionNet||0);
+          msg.innerHTML=
+            '<span class="ms-save-title">✓ 工事情報を更新しました</span>'+
+            '<span class="ms-save-amount">最終注文金額　'+finalAmount.toLocaleString("ja-JP")+'円</span>';
+          msg.classList.add("show");
+          clearTimeout(window.__msSiteSaveMessageTimer);
+          window.__msSiteSaveMessageTimer=setTimeout(()=>{
+            msg.classList.remove("show");
+          },5000);
+        }
+      }
+    }else{
+      if(typeof resetSiteForm==="function") resetSiteForm();
+      const loc=document.getElementById("p_workLocation");
+      if(loc) loc.value="";
+    }
+  }catch(e){
+    console.error(e);
+    alert("工事情報の保存中にエラーが発生しました。");
+  }
+};
+
+/* 新しい入力開始時も工事場所をクリア */
+document.addEventListener("DOMContentLoaded", ()=>{
+  setTimeout(()=>{
+    const buttons=document.querySelectorAll(".ms-threeband-actions button");
+    buttons.forEach(btn=>{
+      if(btn.textContent.includes("新しい入力") && !btn.dataset.msLocationClear){
+        btn.dataset.msLocationClear="1";
+        btn.addEventListener("click", ()=>{
+          const el=document.getElementById("p_workLocation");
+          if(el) el.value="";
+        });
+      }
+    });
+  },100);
+});
+</script>
+<script id="client-master-link-script">
+/* ===== 発注先マスター → 工事情報 連携 ===== */
+(function(){
+ const KEY="ms_invoice_client_master_v1";
+ function clients(){try{const v=JSON.parse(localStorage.getItem(KEY)||"[]");return Array.isArray(v)?v:[]}catch(e){return[]}}
+ function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+ function selected(){const el=document.getElementById("p_clientName");return clients().find(x=>x.id===el?.value)||null}
+ function normalizeManagers(x){
+   const raw=Array.isArray(x?.managers)?x.managers:[];
+   const out=[];
+   raw.forEach(v=>{
+     String(v||"").split(/[、,\n\r]+|　+| {2,}/).map(s=>s.trim()).filter(Boolean).forEach(n=>{
+       if(!out.includes(n))out.push(n);
+     });
+   });
+   return out;
+ }
+ function fillManagers(x,selectedName){
+   const el=document.getElementById("p_orderManager"); if(!el)return;
+   const a=normalizeManagers(x);
+   el.innerHTML='<option value="">担当者を選択してください</option>'+a.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join("");
+   if(selectedName && a.includes(selectedName))el.value=selectedName;
+   else if(a.length===1)el.value=a[0];
+   else el.value="";
+ }
+ function preview(x){
+   let box=document.getElementById("msClientConditionPreview");
+   if(!box){box=document.createElement("div");box.id="msClientConditionPreview";box.className="ms-client-condition-preview";document.getElementById("p_clientName")?.closest("label")?.insertAdjacentElement("afterend",box)}
+   if(!x){box.textContent="請求条件：発注先を選択するとマスターの設定を表示します。";return}
+   const parts=[]; if(x.closingDay)parts.push("締日："+x.closingDay); if(x.paymentTerms)parts.push("支払："+x.paymentTerms); if(x.retention)parts.push("保留金："+x.retention); if(x.safetyFee)parts.push("安全管理費："+x.safetyFee);
+   box.textContent=parts.length?"請求条件　"+parts.join("　"):"請求条件：未設定";
+ }
+ window.msRefreshClientMaster=function(selectedId,manager){
+   const el=document.getElementById("p_clientName");if(!el)return;const a=clients().sort((a,b)=>String(a.name||"").localeCompare(String(b.name||""),"ja"));
+   el.innerHTML='<option value="">発注先マスターから選択してください</option>'+a.map(x=>`<option value="${x.id}">${esc(x.name||"")}</option>`).join("");
+   if(selectedId && a.some(x=>x.id===selectedId))el.value=selectedId;
+   const x=selected();fillManagers(x,manager);preview(x);
+ };
+ window.msApplyClientMaster=function(){const x=selected();fillManagers(x,"");preview(x)};
+ window.msGetSelectedClientMaster=function(){return selected()};
+ document.addEventListener("DOMContentLoaded",()=>setTimeout(()=>window.msRefreshClientMaster(),100));
+})();
+</script>
+<script id="client-master-reset-hook">
+document.addEventListener("DOMContentLoaded",()=>setTimeout(()=>{
+ if(typeof resetSiteForm==="function" && !resetSiteForm.__clientMasterWrapped){const old=resetSiteForm;window.resetSiteForm=function(){const r=old.apply(this,arguments);setTimeout(()=>{if(typeof msRefreshClientMaster==="function")msRefreshClientMaster();},0);return r};window.resetSiteForm.__clientMasterWrapped=true;}
+},180));
+</script>
+<!-- ===== MS請求書システム：工事情報キーボード操作 最終統一版 ===== -->
+<style id="ms-screen-gothic-final">
+/* 操作画面はゴシック体で見やすく。印刷帳票は既存フォントを維持 */
+@media screen {
+  :root{
+    --fontNum:"Noto Sans JP","Yu Gothic","YuGothic","Meiryo",sans-serif !important;
+  }
+  body.ms-invoice-page,
+  body.ms-invoice-page button,
+  body.ms-invoice-page input,
+  body.ms-invoice-page select,
+  body.ms-invoice-page textarea,
+  body.ms-invoice-page label,
+  body.ms-invoice-page .card,
+  body.ms-invoice-page .ms-topbar,
+  body.ms-invoice-page .ms-nav,
+  body.ms-invoice-page .ms-current,
+  body.ms-invoice-page .ms-notice,
+  body.ms-invoice-page .ms-work-guide,
+  #view-sites,
+  #view-sites * {
+    font-family:"Noto Sans JP","Yu Gothic","YuGothic","Meiryo",sans-serif !important;
+  }
+}
+</style>
+<style id="project-master-select-style-final">
+@media screen{
+ #view-sites #p_clientName.ms-select-editing,
+ #view-sites #p_orderManager.ms-select-editing{
+   border:2px solid #8A4653 !important;
+   background:#fff8f9 !important;
+   box-shadow:0 0 0 3px rgba(138,70,83,.14) !important;
+ }
+}
+</style>
+<style id="ms-screen-font-clear-v2">
+/* 操作画面：太くにじみにくい、くっきりしたゴシックへ */
+@media screen {
+  :root{
+    --fontNum:"Meiryo UI","Meiryo","Yu Gothic UI","Yu Gothic",sans-serif !important;
+  }
+  body.ms-invoice-page,
+  body.ms-invoice-page button,
+  body.ms-invoice-page input,
+  body.ms-invoice-page select,
+  body.ms-invoice-page textarea,
+  body.ms-invoice-page label,
+  body.ms-invoice-page .card,
+  body.ms-invoice-page .ms-topbar,
+  body.ms-invoice-page .ms-nav,
+  body.ms-invoice-page .ms-current,
+  body.ms-invoice-page .ms-notice,
+  body.ms-invoice-page .ms-work-guide,
+  #view-sites,
+  #view-sites * {
+    font-family:"Meiryo UI","Meiryo","Yu Gothic UI","Yu Gothic",sans-serif !important;
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+  }
+
+  /* 入力・説明文字は太すぎない標準ウェイト */
+  body.ms-invoice-page input,
+  body.ms-invoice-page select,
+  body.ms-invoice-page textarea,
+  body.ms-invoice-page label,
+  #view-sites .ms-band-field,
+  #view-sites .ms-site-card-meta,
+  #view-sites .ms-site-card-money,
+  #view-sites .ms-site-condition-note {
+    font-weight:400 !important;
+  }
+
+  /* 見出し・主要ボタンだけ適度に強調 */
+  body.ms-invoice-page button,
+  #view-sites h1,
+  #view-sites h2,
+  #view-sites .ms-band-title,
+  #view-sites .ms-site-card-name,
+  #view-sites .ms-sites-toolbar-title,
+  #view-sites .ms-sites-count {
+    font-weight:700 !important;
+  }
+
+  /* Space選択モード：一目で分かる強調表示 */
+  #view-sites select.ms-select-editing,
+  #view-sites #p_clientName.ms-select-editing,
+  #view-sites #p_orderManager.ms-select-editing,
+  #view-sites #p_billingManager.ms-select-editing {
+    border:3px solid #a23b4a !important;
+    background:#fff0b8 !important;
+    color:#5b1f28 !important;
+    box-shadow:0 0 0 4px rgba(162,59,74,.20) !important;
+    font-weight:700 !important;
+  }
+}
+</style>
+<style id="ms-manager-link-keyboard-v4">
+@media screen{
+  #view-sites #p_billingManager{width:100%;min-height:34px;border:1px solid #c9dce9;border-radius:7px;padding:7px 9px;background:#fff;color:#263f50;font:inherit}
+  #view-sites select.ms-select-editing,
+  #view-sites #p_clientName.ms-select-editing,
+  #view-sites #p_orderManager.ms-select-editing,
+  #view-sites #p_billingManager.ms-select-editing{
+    border:3px solid #8A4653 !important;
+    background:#fff8f9 !important;
+    color:#5b2630 !important;
+    box-shadow:0 0 0 4px rgba(138,70,83,.18) !important;
+    font-weight:700 !important;
+  }
+  .ms-select-choice-panel{
+    margin-top:5px;padding:5px;border:2px solid #8A4653;border-radius:8px;
+    background:#fff;box-shadow:0 8px 18px rgba(70,30,40,.14);display:grid;gap:3px;
+    max-height:190px;overflow:auto;position:relative;z-index:30;
+  }
+  .ms-select-choice-panel.hide{display:none!important}
+  .ms-select-choice-item{
+    width:100%;text-align:left;padding:7px 9px;border:1px solid #e2d1d5;border-radius:6px;
+    background:#fff;color:#3f3034;font-size:12px;font-weight:400;cursor:pointer;
+  }
+  .ms-select-choice-item.current{background:#f6e8eb;border-color:#8A4653;color:#6e2f3c;font-weight:700}
+  .ms-select-choice-item:hover{background:#fbf2f4}
+}
+</style>
+<script id="company-billing-manager-link-v4">
+/* ===== 自社マスター → 工事情報「請求担当者」連携 ===== */
+(function(){
+  const KEY="ms_invoice_company_master_v1";
+  function load(){try{const v=JSON.parse(localStorage.getItem(KEY)||"null");return v&&typeof v==="object"?v:null}catch(e){return null}}
+  function esc(s){return String(s??"").replace(/[&<>\"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'\"':"&quot;","'":"&#39;"}[c]))}
+  function staff(x){
+    const raw=Array.isArray(x?.staff)?x.staff:[]; const out=[];
+    raw.forEach(v=>String(v||"").split(/[、,\n\r]+|　+| {2,}/).map(t=>t.trim()).filter(Boolean).forEach(n=>{if(!out.includes(n))out.push(n)}));
+    return out;
+  }
+  window.msRefreshBillingManagers=function(selectedName, useDefault=true){
+    const el=document.getElementById("p_billingManager"); if(!el)return;
+    const x=load(), a=staff(x);
+    el.innerHTML='<option value="">請求担当者を選択してください</option>'+a.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join("");
+    if(selectedName && a.includes(selectedName)) el.value=selectedName;
+    else if(useDefault && x?.defaultStaff && a.includes(x.defaultStaff)) el.value=x.defaultStaff;
+    else if(a.length===1) el.value=a[0];
+    else el.value="";
+  };
+  document.addEventListener("DOMContentLoaded",()=>setTimeout(()=>msRefreshBillingManagers("",true),120));
+})();
+</script>
+<style id="ms-project-input-controller-style">
+@media screen{
+  #view-sites select.ms-project-choice-active{
+    border:3px solid #8A4653 !important;
+    background:#fff8f9 !important;
+    color:#5b2630 !important;
+    box-shadow:0 0 0 4px rgba(138,70,83,.18) !important;
+    font-weight:700 !important;
+  }
+
+  #view-sites .ms-project-choice-list{
+    margin-top:5px;
+    padding:5px;
+    border:2px solid #8A4653;
+    border-radius:8px;
+    background:#fff;
+    box-shadow:0 8px 18px rgba(70,30,40,.14);
+    display:grid;
+    gap:3px;
+    max-height:190px;
+    overflow:auto;
+    position:relative;
+    z-index:50;
+  }
+  #view-sites .ms-project-choice-list.hide{display:none !important;}
+
+  #view-sites .ms-project-choice-item{
+    width:100%;
+    text-align:left;
+    padding:7px 9px;
+    border:1px solid #e2d1d5;
+    border-radius:6px;
+    background:#fff;
+    color:#3f3034;
+    font-size:12px;
+    font-weight:400;
+    cursor:pointer;
+  }
+  #view-sites .ms-project-choice-item.current{
+    background:#f6e8eb;
+    border-color:#8A4653;
+    color:#6e2f3c;
+    font-weight:700;
+  }
+}
+</style>
+<script id="ms-project-input-controller">
+(function(){
+  "use strict";
+
+  const ORDER = [
+    "p_name",
+    "p_clientName",
+    "p_workLocation",
+    "p_orderNo",
+    "p_workNo",
+    "p_orderManager",
+    "p_billingManager",
+    "p_regDate",
+    "p_contractNet",
+    "p_increaseNet",
+    "p_reductionNet"
+  ];
+
+  const CHOICE_IDS = new Set([
+    "p_clientName",
+    "p_orderManager",
+    "p_billingManager"
+  ]);
+
+  function field(id){ return document.getElementById(id); }
+
+  function visibleFields(){
+    return ORDER.map(field).filter(el =>
+      el && !el.disabled && el.offsetParent !== null
+    );
+  }
+
+  function selectInputText(el){
+    if(!el || el.tagName !== "INPUT" || el.type === "date") return;
+    setTimeout(()=>{ try{ el.select(); }catch(e){} },0);
+  }
+
+  function move(el, step){
+    const list = visibleFields();
+    const i = list.indexOf(el);
+    if(i < 0) return;
+    const j = i + step;
+    if(j < 0 || j >= list.length) return;
+    list[j].focus();
+    selectInputText(list[j]);
+  }
+
+  function listFor(el){
+    let box = document.getElementById("msProjectChoices_" + el.id);
+    if(!box){
+      box = document.createElement("div");
+      box.id = "msProjectChoices_" + el.id;
+      box.className = "ms-project-choice-list hide";
+      box.setAttribute("data-for", el.id);
+      el.insertAdjacentElement("afterend", box);
+    }
+    return box;
+  }
+
+  function selectableOptions(el){
+    if(!el || el.tagName !== "SELECT") return [];
+    return [...el.options].filter(o => !o.disabled && o.value !== "");
+  }
+
+  function renderList(el){
+    const box = listFor(el);
+    const opts = selectableOptions(el);
+    box.innerHTML = "";
+
+    if(!opts.length){
+      const d = document.createElement("div");
+      d.style.cssText = "padding:7px;color:#7a8c98;font-size:11px;";
+      d.textContent = "選択できる候補がありません。";
+      box.appendChild(d);
+      return;
+    }
+
+    opts.forEach(opt=>{
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "ms-project-choice-item" + (opt.value === el.value ? " current" : "");
+      b.textContent = opt.textContent;
+      b.dataset.value = opt.value;
+
+      b.addEventListener("mousedown",e=>{
+        e.preventDefault();
+        el.value = b.dataset.value;
+        fireChange(el);
+        finishChoiceAndMove(el);
+      });
+
+      box.appendChild(b);
+    });
+
+    const cur = box.querySelector(".current");
+    if(cur) setTimeout(()=>cur.scrollIntoView({block:"nearest"}),0);
+  }
+
+  function fireChange(el){
+    try{
+      el.dispatchEvent(new Event("change",{bubbles:true}));
+    }catch(e){}
+  }
+
+  function setChoiceMode(el,on){
+    el.dataset.msProjectChoiceMode = on ? "1" : "0";
+    el.classList.toggle("ms-project-choice-active",on);
+    const box = listFor(el);
+    if(on){
+      renderList(el);
+      box.classList.remove("hide");
+    }else{
+      box.classList.add("hide");
+    }
+  }
+
+  function inChoiceMode(el){
+    return el.dataset.msProjectChoiceMode === "1";
+  }
+
+  function stepChoice(el,dir){
+    const opts = selectableOptions(el);
+    if(!opts.length) return;
+
+    let i = opts.findIndex(o => o.value === el.value);
+    if(i < 0) i = dir > 0 ? -1 : 0;
+    i = Math.max(0, Math.min(i + dir, opts.length - 1));
+    el.value = opts[i].value;
+
+    // 発注先を矢印で動かした時も担当者候補を即時更新
+    fireChange(el);
+    renderList(el);
+  }
+
+  function finishChoiceAndMove(el){
+    fireChange(el);
+    setChoiceMode(el,false);
+    move(el,1);
+  }
+
+  function bindField(el){
+    if(!el || el.dataset.msProjectControllerBound === "1") return;
+    el.dataset.msProjectControllerBound = "1";
+
+    el.addEventListener("keydown",function(e){
+      if(e.altKey || e.ctrlKey || e.metaKey) return;
+
+      const choice = CHOICE_IDS.has(el.id);
+      const active = choice && inChoiceMode(el);
+
+      // Space = 選択モード開始/解除
+      if(choice && (e.key === " " || e.code === "Space")){
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        setChoiceMode(el,!active);
+        return;
+      }
+
+      if(active){
+        // 選択中：上下矢印で一覧内を移動
+        if(e.key === "ArrowDown" || e.key === "ArrowUp"){
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          stepChoice(el,e.key === "ArrowDown" ? 1 : -1);
+          return;
+        }
+
+        // Enter = 決定して次の項目へ
+        if(e.key === "Enter"){
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          finishChoiceAndMove(el);
+          return;
+        }
+
+        // Tab = 現在値を確定し、ブラウザ標準で次へ
+        if(e.key === "Tab"){
+          fireChange(el);
+          setChoiceMode(el,false);
+          return;
+        }
+
+        if(e.key === "Escape"){
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          setChoiceMode(el,false);
+          return;
+        }
+
+        return;
+      }
+
+      // 通常入力：Enter/↓ 次へ、↑ 前へ、Tabは標準
+      if(e.key === "Enter" || e.key === "ArrowDown"){
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        move(el,1);
+        return;
+      }
+
+      if(e.key === "ArrowUp"){
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        move(el,-1);
+        return;
+      }
+    }, true);
+
+    el.addEventListener("blur",function(){
+      if(CHOICE_IDS.has(el.id) && inChoiceMode(el)){
+        setChoiceMode(el,false);
+      }
+    });
+  }
+
+  function refreshMasterChoices(){
+    // 発注先マスター
+    if(typeof window.msRefreshClientMaster === "function"){
+      const client = field("p_clientName");
+      const manager = field("p_orderManager");
+      const keepClient = client ? client.value : "";
+      const keepManager = manager ? manager.value : "";
+      window.msRefreshClientMaster(keepClient,keepManager);
+    }
+
+    // 自社マスターの請求担当者
+    if(typeof window.msRefreshBillingManagers === "function"){
+      const billing = field("p_billingManager");
+      window.msRefreshBillingManagers(billing ? billing.value : "", true);
+    }
+  }
+
+  function focusProjectName(){
+    const view = document.getElementById("view-sites");
+    const name = field("p_name");
+    if(!view || !name || view.classList.contains("hide")) return;
+
+    const apply = ()=>{
+      if(view.classList.contains("hide")) return;
+      name.focus({preventScroll:true});
+      selectInputText(name);
+    };
+
+    // 他の初期化・画面切替処理の後でも工事名を最終フォーカスにする
+    apply();
+    setTimeout(apply,60);
+    setTimeout(apply,180);
+    setTimeout(apply,320);
+  }
+
+  function init(){
+    ORDER.forEach(id=>bindField(field(id)));
+
+    // マスター読込後に候補を再同期
+    setTimeout(refreshMasterChoices,80);
+    setTimeout(refreshMasterChoices,220);
+
+    // 起動時、工事情報が表示されていれば最初のフォーカスは必ず工事名
+    focusProjectName();
+
+    // 画面切替そのものと連動させる。
+    // onclick側の別処理より後で確実に工事名へ戻すため、switchView本体を1回だけ包む。
+    if(typeof window.switchView === "function" && !window.switchView.__msProjectFocusWrapped){
+      const originalSwitchView = window.switchView;
+      const wrappedSwitchView = function(viewName){
+        const result = originalSwitchView.apply(this, arguments);
+        if(viewName === "sites"){
+          setTimeout(refreshMasterChoices, 20);
+          setTimeout(focusProjectName, 40);
+          setTimeout(focusProjectName, 160);
+        }
+        return result;
+      };
+      wrappedSwitchView.__msProjectFocusWrapped = true;
+      window.switchView = wrappedSwitchView;
+    }
+
+    // 念のため工事情報タブからの遷移時にも同期。
+    document.querySelectorAll('[data-view="sites"]').forEach(btn=>{
+      if(btn.dataset.msProjectFocusBound === "1") return;
+      btn.dataset.msProjectFocusBound = "1";
+      btn.addEventListener("click",()=>{
+        setTimeout(refreshMasterChoices,30);
+        setTimeout(focusProjectName,60);
+      });
+    });
+
+    // 新しい入力開始後もマスター候補を戻し、工事名へ
+    document.querySelectorAll(".ms-threeband-actions button").forEach(btn=>{
+      if(!btn.textContent.includes("新しい入力") || btn.dataset.msProjectNewBound === "1") return;
+      btn.dataset.msProjectNewBound = "1";
+      btn.addEventListener("click",()=>{
+        setTimeout(refreshMasterChoices,30);
+        setTimeout(focusProjectName,50);
+      });
+    });
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded",init,{once:true});
+  }else{
+    init();
+  }
+})();
+</script>
+<script id="invoice-return-monthly-link">
+(function(){
+  function monthlyParams(){
+    try{ return new URLSearchParams(location.search||""); }catch(e){ return null; }
+  }
+
+  window.returnToMonthly=function(){
+    // 今月の請求から来た場合は履歴で戻す。
+    // これにより選択中の工事・対象月・入力位置をそのまま保持する。
+    if(history.length>1){
+      history.back();
+      return;
+    }
+    location.href="invoice_monthly.html";
+  };
+
+  function setupReturnButton(){
+    const q=monthlyParams();
+    if(!q || q.get("from")!=="monthly") return;
+
+    // 印刷ルートでは、工事情報の編集画面を開かない。
+    // invoice-direct-print-route が印刷画面へ直接切り替える。
+    if(q.get("print")==="1") return;
+
+    const btn=document.getElementById("invoiceReturnMonthly");
+    if(btn) btn.style.display="inline-flex";
+
+    const siteId=q.get("site")||"";
+    if(!siteId) return;
+
+    // 通常の「工事情報を編集」遷移だけ、選択していた工事を編集状態で開く
+    let tries=0;
+    const openSelected=()=>{
+      tries++;
+      try{
+        if(typeof window.msEditSite==="function" && typeof state!=="undefined" && Array.isArray(state.sites) && state.sites.some(s=>s.id===siteId)){
+          window.msEditSite(siteId);
+          return;
+        }
+      }catch(e){}
+      if(tries<20) setTimeout(openSelected,100);
+    };
+    setTimeout(openSelected,80);
+  }
+
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",setupReturnButton,{once:true});
+  else setupReturnButton();
+})();
+</script>
+<script id="invoice-return-monthly-visibility-fix">
+document.addEventListener("DOMContentLoaded",()=>{
+  const q=new URLSearchParams(location.search);
+  const btn=document.getElementById("invoiceReturnMonthly");
+  if(!btn) return;
+  if(q.get("from")==="monthly" && q.get("print")!=="1"){
+    btn.classList.remove("hide");
+    btn.style.display="";
+  }else{
+    btn.classList.add("hide");
+    btn.style.display="none";
+  }
+});
+</script>
+<script id="site-client-terms-refresh-reset-hook">
+document.addEventListener("DOMContentLoaded",()=>setTimeout(()=>{
+  if(typeof resetSiteForm==="function" && !resetSiteForm.__termsRefreshAreaWrapped){
+    const old=resetSiteForm;
+    window.resetSiteForm=function(){
+      const r=old.apply(this,arguments);
+      const area=document.getElementById("msClientTermsRefreshArea");
+      if(area) area.classList.add("hide");
+      return r;
+    };
+    window.resetSiteForm.__termsRefreshAreaWrapped=true;
+  }
+},260));
+</script>
+<script id="invoice-direct-print-route">
+(function(){
+  "use strict";
+  let msInvoicePrintStarted=false;
+  let msInvoiceReturning=false;
+
+  window.returnFromInvoicePrint=function(){
+    if(msInvoiceReturning) return;
+    msInvoiceReturning=true;
+    if(history.length>1){ history.back(); return; }
+    location.href="invoice_monthly.html";
+  };
+
+  // MS積算と同じ流れ：プレビュー右下の「印刷」からブラウザ印刷を開く。
+  // 印刷完了／印刷ダイアログを閉じた後は、元の月次画面へ戻る。
+  window.printCurrentInvoice=function(){
+    msInvoicePrintStarted=true;
+    try{ if(typeof renderPrint==="function") renderPrint(); }catch(e){}
+    setTimeout(()=>window.print(),80);
+  };
+
+  window.addEventListener("afterprint",()=>{
+    if(!msInvoicePrintStarted) return;
+    msInvoicePrintStarted=false;
+    setTimeout(()=>window.returnFromInvoicePrint(),40);
+  });
+
+  if(window.matchMedia){
+    try{
+      const media=window.matchMedia("print");
+      const onChange=(e)=>{
+        if(!e.matches && msInvoicePrintStarted){
+          msInvoicePrintStarted=false;
+          setTimeout(()=>window.returnFromInvoicePrint(),40);
+        }
+      };
+      if(media.addEventListener) media.addEventListener("change",onChange);
+      else if(media.addListener) media.addListener(onChange);
+    }catch(e){}
+  }
+
+  function openFromQuery(){
+    const q=new URLSearchParams(location.search||"");
+    if(q.get("print")!=="1") return;
+    const siteId=q.get("site")||"";
+    const month=q.get("month")||"";
+    const from=q.get("from")||"";
+
+    try{ if(typeof switchView==="function") switchView("print"); }catch(e){}
+    const back=document.getElementById("printReturnMonthly");
+    if(back && (from==="monthly" || from==="history")) back.style.display="inline-flex";
+
+    let tries=0;
+    const apply=()=>{
+      tries++;
+      try{
+        if(typeof refreshSiteSelects==="function") refreshSiteSelects();
+        const m=document.getElementById("pr_month");
+        const site=document.getElementById("pr_site");
+        const date=document.getElementById("pr_billDate");
+        if(m && month) m.value=month;
+        if(site && siteId){
+          const exists=[...site.options].some(o=>String(o.value)===String(siteId));
+          if(exists) site.value=siteId;
+        }
+        if(date && !date.value){
+          const d=new Date();
+          date.value=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+        }
+        if(m && site && site.value===siteId && typeof renderPrint==="function"){
+          renderPrint();
+          return;
+        }
+      }catch(e){}
+      if(tries<25) setTimeout(apply,100);
+    };
+    setTimeout(apply,80);
+  }
+
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",openFromQuery,{once:true});
+  else openFromQuery();
+})();
+</script>
+<script id="invoice-print-display-fix">
+(function(){
+  "use strict";
+
+  function params(){
+    try{return new URLSearchParams(location.search || "");}
+    catch(e){return new URLSearchParams();}
+  }
+
+  function formatClientName(name){
+    const s=String(name || "").trim();
+    if(!s) return "—";
+    return /(御中|様)$/.test(s) ? s : s + " 御中";
+  }
+
+  function selectedSite(){
+    try{
+      const p=params();
+      const select=document.getElementById("pr_site");
+      const siteId=(select && select.value) || p.get("site") || "";
+      if(typeof state==="undefined" || !Array.isArray(state.sites)) return null;
+      return state.sites.find(s=>String(s.id)===String(siteId)) || null;
+    }catch(e){
+      return null;
+    }
+  }
+
+  function applySelectedSitePrintData(){
+    const site=selectedSite();
+    if(!site) return;
+
+    const client=document.getElementById("pvClient");
+    if(client) client.textContent=formatClientName(site.clientName || "");
+
+    const staff=document.getElementById("pvStaff");
+    if(staff) staff.textContent=site.billingManager || site.manager || "—";
+  }
+
+  function applyDirectPresentation(){
+    const p=params();
+    if(p.get("print")!=="1") return;
+    document.body.classList.add("ms-direct-print");
+    const printView=document.getElementById("view-print");
+    if(printView) printView.style.removeProperty("display");
+    const card=document.getElementById("printControlCard");
+    if(card){
+      card.style.setProperty("display","none","important");
+      card.setAttribute("hidden","");
+    }
+  }
+
+  function install(){
+    applyDirectPresentation();
+
+    if(typeof window.renderPrint==="function" && !window.renderPrint.__msVectorClientFixed){
+      const original=window.renderPrint;
+      window.renderPrint=function(){
+        const result=original.apply(this,arguments);
+        applySelectedSitePrintData();
+        setTimeout(applySelectedSitePrintData,0);
+        return result;
+      };
+      window.renderPrint.__msVectorClientFixed=true;
+    }
+
+    // すでに初回描画が終わっている場合にも補正
+    applySelectedSitePrintData();
+    setTimeout(applySelectedSitePrintData,100);
+    setTimeout(applySelectedSitePrintData,300);
+  }
+
+  if(document.readyState==="loading"){
+    document.addEventListener("DOMContentLoaded",install,{once:true});
+  }else{
+    install();
+  }
+})();
+</script>
+<script id="direct-print-hide-control-card">
+(function(){
+  function hide(){
+    try{
+      const q=new URLSearchParams(location.search||"");
+      if(q.get("print")!=="1") return;
+      const card=document.getElementById("printControlCard");
+      if(card){
+        card.style.setProperty("display","none","important");
+        card.setAttribute("hidden","");
+      }
+    }catch(e){}
+  }
+  if(document.readyState==="loading"){
+    document.addEventListener("DOMContentLoaded",hide,{once:true});
+  }else{
+    hide();
+  }
+  setTimeout(hide,50);
+  setTimeout(hide,200);
+})();
+</script>
+
+
+<script id="company-master-print-link-final">
+(function(){
+  "use strict";
+  const KEY="ms_invoice_company_master_v1";
+
+  function loadCompany(){
+    try{
+      const v=JSON.parse(localStorage.getItem(KEY)||"null");
+      return v && typeof v==="object" ? v : null;
+    }catch(e){ return null; }
+  }
+
+  function setText(id,value){
+    const el=document.getElementById(id);
+    if(el) el.textContent = value || "—";
+  }
+
+  function applyCompanyMaster(){
+    const x=loadCompany();
+    if(!x) return;
+
+    setText("pvMyName", x.name);
+    setText("pvMyAddr", x.address);
+    setText("pvMyTel", x.tel);
+    setText("pvSigner", x.representative);
+    setText("pvRegistrationNo", x.registrationNo);
+  }
+
+  function wrapRender(){
+    if(typeof window.renderPrint!=="function" || window.renderPrint.__companyMasterLinked) return false;
+    const old=window.renderPrint;
+    window.renderPrint=function(){
+      const r=old.apply(this,arguments);
+      applyCompanyMaster();
+      setTimeout(applyCompanyMaster,0);
+      return r;
+    };
+    window.renderPrint.__companyMasterLinked=true;
+    return true;
+  }
+
+  function init(){
+    applyCompanyMaster();
+    let tries=0;
+    const timer=setInterval(function(){
+      tries++;
+      if(wrapRender()){
+        applyCompanyMaster();
+        clearInterval(timer);
+      }else if(tries>40){
+        clearInterval(timer);
+      }
+    },50);
+    setTimeout(applyCompanyMaster,100);
+    setTimeout(applyCompanyMaster,300);
+  }
+
+  if(document.readyState==="loading"){
+    document.addEventListener("DOMContentLoaded",init,{once:true});
+  }else{
+    init();
+  }
+})();
+</script>
+
+<script id="grand-total-yen-format">
+(function(){
+ function fmt(){
+  const el=document.getElementById("pvTotalGross"); if(!el)return;
+  const n=Number(String(el.textContent||"").replace(/[^0-9-]/g,""));
+  if(Number.isFinite(n)) el.textContent="￥"+Math.round(n).toLocaleString("ja-JP")+"-";
+ }
+ function init(){
+  if(typeof window.renderPrint==="function"&&!window.renderPrint.__yenFmt){
+   const old=window.renderPrint;
+   window.renderPrint=function(){const r=old.apply(this,arguments);fmt();setTimeout(fmt,0);return r;};
+   window.renderPrint.__yenFmt=true;
+  }
+  fmt();setTimeout(fmt,100);setTimeout(fmt,300);
+ }
+ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init,{once:true});else init();
+})();
+</script>
+
+<script id="vector-print-clone-controller">
+(function(){
+  "use strict";
+
+  function removePrintClone(){
+    const old=document.getElementById("msVectorPrintOnly");
+    if(old) old.remove();
+  }
+
+  function makePrintClone(){
+    removePrintClone();
+
+    const svg=document.getElementById("vectorInvoiceSheet");
+    if(!svg) return;
+
+    const box=document.createElement("div");
+    box.id="msVectorPrintOnly";
+
+    const clone=svg.cloneNode(true);
+    clone.removeAttribute("id");
+    clone.setAttribute("width","210mm");
+    clone.setAttribute("height","297mm");
+    clone.setAttribute("viewBox","0 0 210 297");
+
+    box.appendChild(clone);
+    document.body.appendChild(box);
+  }
+
+  window.addEventListener("beforeprint", makePrintClone);
+  window.addEventListener("afterprint", removePrintClone);
+
+  // Chromium系で beforeprint が遅い場合に備える
+  document.addEventListener("click",function(e){
+    const b=e.target && e.target.closest ? e.target.closest("button") : null;
+    if(!b) return;
+    const t=(b.textContent||"").replace(/\s+/g,"");
+    if(t.includes("印刷/PDF保存") || t.includes("印刷／PDF保存")){
+      makePrintClone();
+    }
+  },true);
+})();
+</script>
+
+
+<script id="invoice-normal-final-print-layout">
+(function(){
+  "use strict";
+  function rec(){
+    try{
+      const month=document.getElementById("pr_month")?.value||new URLSearchParams(location.search).get("month")||"";
+      const siteId=document.getElementById("pr_site")?.value||new URLSearchParams(location.search).get("site")||"";
+      return (typeof state!=="undefined" && state.monthly && state.monthly[month]) ? state.monthly[month][siteId] : null;
+    }catch(e){return null;}
+  }
+  function setMain(id,text){const el=document.getElementById(id);if(!el)return;const t=el.querySelector("tspan.detail-main");if(t)t.textContent=text;else el.textContent=text;}
+  function show(id,on){const el=document.getElementById(id);if(el)el.style.visibility=on?"visible":"hidden";}
+  function apply(){
+    const r=rec(); const isFinal=!!(r && r.isFinal);
+    ["pvRow2Label","pvRow3Label","pvRow4Label","pvIncreaseNet","pvReductionNet","pvFinalOrderNet"].forEach(id=>show(id,isFinal));
+    // 行内の補助文字も通常月は隠す（y位置で限定）
+    const svg=document.getElementById("vectorInvoiceSheet");
+    if(svg){
+      [...svg.querySelectorAll("text")].forEach(el=>{
+        const y=Number(el.getAttribute("y")||0);
+        if([139.3,143.3,151.5,155.5,163.7,167.7].some(v=>Math.abs(y-v)<0.05)) el.style.visibility=isFinal?"visible":"hidden";
+      });
+    }
+    if(isFinal){
+      setMain("pvRow5Label","⑤　既受領額（税抜）"); setMain("pvRow6Label","⑥　当月出来高（税抜）");
+      setMain("pvRow7Label","⑦　累計出来高"); setMain("pvCumFormula","⑤＋⑥"); setMain("pvRow8Label","⑧　当月合計金額");
+    }else{
+      setMain("pvRow5Label","②　既受領額（税抜）"); setMain("pvRow6Label","③　当月出来高（税抜）");
+      setMain("pvRow7Label","④　累計出来高"); setMain("pvCumFormula","②＋③"); setMain("pvRow8Label","⑤　当月合計金額");
+    }
+  }
+  function wrap(){
+    if(typeof window.renderPrint==="function" && !window.renderPrint.__msNormalFinalWrapped){
+      const old=window.renderPrint; const f=function(){const v=old.apply(this,arguments);setTimeout(apply,0);return v;};
+      f.__msNormalFinalWrapped=true; window.renderPrint=f;
+    }
+    apply();
+  }
+  document.addEventListener("DOMContentLoaded",()=>setTimeout(wrap,250));
+  window.addEventListener("beforeprint",apply);
+  setTimeout(wrap,700);
+})();
+</script>
+
+<script id="invoice-print-retention-amount-final">
+(function(){
+  "use strict";
+
+  function params(){
+    try{return new URLSearchParams(location.search||"");}
+    catch(e){return new URLSearchParams();}
+  }
+  function currentMonth(){
+    return document.getElementById("pr_month")?.value || params().get("month") || "";
+  }
+  function currentSiteId(){
+    return document.getElementById("pr_site")?.value || params().get("site") || "";
+  }
+  function monthKeysUntil(month){
+    try{
+      return Object.keys(state?.monthly||{}).filter(m=>!month || m<=month).sort();
+    }catch(e){return [];}
+  }
+  function rec(month,siteId){
+    try{return state?.monthly?.[month]?.[siteId]||null;}catch(e){return null;}
+  }
+  function completedByMonth(siteId,month){
+    return monthKeysUntil(month).some(m=>!!rec(m,siteId)?.isFinal);
+  }
+  function workCumUntil(siteId,month){
+    let n=0;
+    monthKeysUntil(month).forEach(m=>{ const r=rec(m,siteId); if(r)n+=Number(r.thisMonthNet||0); });
+    return n;
+  }
+  function billedCumUntil(site,month){
+    let n=0;
+    monthKeysUntil(month).forEach(m=>{
+      if(!rec(m,site.id)) return;
+      try{
+        if(typeof calcBillForSite==="function") n+=Number(calcBillForSite(m,site)?.billNet||0);
+      }catch(e){}
+    });
+    return n;
+  }
+  function retentionRemain(){
+    try{
+      const month=currentMonth(), siteId=currentSiteId();
+      const site=Array.isArray(state?.sites) ? state.sites.find(s=>String(s.id)===String(siteId)) : null;
+      if(!site || !month) return 0;
+      if(typeof triggerLine!=="function" || typeof retentionCap!=="function" || typeof displayContract!=="function") return 0;
+
+      const trigger=Number(triggerLine(site));
+      const cap=Math.max(0,Number(retentionCap(site)||0));
+      if(!Number.isFinite(trigger) || cap<=0) return 0;
+
+      const reached=workCumUntil(site.id,month)>=trigger;
+      const completed=completedByMonth(site.id,month);
+      if(!reached && !completed) return 0;
+
+      const finalOrder=Math.max(0,Number(displayContract(site)||0));
+      const billed=billedCumUntil(site,month);
+      const unpaid=Math.max(0,finalOrder-billed);
+      return Math.max(0,Math.min(cap,unpaid));
+    }catch(e){return 0;}
+  }
+  function currentPrintSite(){
+    try{
+      const siteId=currentSiteId();
+      return Array.isArray(state?.sites) ? state.sites.find(s=>String(s.id)===String(siteId)) : null;
+    }catch(e){return null;}
+  }
+  function currentBill(){
+    try{
+      const month=currentMonth(), site=currentPrintSite();
+      if(!month || !site || typeof calcBillForSite!=="function") return null;
+      return calcBillForSite(month,site)||null;
+    }catch(e){return null;}
+  }
+  function formatThresholdAmount(v){
+    const n=Math.max(0,Number(v)||0);
+    if(n<=0) return "";
+    if(n%10000===0) return (n/10000).toLocaleString("ja-JP")+"万円";
+    return Math.round(n).toLocaleString("ja-JP")+"円";
+  }
+  function thresholdNoteText(){
+    const site=currentPrintSite();
+    if(!site) return "５．保留金の発生基準額は発注先の請求条件に従います。";
+    const terms=site.clientTerms||{};
+    const min=Math.max(0,Number(terms.retentionMinAmount ?? site.retentionMinAmount ?? 0)||0);
+    if(min>0){
+      return "５．注文金額が"+formatThresholdAmount(min)+"以上になる場合は保留金が発生します。";
+    }
+    return "５．保留金の発生基準額は発注先の請求条件に従います。";
+  }
+  function apply(){
+    const amount=retentionRemain();
+    const bill=currentBill();
+    const retentionOnly=!!bill?.retentionOnly;
+    const showRetention=retentionOnly || amount>0;
+
+    const svgLabel=document.getElementById("pvRetentionLabel");
+    if(svgLabel){
+      svgLabel.style.visibility=showRetention ? "visible" : "hidden";
+      svgLabel.textContent=retentionOnly ? "＜保留金請求＞" : "＜保留金額＞";
+    }
+
+    const svg=document.getElementById("pvRetentionAmount");
+    if(svg) svg.textContent=(!retentionOnly && amount>0) ? Math.round(amount).toLocaleString("ja-JP")+" 円" : "　";
+
+    // 旧HTML帳票側にも同じ表示ルールを適用
+    const legacyLabel=document.getElementById("legacyPvRetentionLabel");
+    if(legacyLabel){
+      legacyLabel.style.visibility=showRetention ? "visible" : "hidden";
+      legacyLabel.textContent=retentionOnly ? "〈保留金請求〉" : "〈保留金額〉";
+    }
+
+    const legacy=document.getElementById("pvRetentionBox");
+    if(legacy) legacy.textContent=(!retentionOnly && amount>0) ? Math.round(amount).toLocaleString("ja-JP")+" 円" : "　";
+
+    // 作成上の注意5は、工事に保存された発注先マスターの保留金発生基準額に合わせる。
+    const note=document.getElementById("pvRetentionThresholdNote");
+    if(note) note.textContent=thresholdNoteText();
+  }
+  function wrap(){
+    if(typeof window.renderPrint==="function" && !window.renderPrint.__retentionAmountPrinted){
+      const old=window.renderPrint;
+      const f=function(){
+        const v=old.apply(this,arguments);
+        setTimeout(apply,0);
+        return v;
+      };
+      f.__retentionAmountPrinted=true;
+      window.renderPrint=f;
+    }
+    apply();
+  }
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",()=>setTimeout(wrap,300),{once:true});
+  else setTimeout(wrap,100);
+  window.addEventListener("beforeprint",apply);
+  setTimeout(wrap,800);
+})();
+</script>
+
+
+<script id="ms-negative-adjustment-input-guard">
+/* 増額・減額欄：マイナス記号は入力段階で拒否する。
+   負数を正数へ自動変換はしない。保存時にも別途チェックする。 */
+(function(){
+  const ids=["p_increaseNet","p_reductionNet"];
+  function warn(el){
+    if(el.dataset.msNegativeWarn==="1") return;
+    el.dataset.msNegativeWarn="1";
+    alert(el.id.includes("increase")
+      ? "増額金額にマイナス値は入力できません。\n減額の場合は「減額工事」に入力してください。"
+      : "減額金額にマイナス値は入力できません。\n増額の場合は「増額工事」に入力してください。");
+    setTimeout(()=>{ el.dataset.msNegativeWarn=""; },0);
+  }
+  function setup(){
+    ids.forEach(id=>{
+      const el=document.getElementById(id);
+      if(!el || el.dataset.msNegativeGuard==="1") return;
+      el.dataset.msNegativeGuard="1";
+
+      el.addEventListener("keydown",e=>{
+        if(e.key==="-" || e.key==="Subtract" || e.key==="−" || e.key==="－"){
+          e.preventDefault();
+          warn(el);
+        }
+      });
+
+      el.addEventListener("paste",e=>{
+        const s=(e.clipboardData?.getData("text")||"");
+        if(/[-−－]/.test(s)){
+          e.preventDefault();
+          warn(el);
+        }
+      });
+
+      el.addEventListener("input",()=>{
+        const s=String(el.value||"");
+        if(/[-−－]/.test(s)){
+          el.value="";
+          warn(el);
+          try{ if(typeof formatCommaInput==="function") formatCommaInput(el); }catch(_){}
+          try{ if(typeof refreshSiteSummaryAndHistory==="function") refreshSiteSummaryAndHistory(); }catch(_){}
+        }
+      });
+    });
+  }
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",setup);
+  else setup();
+})();
+</script>
+
+</body>
+</html>

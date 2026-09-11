@@ -1,0 +1,839 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MS請求書システム｜総括請求書</title>
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;background:#f4f7fb;color:#314b5d;
+  font-family:"Meiryo UI","Meiryo","Yu Gothic UI","Yu Gothic",sans-serif;
+}
+.summary-header{
+  width:100%;background:linear-gradient(135deg,#0070C0,#2b8ae2);color:#fff;
+  padding:17px 0;
+}
+.summary-header .inner{
+  max-width:1400px;margin:0 auto;padding:0 18px;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+}
+.summary-header h1{margin:0;font-size:19px;font-weight:900}
+.summary-header .sub{margin-top:3px;font-size:11px;opacity:.94}
+.summary-back{
+  display:inline-flex;align-items:center;justify-content:center;
+  min-width:140px;height:36px;padding:0 14px;border-radius:999px;
+  border:1px solid rgba(255,255,255,.65);background:rgba(255,255,255,.16);
+  color:#fff;text-decoration:none;font-size:12px;font-weight:900;
+}
+.wrap{max-width:1400px;margin:16px auto 40px;padding:0 18px}
+.card{
+  background:#fff;border:1px solid #d3e4f1;border-radius:14px;
+  overflow:hidden;box-shadow:0 3px 10px rgba(20,80,120,.06);margin-bottom:13px;
+}
+.card>h2{
+  margin:0;padding:10px 14px;background:linear-gradient(180deg,#0e74b7,#075f9d);
+  color:#fff;font-size:15px;font-weight:900;
+}
+.body{padding:13px 14px}
+.selector-grid{
+  display:grid;grid-template-columns:minmax(260px,1.5fr) minmax(190px,.7fr) auto;
+  gap:10px;align-items:end;
+}
+label{display:flex;flex-direction:column;gap:5px;font-size:11px;font-weight:800;color:#526c7c}
+select,input{
+  min-height:38px;border:1px solid #b9cfdd;border-radius:8px;
+  padding:7px 9px;background:#fff;color:#263f50;font:inherit;font-size:13px;
+}
+button{
+  min-height:38px;border:0;border-radius:8px;padding:0 14px;
+  background:#0e74b7;color:#fff;font-size:12px;font-weight:900;cursor:pointer;
+}
+button.secondary{background:#eef6fb;color:#245b80;border:1px solid #b7cedd}
+.guide{
+  margin-top:10px;padding:8px 10px;border:1px solid #d7e4ed;border-radius:8px;
+  background:#f7fafc;color:#607482;font-size:11px;line-height:1.6;
+}
+.summary-status{
+  display:flex;justify-content:space-between;gap:10px;align-items:center;
+  margin-bottom:9px;font-size:11px;color:#607482;
+}
+.table-scroll{overflow:auto}
+table{width:100%;border-collapse:collapse;table-layout:fixed}
+th,td{border:1px solid #c9d7e1;padding:9px 10px;font-size:13px;line-height:1.4}
+th{background:#f0f6fa;color:#355f78;font-weight:900}
+th:nth-child(1){width:auto}
+th:nth-child(2){width:150px}
+th:nth-child(3){width:190px}
+td.center{text-align:center}
+td.num{text-align:right;font-variant-numeric:tabular-nums;font-weight:800}
+.empty{text-align:center;color:#748695;padding:24px 10px}
+.totals{
+  margin-top:12px;margin-left:auto;max-width:600px;border:1px solid #c9d7e1;border-radius:9px;overflow:hidden;
+}
+.total-row{
+  display:grid;grid-template-columns:1fr 190px;border-bottom:1px solid #c9d7e1;
+}
+.total-row:last-child{border-bottom:0}
+.total-row>div{padding:9px 11px;font-size:13px}
+.total-row .amount{text-align:right;font-weight:900;font-variant-numeric:tabular-nums}
+.total-row.final{background:#f5f9fc}
+.total-row.final>div{font-size:15px;font-weight:900}
+.safe-note{font-size:10px;color:#748695;font-weight:600}
+.actions{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
+#summaryMainScreen td.summary-count-cell{font-size:12px;font-weight:600}
+
+@media(max-width:760px){
+  .selector-grid{grid-template-columns:1fr}
+  .summary-header .inner{align-items:flex-start}
+  th,td{font-size:12px}
+}
+</style>
+<style id="summary-print-final">
+.summary-print-sheet{display:none!important}
+@media print{
+@page{size:A4 portrait;margin:12mm 14mm}
+body{background:#fff;color:#000;font-family:"Yu Mincho","MS PMincho",serif}.summary-header,.wrap{display:none!important}
+.summary-print-sheet{display:none!important}.ps-head{position:relative;height:34mm}.ps-title{text-align:center;font-size:22pt;font-weight:700;letter-spacing:.22em;padding-top:2mm}
+#psClient{position:absolute;left:0;top:2mm;font-size:15pt;font-weight:700}#psDate{position:absolute;right:0;top:23mm;font-size:10pt}
+.ps-info{display:grid;grid-template-columns:1.25fr .75fr;min-height:35mm;align-items:start}.ps-info>div:first-child{padding-top:14mm}.ps-info>div:last-child{font-size:9.5pt;line-height:1.55;padding-left:8mm}.ps-info b{font-size:13pt}
+.ps-lines,.ps-totals{width:100%;border-collapse:collapse;table-layout:fixed}.ps-lines th,.ps-lines td,.ps-totals td{border:1.2px solid #000;height:10mm;padding:0 3mm;vertical-align:middle;font-size:10.5pt}
+.ps-lines th{text-align:center}.ps-lines th:nth-child(2){width:30mm}.ps-lines th:nth-child(3),.ps-totals td:nth-child(2){width:45mm}.ps-lines td:nth-child(2){text-align:center}.ps-lines td:nth-child(3),.ps-totals td:nth-child(2){text-align:right;font-weight:700}
+.ps-totals .grand td{font-size:12pt;font-weight:700}.ps-footer{margin-top:5mm;border-top:1.2px solid #000;border-bottom:1.2px solid #000;padding:3mm 2mm;min-height:25mm;font-size:9pt;line-height:1.65}#psBank{margin-top:2mm;font-weight:700}
+}</style>
+<style id="summary-vector-preview-style">
+/* 総括請求書プレビューは通常画面とは別の専用画面として表示 */
+#summaryVectorScreen{display:none;min-height:100vh;background:#eef2f5}
+body.summary-preview-mode #summaryMainScreen{display:none!important}
+body.summary-preview-mode #summaryVectorScreen{display:block!important}
+.summary-vector-screen-header{
+  position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:10px 18px;background:linear-gradient(135deg,#0070C0,#2b8ae2);color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.15)
+}
+.summary-vector-screen-header h2{margin:0;font-size:16px;font-weight:900}
+.summary-vector-actions{display:flex;gap:8px}
+.summary-vector-actions button{min-height:36px}
+.summary-vector-actions .back{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.65);color:#fff}
+.summary-vector-screen-body{padding:16px;overflow:auto}
+.summary-vector-sheet{
+  width:210mm;height:297mm;margin:0 auto;background:#fff;
+  box-shadow:0 2mm 8mm rgba(0,0,0,.18)
+}
+.summary-vector-sheet svg{display:block;width:210mm;height:297mm}
+@media(max-width:900px){.summary-vector-sheet{transform-origin:top left}}
+@media print{
+  @page{size:A4 portrait;margin:0}
+  html,body{margin:0!important;padding:0!important;width:210mm!important;height:297mm!important;background:#fff!important}
+  #summaryMainScreen,.summary-vector-screen-header,.summary-print-sheet{display:none!important}
+  #summaryVectorScreen{display:block!important;min-height:0!important;background:#fff!important}
+  .summary-vector-screen-body{padding:0!important;overflow:visible!important}
+  .summary-vector-sheet{width:210mm!important;height:297mm!important;margin:0!important;box-shadow:none!important}
+  .summary-vector-sheet svg{width:210mm!important;height:297mm!important}
+}
+</style>
+
+
+<style id="summary-main-two-column-20260907">
+/* 通常画面だけをコンパクトな左右2列にする。印刷・ベクトルプレビューには影響させない。 */
+#summaryMainScreen main.wrap{
+  display:grid;
+  grid-template-columns:minmax(360px,.78fr) minmax(620px,1.42fr);
+  gap:13px;
+  align-items:start;
+}
+#summaryMainScreen main.wrap > .card{
+  margin-bottom:0;
+}
+#summaryMainScreen .selector-grid{
+  grid-template-columns:1fr 150px;
+}
+#summaryMainScreen .selector-grid #btnCurrentMonth{
+  grid-column:2;
+}
+#summaryMainScreen .guide{
+  margin-top:12px;
+}
+@media(max-width:1050px){
+  #summaryMainScreen main.wrap{grid-template-columns:1fr}
+  #summaryMainScreen main.wrap > .card{margin-bottom:13px}
+  #summaryMainScreen .selector-grid{
+    grid-template-columns:minmax(260px,1.5fr) minmax(190px,.7fr) auto;
+  }
+  #summaryMainScreen .selector-grid #btnCurrentMonth{grid-column:auto}
+}
+@media(max-width:760px){
+  #summaryMainScreen .selector-grid{grid-template-columns:1fr}
+  #summaryMainScreen .selector-grid #btnCurrentMonth{grid-column:auto}
+}
+</style>
+
+<!-- MS請求書システム 簡易パスワード保護（SHA-256 / セッション中のみ認証保持） -->
+<style id="ms-password-gate-style">
+html.ms-password-locked body{visibility:hidden!important;}
+</style>
+<script id="ms-password-gate">
+(function(){
+  'use strict';
+  var KEY='ms_invoice_auth_v1';
+  var HASH='60d523c99e38a30e4b889688cf2563ae6b745aa77b41c3d5b7a7fa9606aaa4cf';
+  try{ if(sessionStorage.getItem(KEY)==='ok') return; }catch(e){}
+  document.documentElement.classList.add('ms-password-locked');
+  function hex(buf){return Array.from(new Uint8Array(buf)).map(function(b){return b.toString(16).padStart(2,'0');}).join('');}
+  async function check(pw){
+    if(!window.crypto || !window.crypto.subtle){ return false; }
+    var data=new TextEncoder().encode(pw);
+    return hex(await crypto.subtle.digest('SHA-256',data))===HASH;
+  }
+  async function ask(){
+    while(true){
+      var pw=window.prompt('MS請求書システム\nパスワードを入力してください。');
+      if(pw===null){ document.body && (document.body.innerHTML=''); return; }
+      try{
+        if(await check(pw)){
+          try{sessionStorage.setItem(KEY,'ok');}catch(e){}
+          document.documentElement.classList.remove('ms-password-locked');
+          return;
+        }
+      }catch(e){}
+      window.alert('パスワードが違います。');
+    }
+  }
+  if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',ask,{once:true});}else{ask();}
+})();
+</script>
+
+</head>
+<body>
+<div id="summaryMainScreen">
+<header class="summary-header">
+  <div class="inner">
+    <div>
+      <h1>MS請求書システム　総括請求書</h1>
+      <div class="sub">発注先と請求月を選ぶと、その会社の当月請求をすべて自動集計します。</div>
+    </div>
+    <a class="summary-back" href="index.html">メイン画面に戻る</a>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="card">
+    <h2>総括請求の対象</h2>
+    <div class="body">
+      <div class="selector-grid">
+        <label>発注先
+          <select id="srClient">
+            <option value="">発注先を選択してください</option>
+          </select>
+        </label>
+        <label>請求月
+          <input id="srMonth" type="month">
+        </label>
+        <button id="btnCurrentMonth" class="secondary" type="button">今月に戻す</button>
+      </div>
+      <div class="guide">
+        同じ発注先・同じ請求月に実請求額がある工事は、すべて自動で総括請求書の対象になります。
+        工事ごとの「含める／含めない」は設けません。
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>この会社・この月の請求一覧</h2>
+    <div class="body">
+      <div class="summary-status">
+        <span id="srStatus">発注先と請求月を選択してください。</span>
+        <span id="srCount">0件</span>
+      </div>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>工事名（現場名）</th>
+              <th>請求回数</th>
+              <th>請求金額（税込）</th>
+            </tr>
+          </thead>
+          <tbody id="srBody">
+            <tr><td colspan="3" class="empty">発注先と請求月を選択してください。</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="totals">
+        <div class="total-row">
+          <div>① 請求金額合計　10％対象</div>
+          <div class="amount" id="srGross">0 円</div>
+        </div>
+        <div class="total-row">
+          <div>② 安全管理費 <span class="safe-note" id="srSafeRate"></span></div>
+          <div class="amount" id="srSafe">0 円</div>
+        </div>
+        <div class="total-row final">
+          <div>合計（①－②）</div>
+          <div class="amount" id="srTotal">0 円</div>
+        </div>
+      </div>
+
+      <div class="actions" id="summaryVectorControls">
+        <button id="btnPrintPreview" type="button">プレビュー更新</button>
+      </div>
+    </div>
+  </section>
+
+</main>
+</div>
+<section id="summaryVectorScreen" aria-label="総括請求書プレビュー">
+  <div class="summary-vector-screen-header">
+    <h2>総括請求書プレビュー</h2>
+    <div class="summary-vector-actions">
+      <button class="back" id="btnVectorBack" type="button">← 戻る</button>
+      <button id="btnVectorPrint" type="button">印刷 / PDF保存</button>
+    </div>
+  </div>
+  <div class="summary-vector-screen-body">
+    <div class="summary-vector-sheet">
+<svg id="summaryVectorSheet" xmlns="http://www.w3.org/2000/svg" width="210mm" height="297mm" viewBox="0 0 210 297">
+            <rect x="0" y="0" width="210" height="297" fill="#fff"/>
+            <style>
+              .thin{fill:none;stroke:#000;stroke-width:.22;vector-effect:non-scaling-stroke}
+              .summary-outer{fill:none;stroke:#000;stroke-width:1.10;vector-effect:non-scaling-stroke}
+              .rule{fill:none;stroke:#000;stroke-width:1.10;vector-effect:non-scaling-stroke}
+              .summary-title{font-family:"Yu Mincho","Hiragino Mincho ProN","MS PMincho",serif;font-size:7.2px;font-weight:700;fill:#000;text-anchor:middle;letter-spacing:1.3px}
+              .summary-recipient{font-family:"Yu Mincho","Hiragino Mincho ProN","MS PMincho",serif;font-size:5.8px;font-weight:700;fill:#000;text-anchor:start}
+              .summary-date{font-family:"Yu Mincho","Hiragino Mincho ProN","MS PMincho",serif;font-size:3.6px;fill:#000;text-anchor:end}
+              .summary-company{font-family:"Yu Mincho","Hiragino Mincho ProN","MS PMincho",serif;font-size:3.6px;fill:#000;text-anchor:start}
+              .summary-signer{font-family:"Yu Mincho","Hiragino Mincho ProN","MS PMincho",serif;font-size:3.6px;fill:#000;text-anchor:end}
+              .summary-intro{font-family:"Yu Mincho","Hiragino Mincho ProN","MS PMincho",serif;font-size:3.8px;fill:#000;text-anchor:start}
+              .summary-table-head{font-family:"Yu Mincho","Hiragino Mincho ProN","MS PMincho",serif;font-size:3.4px;font-weight:700;fill:#000;text-anchor:middle;dominant-baseline:middle}
+              .summary-detail-name{font-family:"Yu Gothic","Meiryo","Noto Sans JP",sans-serif;font-size:4.32px;font-weight:600;fill:#000;text-anchor:start;dominant-baseline:middle;alignment-baseline:middle}
+              .summary-detail-center{font-family:"Yu Gothic","Meiryo","Noto Sans JP",sans-serif;font-size:3.75px;font-weight:600;fill:#000;text-anchor:middle;dominant-baseline:middle;alignment-baseline:middle}
+              .summary-detail-money{font-family:"Yu Gothic","Meiryo","Noto Sans JP",sans-serif;font-size:4.32px;font-weight:600;fill:#000;text-anchor:end;dominant-baseline:middle;alignment-baseline:middle}
+              .summary-total-label{font-family:"Yu Mincho","Hiragino Mincho ProN","MS PMincho",serif;font-size:3.8px;font-weight:700;fill:#000;text-anchor:middle;dominant-baseline:middle;alignment-baseline:middle}
+              .summary-bank{font-family:"Yu Mincho","Hiragino Mincho ProN","MS PMincho",serif;font-size:3.4px;fill:#000;text-anchor:start}
+              .summary-note{font-family:"Yu Mincho","Hiragino Mincho ProN","MS PMincho",serif;font-size:3.3px;fill:#000;text-anchor:start}
+              .summary-gross-label{font-family:"Yu Mincho","Hiragino Mincho ProN","MS PMincho",serif;font-size:4.18px;font-weight:700;fill:#000;text-anchor:start;dominant-baseline:middle;alignment-baseline:middle}
+              .summary-total-money{font-family:"Yu Gothic","Meiryo","Noto Sans JP",sans-serif;font-size:4.32px;font-weight:600;fill:#000;text-anchor:end;dominant-baseline:middle;alignment-baseline:middle}
+              .summary-safe-label{font-family:"Yu Mincho","Hiragino Mincho ProN","MS PMincho",serif;font-size:4.18px;font-weight:700;fill:#000;text-anchor:start;dominant-baseline:middle;alignment-baseline:middle}
+              .summary-company-name{font-family:"Yu Mincho","Hiragino Mincho ProN","MS PMincho",serif;font-size:5.0px;font-weight:700;fill:#000;text-anchor:start}
+            </style>
+
+            <!-- タイトル -->
+            <text id="summaryVectorTitle" class="summary-title" x="110.25" y="34.5">総 括 請 求 書</text>
+            <g id="title-rule"><line class="rule" x1="75.0" y1="38.3" x2="145.5" y2="38.3"/></g>
+
+            <!-- 宛名 -->
+            <text id="summaryVectorRecipient" class="summary-recipient" x="25.0" y="54.6"></text>
+            <!-- 宛名下線 -->
+            <g id="recipient-rule"><line class="rule" x1="24.0" y1="57.6" x2="112.5" y2="57.6"/></g>
+
+            <!-- 請求日 -->
+            <text id="summaryVectorDate" class="summary-date" x="190.0" y="49.5"></text>
+
+            <!-- 自社情報：全体を約5mm下げ、住所～TEL間を少し詰める -->
+            <text id="summaryVectorMyName" class="summary-company-name" x="132.5" y="61.0"></text>
+            <text id="summaryVectorAddr" class="summary-company" x="132.5" y="67.0"></text>
+            <text id="summaryVectorTel" class="summary-company" x="132.5" y="76.0"></text>
+
+            <!-- 代表者は下線の直上・右寄せ -->
+            <text id="summaryVectorSigner" class="summary-signer" x="191.0" y="81.0"></text>
+
+            <!-- 自社代表者欄下線 -->
+            <g id="company-sign-rule"><line class="rule" x1="132.5" y1="82.6" x2="192.0" y2="82.6"/></g>
+
+            <!-- 登録番号は下線の下 -->
+            <text id="summaryVectorReg" class="summary-company" x="132.5" y="87.5"></text>
+
+            <!-- ご請求文 -->
+            <text id="summaryVectorIntro" class="summary-intro" x="29.0" y="76.0">下記のとおりご請求申し上げます。</text>
+
+            <!-- 工事一覧・合計表 -->
+            <g id="summary-table" transform="translate(0 3)">
+              <rect class="summary-outer" x="29.0" y="92.0" width="161.0" height="56.0"/>
+              <line class="thin" x1="124.0" y1="92.0" x2="124.0" y2="148.0"/>
+              <line class="thin" x1="147.0" y1="92.0" x2="147.0" y2="148.0"/>
+              <line class="summary-outer" x1="29.0" y1="98.5" x2="190.0" y2="98.5"/>
+              <text class="summary-table-head" x="76.5" y="95.25">工 事 名 （現 場 名）</text>
+              <text class="summary-table-head" x="135.5" y="95.25">請求回数</text>
+              <text class="summary-table-head" x="168.5" y="95.25">請求金額（税込）</text>
+              <g id="summaryVectorDetailRows"></g>
+              <g id="summaryVectorTotals"></g>
+              <line class="thin" x1="29.0" y1="108.5" x2="190.0" y2="108.5"/>
+              <line class="thin" x1="29.0" y1="118.5" x2="190.0" y2="118.5"/>
+              <line class="thin" x1="29.0" y1="128.5" x2="190.0" y2="128.5"/>
+              <line class="summary-outer" x1="29.0" y1="138.0" x2="190.0" y2="138.0"/>
+              <line x1="124.0" y1="118.5" x2="124.0" y2="148.0" stroke="#fff" stroke-width="0.9" vector-effect="non-scaling-stroke"/>
+              <line class="thin" x1="147.0" y1="118.5" x2="147.0" y2="148.0"/>
+            </g>
+
+            <!-- 振込先枠 -->
+            <g id="bank-box">
+              <rect class="thin" x="29.0" y="261.0" width="161.0" height="11.0"/>
+              <text id="summaryVectorBankLabel" class="summary-bank" x="31.0" y="265.7">【振込先】</text>
+              <text id="summaryVectorBankName" class="summary-bank" x="50.0" y="265.7"></text>
+              <text id="summaryVectorBranch" class="summary-bank" x="70.0" y="265.7"></text>
+              <text id="summaryVectorAccountType" class="summary-bank" x="50.0" y="270.0"></text>
+              <text id="summaryVectorAccountNo" class="summary-bank" x="70.0" y="270.0"></text>
+              <text id="summaryVectorAccountName" class="summary-bank" x="103.0" y="270.0"></text>
+            </g>
+            <g id="summaryVectorNotes">
+              <text id="summaryVectorNote1" class="summary-note" x="29.0" y="278.0"></text>
+              <text id="summaryVectorNote2" class="summary-note" x="29.0" y="283.0"></text>
+              <text id="summaryVectorNote3" class="summary-note" x="29.0" y="288.0"></text>
+            </g>
+          </svg>
+    </div>
+  </div>
+</section>
+<section id="summaryPrintSheet" class="summary-print-sheet">
+<div class="ps-head"><div id="psClient"></div><div class="ps-title">総　括　請　求　書</div><div id="psDate"></div></div>
+<div class="ps-info"><div>下記のとおり御請求申し上げます。</div><div><b id="psMyName"></b><br><span id="psSigner"></span><br><span id="psAddr"></span><br><span id="psTel"></span><br><span id="psReg"></span></div></div>
+<table class="ps-lines"><thead><tr><th>工　事　名　（現 場 名）</th><th>請求回数</th><th>請求金額（税込）</th></tr></thead><tbody id="psRows"></tbody></table>
+<table class="ps-totals"><tr><td>①　請求金額合計　10％対象 <span id="psTax"></span></td><td id="psGross"></td></tr><tr><td>②　安全管理費 <span id="psSafeRate"></span></td><td id="psSafe"></td></tr><tr class="grand"><td>合　　　　　計　（①－②）</td><td id="psTotal"></td></tr></table>
+<div class="ps-footer"><div>※請求書は月末締めで翌月５日までに必着でお願いします。<br>　尚、支払いは翌月末となります。</div><div id="psBank"></div></div>
+</section>
+
+<script src="invoice_common.js"></script>
+<script>
+(function(){
+  "use strict";
+  const MONTH_KEY="ms_invoice_billing_month_direct_v1";
+
+  const esc=s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+  const money=n=>Math.round(Number(n||0)).toLocaleString("ja-JP")+" 円";
+
+  function pcMonth(){
+    const d=new Date();
+    return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");
+  }
+
+  function clientKey(site){
+    const id=String(site?.clientId||"").trim();
+    if(id) return "id:"+id;
+    return "name:"+String(site?.clientName||"").trim();
+  }
+
+  function clientName(site){
+    return String(site?.clientName||"").trim() || "（発注先未設定）";
+  }
+
+  function buildClients(){
+    const sel=document.getElementById("srClient");
+    const map=new Map();
+    for(const site of (state?.sites||[])){
+      const name=clientName(site);
+      if(name==="（発注先未設定）") continue;
+      const key=clientKey(site);
+      if(!map.has(key)) map.set(key,name);
+    }
+    [...map.entries()]
+      .sort((a,b)=>a[1].localeCompare(b[1],"ja"))
+      .forEach(([key,name])=>{
+        const o=document.createElement("option");
+        o.value=key;o.textContent=name;sel.appendChild(o);
+      });
+  }
+
+  function invoiceLabel(site,month,bill){
+    try{
+      if(bill?.retentionOnly) return "保留金請求";
+      const c=typeof invoiceCountUntil==="function" ? invoiceCountUntil(site,month) : 0;
+      return c>0 ? c+"回目" : "—";
+    }catch(e){return "—";}
+  }
+
+  function retentionRemainForSummary(site,month,bill){
+    try{
+      if(!site || !month || !bill || bill.retentionOnly) return 0;
+      if(typeof triggerLine!=="function" || typeof retentionCap!=="function" || typeof displayContract!=="function") return 0;
+
+      // 総括請求書の保留金表示も、その月に保存された増減を反映した計算条件で判定する。
+      // 共通計算や月次保存は変更せず、表示判定だけを月次画面と同じ基準に揃える。
+      const rec=state?.monthly?.[month]?.[site.id] || null;
+      let linked=typeof applyClientTermsToSite==="function" ? applyClientTermsToSite(site) : site;
+      if(typeof getSiteForCalc==="function"){
+        try{ linked=getSiteForCalc(site,!!rec?.isFinal,month)||linked; }catch(e){}
+      }
+      const trigger=Number(triggerLine(linked));
+      const cap=Math.max(0,Number(retentionCap(linked)||0));
+      const finalOrder=Math.max(0,
+        Number(linked?.contractNet||0)+Number(linked?.increaseNet||0)-Number(linked?.reductionNet||0)
+      );
+      if(!Number.isFinite(trigger) || cap<=0 || finalOrder<=0) return 0;
+
+      /* 今回請求後の累計請求額。calcBillForSite の billedBefore は今回より前の累計。 */
+      const billedAfter=Math.max(0,Number(bill.billedBefore||0)+Number(bill.billNet||0));
+      const unpaid=Math.max(0,finalOrder-billedAfter);
+
+      /* 通常請求で95%ライン等に達し、今回の請求後にも保留金が残る場合だけ表示する。 */
+      const reached=Number(bill.workCum||0)>=trigger || Number(bill.targetCum||0)>=Math.round(trigger);
+      return reached ? Math.max(0,Math.min(cap,unpaid)) : 0;
+    }catch(e){
+      return 0;
+    }
+  }
+
+  function rowsFor(client,month){
+    const rows=[];
+    if(!client || !month) return rows;
+    for(const site of (state?.sites||[])){
+      if(clientKey(site)!==client) continue;
+      const rec=state?.monthly?.[month]?.[site.id];
+      if(!rec) continue;
+
+      let bill=null;
+      try{bill=calcBillForSite(month,site);}catch(e){bill=null;}
+      if(!bill || Number(bill.gross||0)<=0) continue;
+
+      let terms=null;
+      try{terms=getEffectiveClientTerms(site);}catch(e){terms=null;}
+      const safe=terms?.safeEnabled
+        ? Math.round(Number(bill.gross||0)*(Number(terms.safeRate||0)/100))
+        : 0;
+
+      const baseLabel=invoiceLabel(site,month,bill);
+      const retentionRemain=retentionRemainForSummary(site,month,bill);
+      const label=(!bill.retentionOnly && retentionRemain>0)
+        ? "保留金有"
+        : baseLabel;
+
+      rows.push({
+        site,
+        name:site.name||"（工事名なし）",
+        gross:Number(bill.gross||0),
+        safe,
+        safeRate:Number(terms?.safeRate||0),
+        retentionRemain,
+        label
+      });
+    }
+    return rows;
+  }
+
+  function render(){
+    const client=document.getElementById("srClient").value;
+    const month=document.getElementById("srMonth").value;
+    const tbody=document.getElementById("srBody");
+    const rows=rowsFor(client,month);
+
+    if(!client || !month){
+      tbody.innerHTML='<tr><td colspan="3" class="empty">発注先と請求月を選択してください。</td></tr>';
+      document.getElementById("srStatus").textContent="発注先と請求月を選択してください。";
+    }else if(!rows.length){
+      tbody.innerHTML='<tr><td colspan="3" class="empty">この会社・この月に請求データはありません。</td></tr>';
+      document.getElementById("srStatus").textContent="該当する請求はありません。";
+    }else{
+      tbody.innerHTML=rows.map(r=>`
+        <tr>
+          <td><b>${esc(r.name)}</b></td>
+          <td class="center summary-count-cell">${esc(r.label)}</td>
+          <td class="num">${money(r.gross)}</td>
+        </tr>`).join("");
+      document.getElementById("srStatus").textContent=
+        document.getElementById("srClient").selectedOptions[0].textContent+"　"+month+" の請求";
+    }
+
+    const gross=rows.reduce((a,r)=>a+r.gross,0);
+    const safe=rows.reduce((a,r)=>a+r.safe,0);
+    const total=Math.max(0,gross-safe);
+    const rates=[...new Set(rows.filter(r=>r.safe>0).map(r=>r.safeRate))];
+
+    document.getElementById("srCount").textContent=rows.length+"件";
+    document.getElementById("srGross").textContent=money(gross);
+    document.getElementById("srSafe").textContent=money(safe);
+    document.getElementById("srTotal").textContent=money(total);
+    document.getElementById("srSafeRate").textContent=
+      rates.length===1 ? "（①×"+(rates[0]/100).toFixed(3)+"）" :
+      rates.length>1 ? "（工事ごとの会社条件で計算）" : "（なし）";
+
+    // 今回はデータ確認まで。印刷レイアウトは次段階で有効化する。
+    document.getElementById("btnPrintPreview").disabled=!(client && month && rows.length);
+  }
+
+  function printMonthEnd(m){if(!/^\d{4}-\d{2}$/.test(m))return "";const a=m.split("-").map(Number),d=new Date(a[0],a[1],0);return a[0]+"年"+a[1]+"月"+d.getDate()+"日";}
+  function fillPrint(){
+    const c=document.getElementById("srClient").value,m=document.getElementById("srMonth").value,rows=rowsFor(c,m);
+    if(!c||!m||!rows.length){alert("発注先と請求月を選び、請求データを確認してください。");return false;}
+    const st=state?.settings||{}, client=document.getElementById("srClient").selectedOptions[0]?.textContent||"";
+    psClient.textContent=client+" 御中";psDate.textContent=printMonthEnd(m);psMyName.textContent=st.myName||"";psSigner.textContent=st.mySigner||"";psAddr.textContent=st.myAddr||"";psTel.textContent=st.myTel?"TEL."+st.myTel:"";psReg.textContent=st.registrationNo?"登録番号 "+st.registrationNo:"";psBank.textContent=st.bankText||"";
+    psRows.innerHTML=rows.map(r=>`<tr><td>${esc(r.name)}</td><td>${esc(r.label)}</td><td>${money(r.gross)}</td></tr>`).join("");
+    const gross=rows.reduce((a,r)=>a+r.gross,0),safe=rows.reduce((a,r)=>a+r.safe,0),total=Math.max(0,gross-safe),tr=Number(st.taxRate||10),tax=Math.round(gross*tr/(100+tr)),rates=[...new Set(rows.filter(r=>r.safe>0).map(r=>r.safeRate))];
+    psTax.textContent="（内消費税 "+money(tax)+"）";psGross.textContent=money(gross);psSafe.textContent=money(safe);psTotal.textContent=money(total);psSafeRate.textContent=rates.length===1?"（①×"+(rates[0]/100).toFixed(3)+"）":rates.length>1?"（会社条件による）":"（なし）";return true;
+  }
+  function loadCompanyMasterForSummary(){
+    try{
+      const x=JSON.parse(localStorage.getItem("ms_invoice_company_master_v1")||"null");
+      return x && typeof x==="object" ? x : {};
+    }catch(e){ return {}; }
+  }
+
+  function loadClientMasterForSummary(){
+    try{
+      const x=JSON.parse(localStorage.getItem("ms_invoice_client_master_v1")||"[]");
+      return Array.isArray(x)?x:[];
+    }catch(e){return [];}
+  }
+
+  function renderVectorNotes(clientKeyValue,selectedClientName){
+    const set=(id,val)=>{const el=document.getElementById(id);if(el)el.textContent=val||"";};
+    set("summaryVectorNote1","");
+    set("summaryVectorNote2","");
+    set("summaryVectorNote3","");
+
+    const list=loadClientMasterForSummary();
+    let client=null;
+    if(String(clientKeyValue||"").startsWith("id:")){
+      const id=String(clientKeyValue).slice(3);
+      client=list.find(x=>String(x.id||"")===id)||null;
+    }
+    if(!client){
+      client=list.find(x=>String(x.name||"").trim()===String(selectedClientName||"").trim())||null;
+    }
+    if(!client)return;
+
+    const closing=String(client.closingDay||"").trim();
+    const payment=String(client.paymentTerms||"").trim();
+    const retention=String(client.retention||"").trim();
+    const minAmount=Number(client.retentionMinAmount||0);
+
+    if(closing){
+      const closingText=closing==="末日" ? "月末" : closing;
+      set("summaryVectorNote1","※請求書は"+closingText+"締めとなっています。締日より5日以内の必着でお願いします。");
+    }
+    if(payment){
+      let payText=payment.replace(/払い$/,"");
+      set("summaryVectorNote2","　尚、支払いは"+payText+"となります。");
+    }
+    if(retention && retention!=="なし" && minAmount>0){
+      let threshold="";
+      if(minAmount%10000===0){
+        threshold=(minAmount/10000).toLocaleString("ja-JP")+"万円";
+      }else{
+        threshold=minAmount.toLocaleString("ja-JP")+"円";
+      }
+      set("summaryVectorNote3","※注文金額が"+threshold+"以上になる場合は保留金が発生します。");
+    }
+  }
+
+  function renderVectorBank(co,st){
+    const set=(id,val)=>{const el=document.getElementById(id);if(el)el.textContent=val||"";};
+
+    set("summaryVectorBankName", String(co.bank||"").trim());
+    set("summaryVectorBranch", String(co.branch||"").trim());
+    set("summaryVectorAccountType", String(co.accountType||"").trim());
+    set("summaryVectorAccountNo", String(co.accountNo||"").trim());
+    set("summaryVectorAccountName", String(co.accountName||"").trim());
+  }
+  function renderVectorDetailRows(rows){
+    const g=document.getElementById("summaryVectorDetailRows");
+    const table=document.getElementById("summary-table");
+    if(!g||!table)return;
+    g.innerHTML="";
+    const NS="http://www.w3.org/2000/svg";
+
+    const count=Math.max(2,rows.length);
+    const extra=count-2;
+    const extraRowsH=extra*10;
+    const addH=extraRowsH; // 工事追加行の分だけ表を伸ばす
+
+    /* 表外枠 */
+    const outer=table.querySelector("rect.summary-outer");
+    if(outer) outer.setAttribute("height",String(56+addH));
+
+    /* 既存の線を毎回基準位置から再設定 */
+    const allLines=[...table.querySelectorAll("line")];
+
+    const setLine=(line,x1,y1,x2,y2)=>{
+      line.setAttribute("x1",String(x1));
+      line.setAttribute("y1",String(y1));
+      line.setAttribute("x2",String(x2));
+      line.setAttribute("y2",String(y2));
+    };
+
+    /* 縦線を特定 */
+    const vertical124=allLines.filter(l=>Number(l.getAttribute("x1"))===124 && Number(l.getAttribute("x2"))===124);
+    const vertical147=allLines.filter(l=>Number(l.getAttribute("x1"))===147 && Number(l.getAttribute("x2"))===147);
+
+    /* 黒い縦線：工事行が増えた分だけ下へ伸ばす */
+    vertical124.forEach(l=>{
+      if(l.getAttribute("stroke")==="#fff"){
+        /* 白線は不要。集計欄では縦線そのものを止める。 */
+        l.setAttribute("display","none");
+      }else{
+        /* 請求回数の左縦線は、最後の工事明細行まで。 */
+        setLine(l,124,92,124,118.5+extraRowsH);
+      }
+    });
+    vertical147.forEach(l=>setLine(l,147,92,147,148+extraRowsH));
+
+    /* 固定横線を基準へ戻し、下側の合計欄だけ追加行分下げる */
+    allLines.forEach(l=>{
+      const x1=Number(l.getAttribute("x1")), x2=Number(l.getAttribute("x2"));
+      const y1=Number(l.getAttribute("y1")), y2=Number(l.getAttribute("y2"));
+      if(x1===29 && x2===190 && y1===128.5 && y2===128.5){
+        setLine(l,29,128.5+extraRowsH,190,128.5+extraRowsH);
+      }else if(x1===29 && x2===190 && y1===138 && y2===138){
+        setLine(l,29,138+extraRowsH,190,138+extraRowsH);
+      }
+    });
+
+    /* 3件目以降の工事行の横線 */
+    for(let i=2;i<count;i++){
+      const y=118.5+(i-1)*10;
+      const line=document.createElementNS(NS,"line");
+      line.setAttribute("class","thin");
+      setLine(line,29,y,190,y);
+      g.appendChild(line);
+    }
+
+    /* 最下段の集計行 */
+    const totals=document.getElementById("summaryVectorTotals");
+    if(totals){
+      totals.innerHTML="";
+      const grossLabel=document.createElementNS(NS,"text");
+      grossLabel.setAttribute("class","summary-gross-label");
+      grossLabel.setAttribute("x","39.0");
+      grossLabel.setAttribute("y",String(123.5+extraRowsH));
+      grossLabel.textContent="①　請求金額合計　10％対象　（内消費税";
+      totals.appendChild(grossLabel);
+
+      const taxText=document.createElementNS(NS,"text");
+      taxText.setAttribute("class","summary-total-money");
+      taxText.setAttribute("x","142.0");
+      taxText.setAttribute("y",String(123.5+extraRowsH));
+      const grossTotal=rows.reduce((s,r)=>s+Number(r.gross||0),0);
+      const taxRate=Number((state?.settings||{}).taxRate||10);
+      const tax=Math.round(grossTotal*taxRate/(100+taxRate));
+      taxText.textContent=tax.toLocaleString("ja-JP")+"円）";
+      totals.appendChild(taxText);
+
+      const grossMoney=document.createElementNS(NS,"text");
+      grossMoney.setAttribute("class","summary-total-money");
+      grossMoney.setAttribute("x","188.0");
+      grossMoney.setAttribute("y",String(123.5+extraRowsH));
+      grossMoney.textContent=grossTotal.toLocaleString("ja-JP");
+      totals.appendChild(grossMoney);
+
+      const safeTotal=rows.reduce((s,r)=>s+Number(r.safe||0),0);
+
+      const safeLabel=document.createElementNS(NS,"text");
+      safeLabel.setAttribute("class","summary-safe-label");
+      safeLabel.setAttribute("x","39.0");
+      safeLabel.setAttribute("y",String(133.25+extraRowsH));
+      const safeRates=[...new Set(rows.filter(r=>Number(r.safe||0)>0).map(r=>Number(r.safeRate||0)))];
+      const safeRateText=safeRates.length===1 ? safeRates[0]+"％" : (safeRates.length>1 ? safeRates.join("％・")+"％" : "0％");
+      safeLabel.textContent="②　安全管理費　（①× "+safeRateText+"）";
+      totals.appendChild(safeLabel);
+
+      const safeMoney=document.createElementNS(NS,"text");
+      safeMoney.setAttribute("class","summary-total-money");
+      safeMoney.setAttribute("x","188.0");
+      safeMoney.setAttribute("y",String(133.25+extraRowsH));
+      safeMoney.textContent=safeTotal ? "△"+safeTotal.toLocaleString("ja-JP") : "0";
+      totals.appendChild(safeMoney);
+
+      const totalLabel=document.createElementNS(NS,"text");
+      totalLabel.setAttribute("class","summary-total-label");
+      totalLabel.setAttribute("x","88.0");
+      totalLabel.setAttribute("y",String(143+extraRowsH));
+      totalLabel.textContent="合　　　　計　　（①－②）";
+      totals.appendChild(totalLabel);
+
+      const totalMoney=document.createElementNS(NS,"text");
+      totalMoney.setAttribute("class","summary-total-money");
+      totalMoney.setAttribute("x","188.0");
+      totalMoney.setAttribute("y",String(143+extraRowsH));
+      totalMoney.textContent=Math.max(0,grossTotal-safeTotal).toLocaleString("ja-JP");
+      totals.appendChild(totalMoney);
+    }
+
+    /* 明細文字：各10mm行の上下中央 */
+    rows.forEach((r,i)=>{
+      const y=103.5+i*10;
+
+      const name=document.createElementNS(NS,"text");
+      name.setAttribute("class","summary-detail-name");
+      name.setAttribute("x","31.0");
+      name.setAttribute("y",String(y));
+      name.textContent=r.name||"";
+      g.appendChild(name);
+
+      const countText=document.createElementNS(NS,"text");
+      countText.setAttribute("class","summary-detail-center");
+      countText.setAttribute("x","135.5");
+      countText.setAttribute("y",String(y));
+      countText.textContent=r.label||"";
+      g.appendChild(countText);
+
+      const money=document.createElementNS(NS,"text");
+      money.setAttribute("class","summary-detail-money");
+      money.setAttribute("x","188.0");
+      money.setAttribute("y",String(y));
+      money.textContent=Number(r.gross||0).toLocaleString("ja-JP");
+      g.appendChild(money);
+    });
+  }
+  function init(){
+    // invoice_common.js の loadAll(true) 完了後に初期化する。
+    buildClients();
+
+    const month=document.getElementById("srMonth");
+    let saved="";
+    try{saved=localStorage.getItem(MONTH_KEY)||"";}catch(e){}
+    month.value=/^\d{4}-\d{2}$/.test(saved)?saved:pcMonth();
+
+    document.getElementById("srClient").addEventListener("change",render);
+    month.addEventListener("change",()=>{
+      try{localStorage.setItem(MONTH_KEY,month.value);}catch(e){}
+      render();
+    });
+    document.getElementById("btnCurrentMonth").addEventListener("click",()=>{
+      month.value=pcMonth();
+      try{localStorage.setItem(MONTH_KEY,month.value);}catch(e){}
+      render();
+    });
+    document.getElementById("btnPrintPreview").addEventListener("click",()=>{
+      const client=document.getElementById("srClient").value;
+      const m=document.getElementById("srMonth").value;
+      const rows=rowsFor(client,m);
+      if(!client||!m||!rows.length){
+        alert("発注先と請求月を選び、請求データを確認してください。");
+        return;
+      }
+      renderVectorDetailRows(rows);
+
+      const selectedClient=document.getElementById("srClient").selectedOptions[0]?.textContent||"";
+      const recipient=document.getElementById("summaryVectorRecipient");
+      if(recipient) recipient.textContent=selectedClient ? selectedClient+"　御中" : "";
+
+      const st=state?.settings||{};
+      const co=loadCompanyMasterForSummary();
+      const setText=(id,val)=>{const el=document.getElementById(id); if(el) el.textContent=val||"";};
+      setText("summaryVectorDate", printMonthEnd(m));
+      setText("summaryVectorMyName", co.name||st.myName||"");
+      setText("summaryVectorSigner", co.representative||st.mySigner||"");
+      setText("summaryVectorAddr", co.address||st.myAddr||"");
+      setText("summaryVectorTel", (co.tel||st.myTel) ? "TEL. "+(co.tel||st.myTel) : "");
+      setText("summaryVectorReg", (co.registrationNo||st.registrationNo) ? "登録番号 "+(co.registrationNo||st.registrationNo) : "");
+      renderVectorBank(co,st);
+      renderVectorNotes(client,selectedClient);
+
+      document.body.classList.add("summary-preview-mode");
+      window.scrollTo(0,0);
+    });
+    document.getElementById("btnVectorBack").addEventListener("click",()=>{
+      document.body.classList.remove("summary-preview-mode");
+      window.scrollTo(0,0);
+    });
+    document.getElementById("btnVectorPrint").addEventListener("click",()=>window.print());
+    render();
+  }
+
+  if(document.readyState==="loading"){
+    document.addEventListener("DOMContentLoaded",()=>setTimeout(init,180),{once:true});
+  }else{
+    setTimeout(init,180);
+  }
+})();
+</script>
+</body>
+</html>

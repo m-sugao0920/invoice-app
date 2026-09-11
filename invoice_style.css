@@ -1,0 +1,1496 @@
+/* MS請求書システム 基礎整理版 2026-08-27 */
+/* MS請求書作成システム 共通CSS */
+
+  :root{
+    --blue:#0070C0;
+    --bg:#f6f6f6; --card:#fff; --line:#ddd; --ink:#111; --muted:#666;
+    --r:12px; --pad:12px;
+    --font:"Yu Mincho","Hiragino Mincho ProN","MS PMincho","MS Mincho",serif;
+    --fontNum:"Yu Gothic","Hiragino Kaku Gothic ProN","Meiryo",system-ui,sans-serif;
+  }
+  body{ margin:0; font-family:var(--font); background:var(--bg); color:var(--ink); }
+  header{
+    position:sticky; top:0; z-index:20;
+    background:var(--blue); color:#fff;
+    border-bottom:1px solid rgba(255,255,255,.25);
+    padding:10px 14px;
+    display:flex; gap:12px; align-items:center; justify-content:space-between;
+  }
+  header h1{ margin:0; font-size:15px; letter-spacing:.5px; }
+  .tabs{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  .tab{
+    border:1px solid rgba(255,255,255,.9);
+    background:rgba(255,255,255,.12);
+    color:#fff;
+    padding:8px 12px; border-radius:999px; cursor:pointer;
+    font-size:13px; line-height:1.15;
+    text-align:center;
+  }
+  .tab small{
+    display:block;
+    font-size:10px;
+    opacity:.85;
+    margin-top:2px;
+    white-space:nowrap;
+  }
+  .tab.active{
+    background:#fff;
+    color:var(--blue);
+    border-color:#fff;
+    font-weight:800;
+  }
+
+  .wrap{ padding:14px; max-width:1100px; margin:0 auto; }
+  .grid{ display:grid; grid-template-columns: 1fr 1fr; gap:14px; }
+  .card{
+    background:var(--card); border:1px solid var(--line); border-radius:var(--r);
+    overflow:hidden;
+  }
+  .card h2{ margin:0; padding:10px 12px; font-size:14px; background:#fafafa; border-bottom:1px solid var(--line); }
+  .card .body{ padding:12px; }
+  label{ display:block; font-size:12px; color:#333; margin:10px 0 4px; }
+  input, select, textarea{
+    width:100%; box-sizing:border-box; padding:9px 10px;
+    border:1px solid #bbb; border-radius:10px; background:#fff; font-size:14px;
+  }
+  textarea{ min-height:60px; resize:vertical; }
+  input.readonly, select.readonly{
+    background:#f3f3f3;
+    color:#888;
+    border-color:#d0d0d0;
+  }
+  input.readonly::placeholder{ color:#aaa; }
+
+  .row{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .btns{ display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; }
+  button{
+    border:1px solid #222; background:#222; color:#fff;
+    padding:9px 12px; border-radius:10px; font-size:14px; cursor:pointer;
+  }
+  button.secondary{ background:#fff; color:#222; }
+  button.danger{ background:#b00020; border-color:#b00020; }
+  .hint{ font-size:12px; color:var(--muted); line-height:1.6; }
+  .list{
+    width:100%; border-collapse:collapse; font-size:13px;
+  }
+  .list th,.list td{ border-top:1px solid #eee; padding:8px 6px; text-align:left; vertical-align:top; }
+  .list th{ color:#333; font-weight:700; background:#fcfcfc; }
+  .pill{ display:inline-block; padding:2px 8px; border-radius:999px; border:1px solid #bbb; font-size:12px; color:#333; }
+  .right{ text-align:right; }
+  .mono{ font-variant-numeric: tabular-nums; }
+  .nowrap{ white-space:nowrap; }
+  .col-order{ min-width:140px; }
+  .col-money{ min-width:150px; }
+  .hide{ display:none !important; }
+  .kv{
+    display:grid; grid-template-columns: 1fr 1fr; gap:8px;
+    background:#fbfbfb; border:1px solid #eee; border-radius:12px; padding:10px;
+    margin-top:10px;
+  }
+  .kv .item{ border:1px solid #eee; border-radius:10px; padding:8px 10px; background:#fff; }
+  .kv .k{ font-size:10px; color:#444; }
+  .kv .v{ font-size:14px; font-weight:800; margin-top:2px; }
+  .kv .s{ font-size:10px; color:#666; margin-top:2px; }
+
+  /* ---- 印刷ページ（A4） ---- */
+  .paperWrap{ padding:14px; }
+  .paper{
+    width:210mm; min-height:297mm; margin:0 auto;
+    background:#fff; border:1px solid #bbb; box-sizing:border-box;
+    padding:10mm 8mm 8mm 12mm;
+  }
+  .paper{
+  padding-right:5mm !important;
+}
+  .title{
+    text-align:center;
+    font-size:30px;
+    letter-spacing:8px;
+    margin:0 0 5mm;
+    padding-bottom:2mm;
+    position:relative;
+  }
+  .title::after{
+    content:"";
+    display:block;
+    width:95mm;
+    margin:2mm auto 0;
+    border-bottom:1px solid #000;
+  }
+  .topGrid{ display:grid; grid-template-columns: 1.25fr .95fr; gap:4mm; }
+  .toBlock{ font-size:20px; }
+  .toLine{ display:none; }
+  .rightBlock{ text-align:right; font-size:15px; line-height:1.55; padding-right:2mm; margin-top:10mm;  }
+  .signRow{display:flex; justify-content:flex-end; align-items:flex-end; gap:6px;}
+  .nameLine{
+  display:flex;
+  justify-content:flex-end;   /* ← 右寄せの決定版 */
+  align-items:flex-end;
+  border-bottom:1px solid #000;
+  flex:0 0 55mm;              /* ← 線の長さ（調整可） */
+  height:7mm;                 /* ← 文字を線の上に乗せる高さ */
+  padding-right:2mm;          /* ← 右端との余白 */
+}
+
+  .midInfo{ margin-top:6mm; font-size:13px; line-height:1.65; }
+  .midInfo .uline{
+  border-bottom:1px solid #000;
+  display:inline-block;
+  min-width:150mm;
+  vertical-align:baseline;
+  margin-left:0.5mm;
+}
+
+  .metaGrid{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:6mm; margin-top:4mm; }
+  .metaBox{ border-bottom:1px solid #000; padding-bottom:0.5mm; }
+  .metaLabel{ font-size:16px; }
+  .metaValue{ font-size:18px; font-weight:850; }
+  .bigTotal{ margin-top:6mm; border:1.3px solid #000; display:grid; grid-template-columns: 1fr 1fr .55fr; }
+  .bigTotal .left{ padding:6mm; font-size:18px; border-right:1.3px solid #000; display:flex; align-items:center; }
+  .bigTotal .right{ padding:5mm; font-size:28px; font-weight:900; text-align:right; font-family:var(--fontNum); }
+  .bigTotal .right small{ font-size:14px; font-weight:600; }
+  table.sheet{ width:100%; border-collapse:collapse; margin-top:6mm; font-size:14px; }
+  table.sheet th, table.sheet td{ border:1px solid #000; padding:3mm 2.5mm; }
+  table.sheet th{ font-weight:800; text-align:left; font-size:15px; }
+  .num{ text-align:right; font-variant-numeric: tabular-nums; font-size:18px; font-weight:800; font-family:var(--fontNum); }
+  .note{ margin-top:5mm; font-size:12px; line-height:1.55; }
+  .apprBox div{white-space:nowrap;}
+  .apprLine{border-bottom:1px solid #000; height:10mm; margin-top:2mm;}
+  .bank{
+  margin-top:2mm;
+  border:1px solid #999;
+  padding:3mm 3.5mm;
+  font-size:16px;          /* ←★ ここ */
+  line-height:1.6;         /* ←★ 読みやすく */
+}
+
+  .foot{ margin-top:4mm; font-size:10px; line-height:1.5; }
+
+  @media print{
+    @page{ size:A4; margin:0; }
+
+    header{ display:none !important; }
+    body{ background:#fff; margin:0 !important; }
+
+    #view-settings, #view-sites, #view-monthly{ display:none !important; }
+    #view-print .card{ display:none !important; }
+    #view-summary .card{ display:none !important; }
+
+    .wrap{ padding:0 !important; max-width:none !important; }
+
+    /* 余白はここで作る（左・上） */
+    .paperWrap{ padding:10mm 0 0 15mm !important; }
+
+    /* 印刷時はレイアウトごと縮小（2ページ化しにくい） */
+    .paper{
+      border:none !important;
+      margin:0 !important;
+      zoom:0.85;
+      transform:none !important;
+      page-break-inside:avoid;
+    }
+  }
+
+  /* ==== 保留金アラート compact 3行 完全版 ==== */
+.ret-alert{
+  margin-top:10px;
+  border:1.5px solid #b00020;
+  background:#fff5f5;
+  color:#b00020;
+  border-radius:8px;
+  padding:6px 8px;
+  font-family:var(--fontNum);
+  font-size:11px;
+  line-height:1.3;
+}
+.ret-alert .title{
+  font-size:12px;
+  font-weight:900;
+  margin:0 0 2px;
+  padding:0;
+}
+.ret-alert .amt{
+  font-size:15px;
+  font-weight:900;
+}
+.ret-alert .hint{
+  font-size:10px;
+  margin-top:2px !important;
+  line-height:1.25;
+}
+
+/* ===== 現場登録画面：現場一覧 行・列調整 ===== */
+  #sitesTable { width: 100%; table-layout: fixed; }
+  #sitesTable th:nth-child(1), #sitesTable td:nth-child(1){ width:200px; word-break:break-all; }
+  #sitesTable th:nth-child(2), #sitesTable td:nth-child(2){ width:100px; }
+  #sitesTable td:nth-child(2), #sitesTable th:nth-child(2){ font-size:11px; }
+  #sitesTable .pill{ border:none; background:none; padding:0; border-radius:0; font-weight:normal; font-size:inherit; }
+  #sitesTable .pill::before{ content:"（"; }
+  #sitesTable .pill::after{ content:"）"; }
+  #sitesTable button{ padding:4px 8px; font-size:11px; border-radius:6px; }
+  #sitesTable th:nth-child(3),#sitesTable td:nth-child(3),
+  #sitesTable th:nth-child(4),#sitesTable td:nth-child(4),
+  #sitesTable th:nth-child(5),#sitesTable td:nth-child(5){ width:90px; }
+  #view-sites .grid{ grid-template-columns: 1fr 1.8fr; }
+  #view-sites .wrap-wide{ max-width:1400px; }
+
+  /* ===== 保留金アラート（小型・完全版） ===== */
+.ret-alert{
+    margin-top:8px;
+    border:1.5px solid #b00020;
+    background:#fff5f5;
+    color:#b00020;
+    border-radius:8px;
+    padding:6px 8px;
+    font-family:var(--fontNum);
+    font-size:11px;        /* 全体を小さく */
+    line-height:1.45;
+}
+.ret-alert .title{
+    font-size:12px;        /* タイトル行 */
+    font-weight:900;
+    margin:0 0 2px;
+    padding:0;
+}
+.ret-alert .amt{
+    font-size:16px;        /* 金額の数字も小型化 */
+    font-weight:900;
+}
+
+/* ===== 現場一覧で出る保留バッジ（小型版） ===== */
+.ret-badge{
+    display:inline-block;
+    padding:2px 8px;
+    border-radius:999px;
+    border:1.5px solid #b00020;
+    color:#b00020;
+    background:#fff5f5;
+    font-weight:900;
+    font-size:10px;
+    font-family:var(--fontNum);
+    margin-left:6px;
+    line-height:1.2;
+}
+#pvClient{
+  display: block;
+  padding-bottom: 1mm;   /* 文字と下線の間 */
+  margin-bottom: 3mm;    /* ←★ ここを追加（下に空白） */
+  border-bottom: 1px solid #000;
+}
+
+.pv-uline{
+  display:inline-block;
+  border-bottom:1px solid #000;
+  padding-bottom:0.5mm;  /* ←ここを 0.2mm とかにすると「文字と線」がもっと詰まる */
+  line-height:1.0;
+}
+#pvSigner{
+  border:0 !important;        /* 余計な下線を消す */
+  padding-bottom:0;
+}
+/* === Custom adjustments for approval lines === */
+.apprLine{
+  height:0;
+  border-bottom:1px solid #000;
+  margin-top:1mm;      /* 文字と線の間隔 */
+  margin-bottom:2mm;   /* 枠線との二重を防ぐ */
+  margin-left:-2mm;   /* ← 左に 2mm 伸ばす */
+  margin-right:-2mm;  /* ← 右に 2mm 伸ばす */
+}
+.apprBox{
+  border-bottom:1px solid #000 !important; /* 四角を閉じる */
+}
+
+/* === Move labels left by 5mm === */
+.apprLabel{
+  margin-left:-5mm !important;
+}
+.issuerName{
+  font-size: 22px;
+  font-weight: 900;
+  line-height: 1.2;
+  margin-bottom: 1mm;
+}
+#svDate{
+  margin-top: -10mm;   /* ←★ 数値を調整 */
+}
+/* 総括請求書：請求先ブロックを下げる */
+#view-summary .toBlock{
+  margin-top: 8mm;   /* ←★ 数値を調整 */
+}
+
+
+/* ===== 安全管理比率：完全ロック ===== */
+#sr_safeRate{
+  background:#f2f2f2;
+  border:1px solid #ccc;
+  color:#555;
+  pointer-events:none;
+  font-weight:600;
+}
+
+
+
+/* ===== MS積算システム風 インターフェース試作 ===== */
+:root{
+  --ms-blue:#1667a8;
+  --ms-blue2:#eaf4fc;
+  --ms-green:#eef8ee;
+  --ms-purple:#f2ecfb;
+  --ms-burgundy:#8b4051;
+}
+header{
+  background:linear-gradient(180deg,#176eaf,#125f98);
+  padding:9px 14px;
+  box-shadow:0 2px 8px rgba(0,0,0,.14);
+}
+header h1{font-size:17px;font-weight:800;white-space:nowrap;}
+.tabs{gap:6px;}
+.tab{
+  border-radius:7px;
+  padding:7px 11px;
+  border:1px solid rgba(255,255,255,.7);
+  background:rgba(255,255,255,.10);
+}
+.tab.active{font-weight:800;box-shadow:0 1px 4px rgba(0,0,0,.10);}
+
+.ms-home{max-width:1400px;margin:0 auto;padding:14px;}
+.ms-current{
+  background:#fff;border:1px solid #c9d8e5;border-left:6px solid var(--ms-blue);
+  border-radius:10px;padding:12px 14px;margin-bottom:12px;
+  display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;
+}
+.ms-current .title{font-family:var(--fontNum);font-size:12px;letter-spacing:0;margin:0;padding:0;text-align:left;font-weight:700;color:#557;}
+.ms-current .title::after{display:none;}
+.ms-current .value{font-family:var(--fontNum);font-size:18px;font-weight:800;color:#123;margin-top:2px;}
+.ms-summary-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px;}
+.ms-summary-card{background:#fff;border:1px solid #d8e1e8;border-radius:10px;padding:11px 13px;}
+.ms-summary-card .k{font-size:11px;color:#677;}
+.ms-summary-card .v{font-family:var(--fontNum);font-size:22px;font-weight:850;margin-top:2px;}
+.ms-summary-card.pending{border-top:4px solid #d08a37;}
+.ms-summary-card.amount{border-top:4px solid var(--ms-blue);}
+.ms-summary-card.done{border-top:4px solid #5f9d69;}
+.ms-section{background:#fff;border:1px solid #d7dfe6;border-radius:11px;overflow:hidden;margin-bottom:12px;}
+.ms-section-head{padding:10px 13px;background:#edf5fb;border-bottom:1px solid #d7e5ef;display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.ms-section-head h2{margin:0;font-family:var(--fontNum);font-size:15px;color:#174e77;}
+.ms-section-head .count{font-size:12px;color:#557;}
+.ms-job-list{padding:8px 10px;}
+.ms-job{
+  display:grid;grid-template-columns:minmax(220px,1.7fr) repeat(3,minmax(120px,.8fr)) auto;
+  gap:8px;align-items:center;padding:9px 8px;border-bottom:1px solid #edf0f2;
+}
+.ms-job:last-child{border-bottom:none;}
+.ms-job-name{font-weight:800;font-family:var(--fontNum);font-size:14px;}
+.ms-job-sub{font-size:10px;color:#778;margin-top:3px;}
+.ms-money .k{font-size:10px;color:#778;}
+.ms-money .v{font-family:var(--fontNum);font-size:14px;font-weight:750;margin-top:1px;}
+.ms-money.remain .v{color:#a34a25;font-size:16px;}
+.ms-action{display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap;}
+.ms-action button{padding:7px 10px;border-radius:7px;font-size:12px;border:none;background:var(--ms-blue);}
+.ms-action button.secondary{background:#fff;color:#245d85;border:1px solid #9db8cb;}
+.ms-empty{padding:24px;text-align:center;color:#778;font-size:13px;}
+details.ms-section > summary{list-style:none;cursor:pointer;}
+details.ms-section > summary::-webkit-details-marker{display:none;}
+details.ms-section .ms-section-head::after{content:'▼';font-size:10px;color:#678;}
+details.ms-section:not([open]) .ms-section-head::after{content:'▶';}
+.ms-complete .ms-section-head{background:#f3f7f3;border-bottom-color:#dce8dc;}
+.ms-complete .ms-section-head h2{color:#47704d;}
+.ms-complete .ms-job{opacity:.85;}
+.ms-quick-menu{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;}
+.ms-quick-menu button{background:#fff;color:#245d85;border:1px solid #b7ccdb;border-radius:9px;padding:10px 8px;font-weight:700;font-size:12px;}
+.ms-quick-menu button:hover{background:#f4f9fd;}
+@media(max-width:900px){
+  .ms-summary-grid{grid-template-columns:1fr;}
+  .ms-job{grid-template-columns:1fr 1fr;}
+  .ms-job-name{grid-column:1/-1;}
+  .ms-action{grid-column:1/-1;justify-content:flex-start;}
+  .ms-quick-menu{grid-template-columns:1fr 1fr;}
+}
+@media print{#view-home{display:none!important;}}
+
+
+/* ===== MS請求書システム風 共通ヘッダー Ver.2 ===== */
+.ms-topbar{
+  background:linear-gradient(180deg,#1677bd,#0867aa);
+  color:#fff; padding:10px 16px; display:flex; align-items:center;
+  justify-content:space-between; gap:12px; box-shadow:0 2px 7px rgba(0,0,0,.18);
+}
+.ms-brand{display:flex;align-items:center;gap:10px;min-width:260px}
+.ms-logo{
+  width:38px;height:38px;border-radius:9px;background:#fff;color:#0867aa;
+  display:grid;place-items:center;font-family:var(--fontNum);font-weight:900;font-size:17px;
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.08);
+}
+.ms-title{font-family:var(--fontNum);font-size:17px;font-weight:800;letter-spacing:.04em}
+.ms-subtitle{font-family:var(--fontNum);font-size:10px;opacity:.9;margin-top:1px}
+.ms-actions{display:flex;gap:7px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.ms-action{
+  border:1px solid rgba(255,255,255,.8); background:rgba(255,255,255,.12); color:#fff;
+  padding:7px 12px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;
+}
+.ms-action:hover{background:#fff;color:#0867aa}
+.ms-nav{
+  background:#fff;border-bottom:1px solid #ccd9e3;padding:7px 14px;
+  display:flex;gap:7px;align-items:center;justify-content:center;flex-wrap:wrap;
+  position:sticky;top:0;z-index:19;
+}
+.ms-nav .tab{
+  border:1px solid #b8c9d7;background:#f5f9fc;color:#24465f;
+  border-radius:8px;padding:7px 13px;font-size:12px;font-weight:700;
+}
+.ms-nav .tab small{display:none}
+.ms-nav .tab.active{background:#dceefa;color:#075f9d;border-color:#7db7de;box-shadow:inset 0 -3px 0 #1880c2}
+.ms-current{
+  max-width:1100px;margin:12px auto 0;padding:0 14px;
+}
+.ms-current-box{
+  background:#eef7fd;border:1px solid #a8d1ec;border-left:6px solid #1680c2;
+  border-radius:9px;padding:9px 12px;font-family:var(--fontNum);
+  display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;
+}
+.ms-current-label{font-size:10px;color:#557386;font-weight:700}
+.ms-current-name{font-size:15px;font-weight:900;color:#174a69;margin-top:2px}
+.ms-current-note{font-size:11px;color:#587180}
+.ms-home-head{
+  display:flex;justify-content:space-between;align-items:flex-end;gap:10px;
+  margin:0 0 10px;font-family:var(--fontNum)
+}
+.ms-home-head h2{margin:0;font-size:18px;color:#174a69}
+.ms-home-head p{margin:0;font-size:11px;color:#667}
+.ms-summary-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
+.ms-summary-card{
+  background:#fff;border:1px solid #d5dfe7;border-radius:10px;padding:11px 13px;
+  box-shadow:0 1px 3px rgba(0,0,0,.04);font-family:var(--fontNum)
+}
+.ms-summary-card .k{font-size:11px;color:#647681}
+.ms-summary-card .v{font-size:21px;font-weight:900;margin-top:3px;color:#183f59}
+.ms-summary-card.attn{border-left:5px solid #d58a24;background:#fffaf2}
+.ms-summary-card.done{border-left:5px solid #54a56b;background:#f7fcf8}
+.ms-section{
+  background:#fff;border:1px solid #d5dfe7;border-radius:10px;margin-top:10px;overflow:hidden;
+}
+.ms-section-title{
+  padding:9px 12px;font-family:var(--fontNum);font-size:13px;font-weight:900;
+  border-bottom:1px solid #dce4e9;background:#f5f8fa;color:#29495d;
+  display:flex;justify-content:space-between;align-items:center;
+}
+.ms-section-title.pending{background:#fff6e8;border-left:5px solid #e39a32}
+.ms-section-title.completed{background:#f0f8f2;border-left:5px solid #65a978}
+.ms-section-body{padding:10px 12px}
+.ms-notice{
+  max-width:1100px;margin:10px auto 0;padding:0 14px;font-family:var(--fontNum)
+}
+.ms-notice-box{
+  background:#fffbea;border:1px solid #eadb9d;border-radius:8px;padding:8px 11px;
+  display:flex;gap:9px;align-items:flex-start;font-size:11px;color:#5d532a;
+}
+.ms-notice-mark{font-size:16px;line-height:1}
+.ms-modal-bg{
+  position:fixed;inset:0;background:rgba(0,0,0,.38);z-index:5000;
+  display:flex;align-items:center;justify-content:center;padding:18px;
+}
+.ms-modal{
+  width:min(620px,100%);background:#fff;border-radius:12px;border:1px solid #cbd5dc;
+  box-shadow:0 14px 40px rgba(0,0,0,.25);overflow:hidden;font-family:var(--fontNum)
+}
+.ms-modal-h{background:#eaf5fc;border-bottom:1px solid #bdd8e9;padding:11px 14px;font-weight:900;color:#175578}
+.ms-modal-b{padding:14px;font-size:12px;line-height:1.8;color:#344}
+.ms-modal-f{padding:10px 14px;border-top:1px solid #e5e5e5;text-align:right}
+.ms-modal-f button{background:#1479b8;border-color:#1479b8}
+@media(max-width:720px){
+  .ms-summary-grid{grid-template-columns:1fr}
+  .ms-topbar{align-items:flex-start}
+  .ms-brand{min-width:0}
+}
+@media print{
+  .ms-topbar,.ms-nav,.ms-current,.ms-notice,#view-home{display:none!important}
+}
+
+
+/* ===== MS積算システム風 Ver.3：落ち着いたホーム画面 ===== */
+#view-home .wrap{max-width:1100px}
+.ms-home-head{
+  margin-bottom:8px;
+  padding:0 2px;
+}
+.ms-home-head h2{
+  font-size:16px;
+  color:#2e4e63;
+  font-weight:800;
+}
+.ms-home-head p{font-size:10.5px;color:#77838b}
+
+.ms-summary-grid{
+  grid-template-columns:repeat(3,1fr);
+  gap:8px;
+  margin-bottom:10px;
+}
+.ms-summary-card,
+.ms-summary-card.attn,
+.ms-summary-card.done{
+  background:#fff;
+  border:1px solid #d5e0e7;
+  border-left:4px solid #8fb8d3;
+  border-radius:8px;
+  padding:8px 11px;
+  box-shadow:none;
+}
+.ms-summary-card.done{
+  border-left-color:#a9bdb0;
+  background:#fff;
+}
+.ms-summary-card .k{font-size:10px;color:#6c7c86}
+.ms-summary-card .v{
+  font-size:17px;
+  color:#294d64;
+  margin-top:1px;
+}
+
+.ms-section{
+  border:1px solid #ccd9e2;
+  border-radius:8px;
+  margin-top:8px;
+  box-shadow:none;
+}
+.ms-section-title,
+.ms-section-title.pending,
+.ms-section-title.completed{
+  background:#eaf3f9;
+  color:#31566e;
+  border-left:0;
+  border-bottom:1px solid #cadce8;
+  padding:8px 11px;
+  font-size:12.5px;
+}
+.ms-section-title.completed{
+  background:#f1f5f3;
+  color:#4c6255;
+  border-bottom-color:#d9e2dc;
+}
+.ms-section-title span:last-child{
+  font-size:10px;
+  font-weight:700;
+  color:#6f818c;
+}
+.ms-section-body{padding:6px 10px 10px}
+
+#homePendingTable th,
+#homeDoneTable th{
+  background:#f8fafb;
+  color:#4b5d68;
+  font-size:11px;
+  font-weight:700;
+}
+#homePendingTable td,
+#homeDoneTable td{
+  font-size:12px;
+}
+#homePendingTable td[style*="color:#a65d00"]{
+  color:#314f62 !important;
+  font-weight:800 !important;
+}
+#homePendingTable button,
+#homeDoneTable button{
+  background:#fff;
+  color:#28658c;
+  border:1px solid #8eb8d2;
+  border-radius:6px;
+  padding:5px 9px;
+  font-size:11px;
+  font-weight:700;
+}
+#homePendingTable button:hover,
+#homeDoneTable button:hover{
+  background:#edf6fb;
+}
+
+.ms-current-box{
+  background:#f6fafc;
+  border:1px solid #c7d9e4;
+  border-left:4px solid #6ea3c5;
+  padding:7px 10px;
+}
+.ms-current-label{font-size:9.5px}
+.ms-current-name{font-size:13.5px}
+.ms-current-note{font-size:10.5px}
+
+.ms-notice-box{
+  background:#f9fbfc;
+  border:1px solid #d5e0e7;
+  color:#586b77;
+  padding:6px 9px;
+}
+.ms-notice-mark{color:#6d9dbb;font-size:12px}
+
+.ms-topbar{
+  background:#0d6ca8;
+}
+.ms-nav{
+  background:#f7fafc;
+}
+.ms-nav .tab{
+  background:#fff;
+  border:1px solid #c5d6e1;
+  color:#3c5d70;
+  border-radius:7px;
+  padding:6px 11px;
+}
+.ms-nav .tab.active{
+  background:#e6f1f8;
+  color:#155e8c;
+  border-color:#8ebad4;
+  box-shadow:inset 0 -2px 0 #4a98c5;
+}
+
+/* MS積算のカテゴリ見出しに近い小さめの補助帯 */
+.ms-work-guide{
+  max-width:1100px;
+  margin:8px auto 0;
+  padding:0 14px;
+  font-family:var(--fontNum);
+}
+.ms-work-guide-inner{
+  display:flex;
+  gap:6px;
+  align-items:center;
+  flex-wrap:wrap;
+  font-size:10.5px;
+  color:#60727f;
+}
+.ms-guide-chip{
+  background:#eef5f9;
+  border:1px solid #d0e0e9;
+  border-radius:999px;
+  padding:3px 8px;
+}
+@media(max-width:720px){
+  .ms-summary-grid{grid-template-columns:1fr}
+}
+
+
+/* =========================================================
+   MS請求書作成システム Ver.4
+   MS積算システム メイン画面準拠
+   ========================================================= */
+:root{
+  --ms-blue:#0647a5;
+  --ms-blue2:#075fbd;
+  --ms-line:#cfe3f7;
+  --ms-soft:#eef6ff;
+  --ms-text:#122033;
+  --ms-muted:#60758d;
+  --ms-shadow:0 8px 20px rgba(0,70,140,.10);
+}
+body{background:linear-gradient(180deg,#fff 0%,#eef7ff 34%,#e9f5ff 100%) !important;color:var(--ms-text)}
+.ms4-top{
+  position:relative;overflow:hidden;
+  background:linear-gradient(105deg,#fff 0%,#fff 58%,#d8efff 58%,#f7fbff 100%);
+  border-bottom:1px solid #c7def2;padding:28px 34px;
+}
+.ms4-top:after{
+  content:"";position:absolute;right:-120px;top:-160px;width:520px;height:340px;
+  background:rgba(0,112,192,.12);border-radius:50%;
+}
+.ms4-top-inner{
+  position:relative;z-index:1;max-width:1480px;margin:auto;
+  display:grid;grid-template-columns:280px 1fr 430px;gap:26px;align-items:center;
+}
+.ms4-logo{width:245px;max-width:100%;display:block;margin:auto}
+.ms4-title h1{
+  margin:0;color:#0647a5;font-size:48px;line-height:1;font-weight:950;letter-spacing:.04em;
+  font-family:var(--fontNum);
+}
+.ms4-en{
+  display:flex;align-items:center;gap:16px;margin-top:14px;color:#68829f;
+  font-weight:800;letter-spacing:.28em;font-size:15px;font-family:var(--fontNum)
+}
+.ms4-en:before,.ms4-en:after{content:"";height:2px;background:#abc4dd;flex:1;max-width:75px}
+.ms4-catch{font-size:16px;letter-spacing:.06em;margin-top:12px;color:#22384d;font-family:var(--fontNum)}
+.ms4-quick{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.ms4-quick button{
+  border:1px solid #d5e6f7;background:white;color:#0647a5;border-radius:14px;height:104px;
+  font-weight:900;font-size:13px;box-shadow:0 8px 18px rgba(0,70,140,.12);cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+  font-family:var(--fontNum)
+}
+.ms4-quick button:hover{transform:translateY(-2px);box-shadow:0 12px 24px rgba(0,70,140,.16)}
+.ms4-quick svg{width:36px;height:36px;stroke:#0647a5;fill:none;stroke-width:2.4}
+
+.ms4-main{max-width:1480px;margin:auto;padding:18px 28px 24px}
+.ms4-current{
+  background:rgba(255,255,255,.96);border:1px solid #cfe3f7;border-radius:16px;
+  box-shadow:var(--ms-shadow);padding:12px 14px;margin-bottom:14px;
+}
+.ms4-current-grid{display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px}
+.ms4-label{font-size:11px;color:#5f7188;font-weight:900;margin-bottom:4px;font-family:var(--fontNum)}
+.ms4-value{
+  min-height:36px;border:1px solid #d5e6f7;border-radius:9px;background:#fff;
+  padding:7px 10px;font-size:14px;font-weight:850;color:#24445d;font-family:var(--fontNum)
+}
+.ms4-value.money{text-align:right;font-variant-numeric:tabular-nums}
+
+.ms4-lower{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+.ms4-panel{
+  background:rgba(255,255,255,.97);border:1px solid #cfe3f7;border-radius:16px;
+  box-shadow:var(--ms-shadow);overflow:hidden;
+}
+.ms4-panel-head{
+  padding:11px 14px;border-bottom:1px solid #d7e7f7;color:#0647a5;
+  font-size:16px;font-weight:950;background:#fbfdff;font-family:var(--fontNum);
+  display:flex;align-items:center;justify-content:space-between;gap:8px
+}
+.ms4-panel-sub{font-size:10px;color:#70849a;font-weight:700}
+.ms4-panel-body{padding:12px 14px}
+
+.ms4-list-tabs{display:flex;gap:7px;margin-bottom:10px}
+.ms4-list-tabs button{
+  width:auto;height:32px;border:none;border-radius:9px;padding:0 12px;
+  font-size:11px;font-weight:900;cursor:pointer;font-family:var(--fontNum)
+}
+.ms4-list-tabs .active{background:#0647a5;color:#fff}
+.ms4-list-tabs .plain{background:#eef6ff;color:#0647a5}
+.ms4-site-list{display:grid;gap:8px;max-height:430px;overflow:auto}
+.ms4-site-item{
+  border:1px solid #d7e7f7;border-radius:12px;background:#fbfdff;padding:10px;
+  display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;
+}
+.ms4-site-name{font-weight:950;color:#0647a5;font-size:14px;font-family:var(--fontNum)}
+.ms4-site-meta{font-size:11px;color:#60758d;line-height:1.5;margin-top:3px;font-family:var(--fontNum)}
+.ms4-site-amt{font-weight:900;color:#334f65}
+.ms4-site-buttons{display:flex;gap:6px;align-items:center}
+.ms4-site-buttons button{
+  width:auto;min-width:62px;height:30px;border:none;border-radius:8px;
+  font-size:11px;font-weight:900;cursor:pointer;padding:0 10px;font-family:var(--fontNum)
+}
+.ms4-open{background:#0647a5;color:#fff}
+.ms4-subbtn{background:#eef6ff;color:#0647a5}
+.ms4-empty{padding:18px;text-align:center;color:#60758d;font-size:12px}
+
+.ms4-menu-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.ms4-menu{
+  border:1px solid #d1e4f6;background:linear-gradient(180deg,#fff,#fbfdff);
+  border-radius:16px;box-shadow:0 8px 18px rgba(0,70,140,.10);
+  min-height:150px;padding:17px 16px;text-align:left;cursor:pointer;
+  transition:.15s;position:relative;overflow:hidden;font-family:var(--fontNum)
+}
+.ms4-menu:hover{transform:translateY(-3px);box-shadow:0 14px 28px rgba(0,64,128,.16)}
+.ms4-menu-head{display:flex;align-items:center;gap:12px}
+.ms4-menu-badge{
+  width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  color:#fff;font-size:24px;font-weight:950;box-shadow:inset 0 2px 10px rgba(255,255,255,.35),0 5px 12px rgba(0,0,0,.12)
+}
+.ms4-menu h3{margin:0;font-size:19px;line-height:1.1;font-weight:950}
+.ms4-menu p{margin:12px 0 0;font-size:11px;line-height:1.6;color:#60758d}
+.ms4-menu .start{
+  position:absolute;right:14px;bottom:12px;border-radius:999px;padding:5px 11px;
+  color:#fff;font-size:10px;font-weight:900
+}
+.ms4-blue h3{color:#004fb6}.ms4-blue .ms4-menu-badge,.ms4-blue .start{background:linear-gradient(180deg,#0064d6,#0049af)}
+.ms4-green h3{color:#138317}.ms4-green .ms4-menu-badge,.ms4-green .start{background:linear-gradient(180deg,#22a42a,#087d10)}
+.ms4-orange h3{color:#e34800}.ms4-orange .ms4-menu-badge,.ms4-orange .start{background:linear-gradient(180deg,#ff7500,#e44700)}
+.ms4-purple h3{color:#5a35a3}.ms4-purple .ms4-menu-badge,.ms4-purple .start{background:linear-gradient(180deg,#7c56c7,#573196)}
+
+.ms4-footer-note{
+  margin-top:10px;font-size:11px;color:#60758d;text-align:right;font-family:var(--fontNum)
+}
+
+/* Ver.4 homeでは旧ヘッダー類を非表示 */
+.ms-topbar,.ms-nav,.ms-current,.ms-notice,.ms-work-guide{display:none !important}
+
+@media(max-width:1100px){
+  .ms4-top-inner{grid-template-columns:220px 1fr}
+  .ms4-quick{grid-column:1/-1}
+  .ms4-lower{grid-template-columns:1fr}
+}
+@media(max-width:700px){
+  .ms4-top{padding:20px 16px}
+  .ms4-top-inner{display:block}
+  .ms4-logo{width:180px;margin-bottom:14px}
+  .ms4-title{text-align:center}
+  .ms4-title h1{font-size:34px}
+  .ms4-en{justify-content:center;font-size:11px}
+  .ms4-catch{text-align:center}
+  .ms4-quick{margin-top:16px;grid-template-columns:1fr 1fr}
+  .ms4-current-grid{grid-template-columns:1fr}
+  .ms4-menu-grid{grid-template-columns:1fr}
+  .ms4-main{padding:14px}
+}
+@media print{
+  .ms4-top,.ms4-main{display:none!important}
+}
+
+
+/* ===== 帯幅統一修正 ===== */
+.ms4-current,
+.ms4-lower{
+  width:100%;
+  box-sizing:border-box;
+}
+.ms4-lower{
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+}
+.ms4-panel{
+  width:100%;
+  min-width:0;
+  box-sizing:border-box;
+}
+
+
+
+
+/* ===== 上下の外幅を完全統一 =====
+   上：選択中の工事
+   下：工事一覧＋請求メニュー
+*/
+.ms4-main{
+  max-width:1480px !important;
+  width:100% !important;
+  margin-left:auto !important;
+  margin-right:auto !important;
+  box-sizing:border-box !important;
+}
+
+.ms4-current,
+.ms4-lower{
+  width:100% !important;
+  max-width:none !important;
+  margin-left:0 !important;
+  margin-right:0 !important;
+  box-sizing:border-box !important;
+}
+
+/* 下段2パネルの左右端を親幅いっぱいに固定 */
+.ms4-lower{
+  display:grid !important;
+  grid-template-columns:calc(50% - 8px) calc(50% - 8px) !important;
+  gap:16px !important;
+}
+
+.ms4-panel{
+  width:100% !important;
+  max-width:none !important;
+  min-width:0 !important;
+  margin:0 !important;
+  box-sizing:border-box !important;
+}
+
+/* 上段の帯にブラウザ既定等の余分な横幅差が出ないよう固定 */
+.ms4-current{
+  padding-left:14px !important;
+  padding-right:14px !important;
+}
+
+
+
+/* ===== 帯幅 完全統一修正2 =====
+   上部ヘッダーの内幅 1480px と、
+   下の「選択中の工事」「工事一覧＋請求メニュー」を同じ幅にする。
+*/
+.ms4-main{
+  max-width:1480px !important;
+  width:calc(100% - 56px) !important;
+  margin:0 auto !important;
+  padding:18px 0 24px !important;
+  box-sizing:border-box !important;
+}
+.ms4-current,
+.ms4-lower{
+  width:100% !important;
+  max-width:100% !important;
+  margin-left:0 !important;
+  margin-right:0 !important;
+  box-sizing:border-box !important;
+}
+.ms4-lower{
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr) !important;
+  gap:16px !important;
+}
+@media(max-width:700px){
+  .ms4-main{
+    width:calc(100% - 28px) !important;
+    padding:14px 0 !important;
+  }
+  .ms4-lower{
+    grid-template-columns:1fr !important;
+  }
+}
+
+
+
+/* ===== 帯幅 最終修正 =====
+   上部 .ms4-top-inner と下部 .ms4-main を
+   完全に同じ外幅にする
+*/
+.ms4-top-inner,
+.ms4-main{
+  width:100% !important;
+  max-width:1480px !important;
+  margin-left:auto !important;
+  margin-right:auto !important;
+  box-sizing:border-box !important;
+}
+
+/* 下側にだけ入っていた左右余白を完全に除去 */
+.ms4-main{
+  padding:18px 0 24px 0 !important;
+}
+
+/* 上の帯と下の2パネル全体は親幅100% */
+.ms4-current,
+.ms4-lower{
+  width:100% !important;
+  max-width:none !important;
+  margin-left:0 !important;
+  margin-right:0 !important;
+  box-sizing:border-box !important;
+}
+
+.ms4-lower{
+  display:grid !important;
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr) !important;
+  gap:16px !important;
+}
+
+.ms4-panel{
+  width:100% !important;
+  min-width:0 !important;
+  max-width:none !important;
+  margin:0 !important;
+  box-sizing:border-box !important;
+}
+
+@media(max-width:700px){
+  .ms4-main{
+    width:100% !important;
+    padding:14px 0 !important;
+  }
+  .ms4-lower{
+    grid-template-columns:1fr !important;
+  }
+}
+
+
+
+  html.pw-locked #appRoot{ display:none !important; }
+  #pwOverlay{
+    position:fixed; inset:0; z-index:99999;
+    display:flex; align-items:center; justify-content:center;
+    background:rgba(0,0,0,.55);
+    font-family:var(--fontNum, system-ui, sans-serif);
+  }
+  #pwBox{
+    width:min(520px, calc(100% - 28px));
+    background:#fff;
+    border-radius:14px;
+    border:1px solid #ddd;
+    box-shadow:0 10px 30px rgba(0,0,0,.25);
+    padding:16px 16px 14px;
+  }
+  #pwBox h2{ margin:0 0 10px; font-size:18px; }
+  #pwBox p{ margin:0 0 10px; font-size:13px; line-height:1.6; color:#333; }
+  #pwRow{ display:flex; gap:10px; align-items:center; }
+  #pwInput{
+    flex:1;
+    padding:10px 12px;
+    border:1px solid #bbb;
+    border-radius:10px;
+    font-size:16px;
+    letter-spacing:.15em;
+  }
+  #pwBtn{
+    padding:10px 14px;
+    border-radius:10px;
+    border:1px solid #111;
+    background:#111;
+    color:#fff;
+    font-size:14px;
+    cursor:pointer;
+  }
+  #pwMsg{ margin-top:10px; font-size:12px; color:#b00020; min-height:1.2em; }
+  @media print{ #pwOverlay{ display:none !important; } }
+
+
+/* ===== 工事情報画面 Ver.2 ===== */
+.ms-project-card .body{padding:12px}
+.ms-project-section{
+  border:1px solid #d6e5f2;
+  border-radius:10px;
+  background:#fbfdff;
+  padding:10px 12px;
+  margin-bottom:10px;
+}
+.ms-project-section-title{
+  font-family:var(--fontNum);
+  color:#075f9d;
+  font-size:12px;
+  font-weight:900;
+  margin:-10px -12px 8px;
+  padding:7px 10px;
+  background:#edf6fc;
+  border-bottom:1px solid #d6e5f2;
+  border-radius:10px 10px 0 0;
+}
+.ms-auto-summary{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:8px;
+  margin:10px 0;
+}
+.ms-auto-summary>div{
+  border:1px solid #d7e4ee;
+  border-radius:9px;
+  background:#f7fafc;
+  padding:8px 10px;
+}
+.ms-auto-summary span{
+  display:block;
+  font-size:10px;
+  color:#6b7e8b;
+  font-family:var(--fontNum);
+}
+.ms-auto-summary b{
+  display:block;
+  margin-top:3px;
+  font-size:14px;
+  color:#294d64;
+  text-align:right;
+  font-family:var(--fontNum);
+}
+@media(max-width:760px){
+  .ms-auto-summary{grid-template-columns:1fr 1fr}
+}
+
+
+/* =========================================================
+   工事情報入力画面 Ver.6
+   MS積算システム入力画面準拠
+   ========================================================= */
+.ms-estimate-input{
+  border-radius:14px;
+  overflow:hidden;
+}
+.ms-estimate-input>h2{
+  background:linear-gradient(180deg,#0d72b5,#075f9d);
+  color:#fff;
+  font-family:var(--fontNum);
+  font-size:15px;
+  font-weight:900;
+  padding:10px 14px;
+}
+.ms-estimate-input>.body{
+  background:#f7fbfe;
+  padding:12px;
+}
+
+/* 上部案内 */
+.ms-input-guide{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  padding:8px 10px;
+  margin-bottom:10px;
+  background:#fff;
+  border:1px solid #d5e3ee;
+  border-radius:10px;
+  font-family:var(--fontNum);
+  font-size:11px;
+  font-weight:800;
+}
+.ms-input-guide .guide-item{
+  display:flex;
+  align-items:center;
+  gap:5px;
+  color:#526b7b;
+}
+.ms-input-guide .guide-item span{
+  display:inline-block;
+  width:10px;height:10px;
+  border-radius:3px;
+}
+.guide-basic span{background:#74b7df}
+.guide-money span{background:#b8797f}
+.guide-condition span{background:#79b985}
+
+/* 左入力＋右結果 */
+.ms-input-layout{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 280px;
+  gap:12px;
+  align-items:start;
+}
+.ms-input-main{
+  display:grid;
+  gap:10px;
+}
+.ms-input-section{
+  background:#fff;
+  border:1px solid #d6e4ef;
+  border-radius:10px;
+  overflow:hidden;
+}
+.ms-input-section-head{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:7px 10px;
+  border-bottom:1px solid #dbe6ee;
+  font-family:var(--fontNum);
+}
+.ms-input-section-head b{
+  font-size:12px;
+  color:#294e65;
+}
+.ms-input-section-head small{
+  font-size:9.5px;
+  color:#7a8b96;
+}
+.section-basic .ms-input-section-head{background:#edf7fd}
+.section-money .ms-input-section-head{background:#fbf0f1}
+.section-condition .ms-input-section-head{background:#eef8f0}
+
+.ms-form-grid{
+  display:grid;
+  gap:9px 10px;
+  padding:10px;
+}
+.ms-form-grid.cols-2{grid-template-columns:1fr 1fr}
+.ms-form-grid.cols-3{grid-template-columns:repeat(3,1fr)}
+.ms-field{
+  display:block;
+  margin:0;
+  color:#334b5c;
+}
+.ms-field.span-2{grid-column:1 / -1}
+.ms-field-label{
+  display:block;
+  font-family:var(--fontNum);
+  font-size:10px;
+  font-weight:800;
+  margin:0 0 4px 2px;
+}
+.ms-field input,
+.ms-field select{
+  height:37px;
+  border-radius:8px;
+  border:1px solid #b8c9d5;
+  background:#fff;
+  font-family:var(--fontNum);
+  font-size:13px;
+  padding:7px 9px;
+  box-shadow:inset 0 -3px 0 rgba(0,0,0,.035);
+}
+
+/* MS積算の入力色分け：左＋下の色帯 */
+.ms-field.field-basic input,
+.ms-field.field-basic select{
+  border-left:5px solid #83c2e6;
+  border-bottom:4px solid #c8e6f5;
+}
+.ms-field.field-money input,
+.ms-field.field-money select{
+  border-left:5px solid #a86169;
+  border-bottom:4px solid #ead0d3;
+  background:#fffafa;
+}
+.ms-field.field-condition input,
+.ms-field.field-condition select{
+  border-left:5px solid #68aa74;
+  border-bottom:4px solid #cce6d1;
+  background:#fbfffb;
+}
+.ms-field.field-auto input{
+  border-left:5px solid #9aa9b3;
+  border-bottom:4px solid #d8e0e5;
+  background:#f1f4f6;
+  color:#53636e;
+  font-weight:800;
+}
+
+/* 右側計算結果 */
+.ms-input-side{
+  display:grid;
+  gap:10px;
+}
+.ms-result-card{
+  background:#fff;
+  border:1px solid #cbdfea;
+  border-radius:11px;
+  overflow:hidden;
+  box-shadow:0 5px 14px rgba(25,80,120,.08);
+}
+.ms-result-title{
+  background:#eaf5fc;
+  border-bottom:1px solid #cbdfea;
+  padding:9px 11px;
+  color:#17628f;
+  font-size:12px;
+  font-weight:900;
+  font-family:var(--fontNum);
+}
+.ms-result-row{
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:8px;
+  align-items:center;
+  padding:10px 11px;
+  border-bottom:1px solid #edf1f4;
+  font-family:var(--fontNum);
+}
+.ms-result-row span{
+  font-size:10px;
+  color:#687d89;
+}
+.ms-result-row b{
+  font-size:14px;
+  color:#294d64;
+  font-variant-numeric:tabular-nums;
+}
+.ms-result-row.emphasis{
+  background:#f2f8fc;
+}
+.ms-result-row.emphasis b{
+  color:#075f9d;
+  font-size:16px;
+}
+.ms-result-note{
+  padding:8px 10px;
+  color:#778894;
+  font-size:9.5px;
+  line-height:1.5;
+  font-family:var(--fontNum);
+}
+.ms-side-actions{
+  display:grid;
+  gap:7px;
+}
+.ms-side-actions button{
+  width:100%;
+  min-height:38px;
+  border-radius:8px;
+  font-size:12px;
+  font-weight:900;
+  font-family:var(--fontNum);
+}
+.ms-side-actions button:first-child{
+  background:#086ca9;
+  border-color:#086ca9;
+}
+.ms-side-actions button.secondary{
+  background:#fff;
+  color:#31586e;
+  border:1px solid #a9c2d2;
+}
+
+@media(max-width:900px){
+  .ms-input-layout{grid-template-columns:1fr}
+  .ms-input-side{grid-template-columns:1fr 1fr}
+}
+@media(max-width:680px){
+  .ms-form-grid.cols-2,
+  .ms-form-grid.cols-3{grid-template-columns:1fr}
+  .ms-field.span-2{grid-column:auto}
+  .ms-input-side{grid-template-columns:1fr}
+}
+
+
+/* =========================================================
+   工事情報入力画面 Ver.7
+   「基本情報 / 注文金額 / 請求条件」3帯構成
+   ========================================================= */
+.ms-threeband-input{
+  border-radius:14px;
+  overflow:hidden;
+}
+.ms-threeband-input>h2{
+  background:linear-gradient(180deg,#0e74b7,#075f9d);
+  color:#fff;
+  font-family:var(--fontNum);
+  font-size:15px;
+  font-weight:900;
+  padding:10px 14px;
+}
+.ms-threeband-input>.body{
+  padding:12px;
+  background:#f7fbfe;
+}
+
+.ms-band{
+  background:#fff;
+  border:1px solid #d4e3ee;
+  border-radius:11px;
+  overflow:hidden;
+  margin-bottom:11px;
+}
+.ms-band-title{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  height:36px;
+  padding:0 12px;
+  border-bottom:1px solid #d6e3ec;
+  font-family:var(--fontNum);
+}
+.ms-band-title b{
+  font-size:13px;
+  font-weight:900;
+  letter-spacing:.02em;
+}
+.ms-band-no{
+  display:inline-grid;
+  place-items:center;
+  width:22px;height:22px;
+  border-radius:50%;
+  color:#fff;
+  font-size:11px;
+  font-weight:900;
+}
+.band-basic .ms-band-title{
+  background:#eaf5fc;
+  color:#17638f;
+}
+.band-basic .ms-band-no{background:#2787bd}
+
+.band-money .ms-band-title{
+  background:#f9eeee;
+  color:#7b3f46;
+}
+.band-money .ms-band-no{background:#98515a}
+
+.band-condition .ms-band-title{
+  background:#edf7ef;
+  color:#3f7048;
+}
+.band-condition .ms-band-no{background:#5f9c69}
+
+.ms-band-body{
+  padding:11px 12px 12px;
+}
+.ms-band-grid{
+  display:grid;
+  gap:9px 11px;
+}
+.basic-grid{grid-template-columns:1fr 1fr}
+.money-grid{grid-template-columns:repeat(4,1fr)}
+.condition-grid{grid-template-columns:repeat(5,1fr)}
+
+.ms-band-field{
+  display:block;
+  margin:0;
+  min-width:0;
+}
+.ms-band-field.span-2{grid-column:1 / -1}
+.ms-band-field>span{
+  display:block;
+  margin:0 0 4px 2px;
+  color:#3d5565;
+  font-family:var(--fontNum);
+  font-size:10px;
+  font-weight:800;
+}
+.ms-band-field input,
+.ms-band-field select{
+  width:100%;
+  height:37px;
+  box-sizing:border-box;
+  border:1px solid #b8c9d4;
+  border-left:5px solid #83c2e6;
+  border-bottom:4px solid #c8e6f5;
+  border-radius:8px;
+  background:#fff;
+  padding:7px 9px;
+  font-family:var(--fontNum);
+  font-size:13px;
+}
+
+.ms-band-field.money-field input{
+  border-left-color:#a76269;
+  border-bottom-color:#ead0d3;
+  background:#fffafa;
+}
+.ms-band-field.condition-field input,
+.ms-band-field.condition-field select{
+  border-left-color:#6aaa76;
+  border-bottom-color:#cde6d2;
+  background:#fbfffb;
+}
+.ms-band-field.auto-field input{
+  border-left-color:#9eaab2;
+  border-bottom-color:#d7e0e5;
+  background:#f1f4f6;
+  color:#566773;
+  font-weight:800;
+}
+
+.ms-calc-strip{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:8px;
+  margin-top:10px;
+}
+.ms-calc-strip>div{
+  background:#f7fafc;
+  border:1px solid #d7e3eb;
+  border-radius:8px;
+  padding:7px 9px;
+}
+.ms-calc-strip span{
+  display:block;
+  color:#70828e;
+  font-size:9.5px;
+  font-family:var(--fontNum);
+}
+.ms-calc-strip b{
+  display:block;
+  margin-top:2px;
+  color:#2d5067;
+  text-align:right;
+  font-size:13px;
+  font-family:var(--fontNum);
+}
+.ms-calc-strip .important{
+  background:#eef7fd;
+  border-color:#bddced;
+}
+.ms-calc-strip .important b{
+  color:#075f9d;
+  font-size:15px;
+}
+
+.ms-threeband-actions{
+  display:flex;
+  gap:8px;
+  justify-content:flex-end;
+  flex-wrap:wrap;
+  padding-top:2px;
+}
+.ms-threeband-actions button{
+  width:auto;
+  min-width:130px;
+  height:36px;
+  border-radius:8px;
+  font-size:12px;
+  font-weight:900;
+  font-family:var(--fontNum);
+}
+.ms-threeband-actions button:first-child{
+  background:#086ca9;
+  border-color:#086ca9;
+}
+.ms-threeband-actions .secondary{
+  background:#fff;
+  color:#31586e;
+  border:1px solid #aac3d2;
+}
+
+@media(max-width:980px){
+  .money-grid{grid-template-columns:1fr 1fr}
+  .condition-grid{grid-template-columns:1fr 1fr}
+  .ms-calc-strip{grid-template-columns:1fr 1fr}
+}
+@media(max-width:640px){
+  .basic-grid,
+  .money-grid,
+  .condition-grid,
+  .ms-calc-strip{grid-template-columns:1fr}
+  .ms-band-field.span-2{grid-column:auto}
+}

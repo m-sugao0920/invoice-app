@@ -1,0 +1,1472 @@
+<!-- MS請求書システム 基礎整理版 2026-08-27 -->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MS請求書システム｜マスター管理</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#f4f7fb;color:#1f2937;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans JP","Meiryo",sans-serif}
+header{background:linear-gradient(135deg,#0070C0,#2b8ae2);color:#fff;padding:18px 20px}
+.wrap{max-width:1400px;margin:0 auto}
+.head{display:flex;justify-content:space-between;align-items:center;gap:12px}
+h1{font-size:20px;margin:0;font-weight:900}
+.sub{font-size:12px;margin-top:3px;opacity:.95}
+.back{display:inline-flex;align-items:center;justify-content:center;height:38px;padding:0 15px;border-radius:999px;border:1px solid rgba(255,255,255,.55);background:rgba(255,255,255,.18);color:#fff;text-decoration:none;font-weight:900;font-size:13px}
+main{padding:18px 16px 40px}
+.card{background:#fff;border:1px solid #dbe3ee;border-radius:14px;box-shadow:0 6px 18px rgba(15,23,42,.06);overflow:hidden}
+.card-title{padding:12px 16px;background:linear-gradient(180deg,#f7f3ff,#eee8ff);border-bottom:1px solid #ddd6fe;color:#5b21b6;font-weight:900}
+.layout{display:grid;grid-template-columns:minmax(340px,1fr) minmax(0,1.35fr);gap:16px;padding:16px}
+.panel{border:1px solid #dbe3ee;border-radius:12px;padding:14px;background:#fff}
+.band{font-weight:900;background:#f1f5f9;border-left:5px solid #7c3aed;padding:8px 10px;margin:0 0 10px;border-radius:7px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.span2{grid-column:1/-1}
+label{display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:800;color:#475569}
+input,textarea{width:100%;border:1px solid #cbd5e1;border-radius:8px;padding:9px 10px;font:inherit;background:#fff}
+input:focus,textarea:focus{outline:2px solid rgba(124,58,237,.18);border-color:#8b5cf6}
+.actions{display:flex;gap:8px;margin-top:12px}
+button{border:0;border-radius:9px;padding:9px 14px;font-weight:900;cursor:pointer}
+.primary{background:#2563eb;color:#fff}.secondary{background:#e7eef7;color:#334155}.danger{background:#b86a6a;color:#fff}
+.item{border:1px solid #dbe3ee;border-radius:10px;padding:11px 12px;margin-bottom:9px;background:#fafcff}
+.item-head{display:flex;justify-content:space-between;gap:10px;align-items:center}
+.item-name{font-weight:900}.meta{font-size:12px;color:#64748b;margin-top:5px;line-height:1.65}
+.item-buttons{display:flex;gap:6px}.item-buttons button{padding:6px 10px;font-size:12px}
+.empty{padding:26px;text-align:center;color:#94a3b8;border:1px dashed #cbd5e1;border-radius:10px}
+.note{font-size:12px;color:#64748b;margin:0 0 14px}
+.tabs{display:flex;gap:8px;margin-bottom:12px}
+.tab{background:#e8eef6;color:#334155}.tab.active{background:#7c3aed;color:#fff}
+#companyPanel{display:none}
+@media(max-width:900px){.layout{grid-template-columns:1fr}}
+</style>
+
+<style id="client-master-usability-v2">
+#clientPanel select{
+  width:100%;
+  border:1px solid #cbd5e1;
+  border-radius:8px;
+  padding:9px 10px;
+  font:inherit;
+  background:#fff;
+}
+#clientPanel select:focus{
+  outline:2px solid rgba(124,58,237,.18);
+  border-color:#8b5cf6;
+}
+.zip-row{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:6px;
+}
+.zip-btn{
+  padding:0 10px;
+  background:#e7f2fa;
+  color:#17638f;
+  border:1px solid #9fc5dc;
+  white-space:nowrap;
+}
+.field-help{
+  font-size:10px;
+  font-weight:500;
+  color:#64748b;
+}
+.field-help.ok{color:#16803a}
+.field-help.error{color:#a04444}
+.other-input{margin-top:6px}
+.hide{display:none!important}
+</style>
+
+
+<style id="client-master-keyboard-v3">
+:root{
+  --ms-font:"Noto Sans JP","Yu Gothic","Meiryo",sans-serif;
+}
+body,
+button,
+input,
+select,
+textarea{
+  font-family:var(--ms-font) !important;
+}
+
+/* キーボード選択モード：MS積算と同じ考え方でえんじ色に */
+#clientPanel select.ms-select-editing{
+  border:2px solid #8A4653 !important;
+  background:#fff8f9 !important;
+  box-shadow:0 0 0 3px rgba(138,70,83,.14) !important;
+  color:#1f2937 !important;
+}
+
+/* 通常フォーカスは薄いブルー */
+#clientPanel input:focus,
+#clientPanel textarea:focus,
+#clientPanel select:focus:not(.ms-select-editing){
+  border-color:#73a9cf !important;
+  outline:none !important;
+  box-shadow:0 0 0 3px rgba(115,169,207,.14) !important;
+}
+
+.keyboard-hint{
+  margin:0 0 12px;
+  padding:7px 9px;
+  border:1px solid #d8dee7;
+  border-radius:9px;
+  background:#f8fafc;
+  color:#475569;
+  font-size:10px;
+  line-height:1.45;
+}
+.keyboard-hint b{color:#8A4653}
+</style>
+
+
+<style id="master-project-style-final">
+:root{--fontNum:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans JP","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;}
+body,button,input,select,textarea{font-family:var(--fontNum)!important}
+body{background:#f4f7fa!important;color:#314b5d!important}
+header{
+  background:linear-gradient(135deg,#0070C0,#2b8ae2)!important;
+  padding:18px 0!important;
+}
+header .wrap{max-width:1400px!important;padding:0 14px!important}
+header h1{font-size:18px!important;font-weight:900!important}
+header .sub{font-size:12px!important}
+.back{
+  min-width:150px!important;height:38px!important;padding:0 14px!important;
+  border-radius:999px!important;background:rgba(255,255,255,.18)!important;
+  border:1px solid rgba(255,255,255,.55)!important;font-size:13px!important;
+  box-shadow:0 6px 14px rgba(0,0,0,.12)!important;
+}
+main.wrap{max-width:1400px!important;padding:16px 14px 40px!important}
+.tabs{gap:7px!important;margin-bottom:10px!important}
+.tab{
+  height:32px!important;padding:0 13px!important;border-radius:7px!important;
+  font-size:10.5px!important;font-weight:900!important;
+  background:#eaf5fc!important;color:#17638f!important;border:1px solid #9cc7e0!important;
+}
+.tab.active{background:#177bb5!important;color:#fff!important;border-color:#177bb5!important}
+.card{
+  border:1px solid #d3e4f1!important;border-radius:14px!important;
+  box-shadow:0 3px 10px rgba(20,80,120,.06)!important;background:#fff!important;
+}
+.card-title{
+  background:linear-gradient(180deg,#0e74b7,#075f9d)!important;color:#fff!important;
+  border-bottom:0!important;padding:10px 14px!important;font-size:15px!important;font-weight:900!important;
+}
+.layout{grid-template-columns:minmax(320px,1fr) minmax(0,2fr)!important;gap:12px!important;padding:12px!important}
+.panel{border:1px solid #d6e3ec!important;border-radius:11px!important;padding:11px!important;background:#fff!important}
+.band{
+  margin:0 0 8px!important;padding:7px 9px!important;border-left:4px solid #177bb5!important;
+  border-radius:8px!important;background:#f5f9fc!important;color:#245b80!important;
+  font-size:11px!important;font-weight:900!important;
+}
+.grid{gap:8px!important;margin-bottom:11px!important}
+label{gap:4px!important;color:#526c7c!important;font-size:10px!important;font-weight:800!important}
+input,textarea,select{
+  min-height:34px!important;border:1px solid #c9dce9!important;border-radius:7px!important;
+  padding:7px 9px!important;background:#fff!important;color:#263f50!important;font-size:11px!important;
+  box-shadow:inset 0 1px 2px rgba(20,80,120,.03)!important;
+}
+textarea{min-height:68px!important}
+input:focus,textarea:focus,select:focus:not(.ms-select-editing){
+  outline:none!important;border-color:#84b9da!important;background:#fafdff!important;
+  box-shadow:0 0 0 2px rgba(23,123,181,.10)!important;
+}
+#clientPanel select.ms-select-editing{
+  border:2px solid #8a4653!important;background:#fff8f9!important;
+  box-shadow:0 0 0 2px rgba(138,70,83,.12)!important;
+}
+.keyboard-hint{
+  margin:0!important;padding:7px 9px!important;border:1px solid #d6e3ec!important;
+  border-radius:8px!important;background:#f5f9fc!important;color:#657a88!important;
+  font-size:9.5px!important;
+}
+.actions{gap:7px!important;margin-top:10px!important}
+.actions button,.item-buttons button{
+  min-width:72px!important;height:30px!important;padding:0 10px!important;border-radius:7px!important;
+  font-size:10px!important;font-weight:900!important;
+}
+.primary{background:#177bb5!important;color:#fff!important;border:1px solid #116b9f!important}
+.secondary{background:#eaf5fc!important;color:#17638f!important;border:1px solid #9cc7e0!important}
+.danger{background:#fff!important;color:#a44949!important;border:1px solid #d8aaaa!important}
+.item{
+  border:1px solid #d3e4f1!important;border-radius:11px!important;background:#fff!important;
+  padding:10px 11px!important;margin-bottom:8px!important;box-shadow:0 3px 10px rgba(20,80,120,.06)!important;
+}
+.item-name{color:#1f5577!important;font-size:13px!important;font-weight:900!important}
+.meta{color:#6a7d89!important;font-size:9.5px!important;line-height:1.6!important}
+.empty{color:#7a8c98!important;font-size:11px!important;border-color:#d3e4f1!important;background:#fbfdff!important}
+.zip-btn{background:#eaf5fc!important;color:#17638f!important;border:1px solid #9cc7e0!important;border-radius:7px!important;font-size:10px!important}
+.field-help{font-size:9px!important}
+@media(max-width:980px){.layout{grid-template-columns:1fr!important}}
+</style>
+
+
+<style id="reverse-postal-style">
+.postal-choice-overlay{
+  position:fixed;inset:0;z-index:9999;background:rgba(15,23,42,.34);
+  display:flex;align-items:center;justify-content:center;padding:18px;
+}
+.postal-choice-box{
+  width:min(620px,96vw);max-height:78vh;overflow:auto;background:#fff;
+  border:1px solid #c9dce9;border-radius:12px;box-shadow:0 18px 45px rgba(15,23,42,.20);
+}
+.postal-choice-head{
+  position:sticky;top:0;background:linear-gradient(180deg,#0e74b7,#075f9d);
+  color:#fff;padding:10px 13px;font-size:12px;font-weight:900;
+  display:flex;justify-content:space-between;align-items:center;gap:10px;
+}
+.postal-choice-head button{
+  background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.5);
+  border-radius:7px;height:28px;padding:0 10px;font-size:10px;
+}
+.postal-choice-list{padding:10px}
+.postal-choice-item{
+  width:100%;text-align:left;background:#fff;color:#314b5d;border:1px solid #d3e4f1;
+  border-radius:9px;padding:9px 10px;margin-bottom:7px;font-size:10.5px;line-height:1.55;
+}
+.postal-choice-item:hover{background:#f3f9fd;border-color:#84b9da}
+.postal-choice-code{font-weight:900;color:#17638f;margin-right:8px}
+</style>
+
+
+<style id="client-search-style">
+.client-search-box{
+  margin:0 0 9px;
+  padding:8px 9px;
+  border:1px solid #d6e3ec;
+  border-radius:9px;
+  background:#f6faff;
+}
+.client-search-row{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:6px;
+  align-items:center;
+}
+#cm_search{
+  min-height:32px !important;
+  font-size:10.5px !important;
+  background:#fff !important;
+}
+.client-search-clear{
+  min-width:58px !important;
+  height:32px !important;
+  padding:0 10px !important;
+  font-size:10px !important;
+  white-space:nowrap;
+}
+.client-search-info{
+  display:flex;
+  align-items:center;
+  gap:5px;
+  margin-top:6px;
+  color:#6a7d89;
+  font-size:9.5px;
+}
+.client-search-sort{
+  margin-left:auto;
+  padding:2px 7px;
+  border-radius:999px;
+  background:#e6f2fb;
+  color:#17638f;
+  font-weight:900;
+}
+.client-no-result{
+  padding:22px;
+  text-align:center;
+  color:#7a8c98;
+  font-size:11px;
+  border:1px dashed #d3e4f1;
+  border-radius:10px;
+  background:#fbfdff;
+}
+</style>
+
+
+<style id="company-master-style">
+#companyPanel .company-summary{
+  border:1px solid #d3e4f1;
+  border-radius:11px;
+  background:#fff;
+  padding:12px;
+  box-shadow:0 3px 10px rgba(20,80,120,.06);
+}
+#companyPanel .company-summary-name{
+  color:#1f5577;
+  font-size:13px;
+  font-weight:900;
+  margin-bottom:7px;
+}
+#companyPanel .company-summary-meta{
+  color:#6a7d89;
+  font-size:9.5px;
+  line-height:1.7;
+}
+#companyPanel .company-summary-bank{
+  margin-top:9px;
+  padding-top:8px;
+  border-top:1px solid #dbe7ef;
+  color:#405d70;
+  font-size:10px;
+}
+</style>
+
+
+<style id="master-visibility-adjust-20260831">
+/* 文字を見やすくし、登録済み発注先側を少し狭くする */
+.layout{grid-template-columns:minmax(390px,1.35fr) minmax(360px,1fr)!important;}
+.band{font-size:14px!important;}
+label{font-size:13px!important;}
+input,textarea,select{font-size:14px!important;min-height:38px!important;}
+.keyboard-hint{font-size:12px!important;}
+.field-help{font-size:11px!important;}
+.tab{font-size:13px!important;}
+.actions button,.item-buttons button,.zip-btn,.client-search-clear{font-size:12px!important;}
+.item-name{font-size:15px!important;}
+.meta{font-size:12px!important;line-height:1.55!important;}
+#cm_search{font-size:13px!important;}
+.client-search-info{font-size:11px!important;}
+.company-summary-name{font-size:15px!important;}
+#companyPanel .company-summary-meta{font-size:12px!important;}
+#companyPanel .company-summary-bank{font-size:12px!important;}
+@media(max-width:980px){.layout{grid-template-columns:1fr!important;}}
+</style>
+
+<style id="master-header-position-match-monthly-20260831">
+/* 今月の請求画面と同じ上部帯配置：タイトルは左、戻るボタンは右 */
+header .wrap.head{
+  width:100% !important;
+  max-width:1400px !important;
+  margin:0 auto !important;
+  padding-left:14px !important;
+  padding-right:14px !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:space-between !important;
+  gap:12px !important;
+}
+header .wrap.head > div:first-child{margin:0 !important;text-align:left !important;}
+header .back{margin-left:auto !important;flex:0 0 auto !important;}
+</style>
+
+<!-- MS請求書システム 簡易パスワード保護（SHA-256 / セッション中のみ認証保持） -->
+<style id="ms-password-gate-style">
+html.ms-password-locked body{visibility:hidden!important;}
+</style>
+<script id="ms-password-gate">
+(function(){
+  'use strict';
+  var KEY='ms_invoice_auth_v1';
+  var HASH='60d523c99e38a30e4b889688cf2563ae6b745aa77b41c3d5b7a7fa9606aaa4cf';
+  try{ if(sessionStorage.getItem(KEY)==='ok') return; }catch(e){}
+  document.documentElement.classList.add('ms-password-locked');
+  function hex(buf){return Array.from(new Uint8Array(buf)).map(function(b){return b.toString(16).padStart(2,'0');}).join('');}
+  async function check(pw){
+    if(!window.crypto || !window.crypto.subtle){ return false; }
+    var data=new TextEncoder().encode(pw);
+    return hex(await crypto.subtle.digest('SHA-256',data))===HASH;
+  }
+  async function ask(){
+    while(true){
+      var pw=window.prompt('MS請求書システム\nパスワードを入力してください。');
+      if(pw===null){ document.body && (document.body.innerHTML=''); return; }
+      try{
+        if(await check(pw)){
+          try{sessionStorage.setItem(KEY,'ok');}catch(e){}
+          document.documentElement.classList.remove('ms-password-locked');
+          return;
+        }
+      }catch(e){}
+      window.alert('パスワードが違います。');
+    }
+  }
+  if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',ask,{once:true});}else{ask();}
+})();
+</script>
+
+</head>
+<body>
+<header>
+ <div class="wrap head">
+  <div><h1>MS請求書システム</h1><div class="sub">マスター管理</div></div>
+  <a class="back" href="index.html">🏠 メイン画面に戻る</a>
+ </div>
+</header>
+
+<main class="wrap">
+ <div class="tabs">
+  <button class="tab active" id="tabClient" onclick="showMaster('client')">発注先マスター</button>
+  <button class="tab" id="tabCompany" onclick="showMaster('company')">自社マスター</button>
+ </div>
+
+ <section id="clientPanel" class="card">
+  <div class="card-title">発注先マスター</div>
+  <div style="padding:12px 16px 0;">
+    <div class="keyboard-hint">
+      Enter／↓／Tab：次へ　　↑／Shift+Tab：前へ　　
+      選択欄は <b>Space → ↑↓で変更 → Spaceで確定</b>
+    </div>
+  </div>
+  <div class="layout">
+   <div class="panel">
+    <div class="band">基本情報</div>
+    <div class="grid">
+     <label class="span2">発注先名<input id="cm_name" placeholder="発注先名"></label>
+     <label>郵便番号
+       <div class="zip-row">
+         <input id="cm_zip" placeholder="000-0000" inputmode="numeric" maxlength="8">
+         <button type="button" class="zip-btn" onclick="lookupZipAddress()">住所検索</button>
+       </div>
+       <span id="cm_zip_status" class="field-help">7桁入力すると住所を自動検索します</span>
+     </label>
+     <label>電話番号<input id="cm_tel" placeholder="00-0000-0000"></label>
+     <label class="span2">住所
+       <div class="zip-row">
+         <input id="cm_address" placeholder="住所">
+         <button type="button" class="zip-btn" onclick="lookupPostalCodeFromAddress()">郵便番号検索</button>
+       </div>
+       <span id="cm_address_status" class="field-help">住所から郵便番号も検索できます</span>
+     </label>
+    </div>
+
+    <div class="band">請求条件</div>
+    <div class="grid">
+     <label>締日
+       <select id="cm_closingDay" onchange="toggleOther('cm_closingDay','cm_closingDayOther')">
+         <option value="">選択してください</option>
+         <option>10日</option><option>15日</option><option>20日</option><option>25日</option><option>末日</option>
+         <option value="その他">その他</option>
+       </select>
+       <input id="cm_closingDayOther" class="other-input hide" placeholder="締日を入力">
+     </label>
+
+     <label>支払条件
+       <select id="cm_paymentTerms" onchange="toggleOther('cm_paymentTerms','cm_paymentTermsOther')">
+         <option value="">選択してください</option>
+         <option>当月末払い</option><option>翌月10日払い</option><option>翌月15日払い</option>
+         <option>翌月20日払い</option><option>翌月25日払い</option><option>翌月末払い</option>
+         <option>翌々月末払い</option><option value="その他">その他</option>
+       </select>
+       <input id="cm_paymentTermsOther" class="other-input hide" placeholder="支払条件を入力">
+     </label>
+
+     <label>保留金条件
+       <select id="cm_retention" onchange="toggleOther('cm_retention','cm_retentionOther')">
+         <option value="">選択してください</option>
+         <option>なし</option><option>5%</option><option>10%</option>
+         <option value="その他">その他</option>
+       </select>
+       <input id="cm_retentionOther" class="other-input hide" placeholder="保留金条件を入力">
+     </label>
+     <label>保留金発生基準額（税抜）
+       <input id="cm_retentionMinAmount" inputmode="numeric" value="300,000" oninput="formatMasterMoney(this)" placeholder="例：300,000">
+       <span class="field-help">この金額以上で保留金対象。0円は基準なし。</span>
+     </label>
+     <label>増減の反映時期
+       <select id="cm_adjustmentTiming">
+         <option value="anytime">随時反映</option>
+         <option value="final">工事完了時に反映</option>
+       </select>
+       <span class="field-help">「工事完了時に反映」は、通常月では増減を記録のみとし、工事完了月に計算へ反映します。</span>
+     </label>
+
+     <label>増額を保留金計算に
+       <select id="cm_retentionIncludeIncrease">
+         <option value="1">含める</option>
+         <option value="0">含めない</option>
+       </select>
+     </label>
+
+     <label>減額を保留金計算に
+       <select id="cm_retentionIncludeReduction">
+         <option value="1">含める</option>
+         <option value="0">含めない</option>
+       </select>
+     </label>
+
+     <label>安全管理費
+       <select id="cm_safetyFee" onchange="toggleOther('cm_safetyFee','cm_safetyFeeOther')">
+         <option value="">選択してください</option>
+         <option>なし</option><option>0.5%</option><option>1%</option><option>2%</option><option>3%</option><option>5%</option>
+         <option value="その他">その他</option>
+       </select>
+       <input id="cm_safetyFeeOther" class="other-input hide" placeholder="安全管理費を入力">
+     </label>
+    </div>
+
+    <div class="band">発注先担当者</div>
+    <label>担当者名（複数登録可）
+     <textarea id="cm_managers" rows="3" placeholder="山田 太郎、鈴木 次郎"></textarea>
+    </label>
+    <div id="cm_condition_summary" class="cm-condition-summary">
+     <div class="cm-condition-summary-title">登録する請求条件の確認</div>
+     <div id="cm_condition_summary_text">請求条件を入力すると、ここに要約を表示します。</div>
+    </div>
+    <div class="actions">
+     <button class="primary" id="cm_save" onclick="safeSaveClient()">発注先を登録</button>
+     <button class="secondary" onclick="resetClient()">新しい入力</button>
+    </div>
+   </div>
+
+   <div class="panel">
+    <div class="band">登録済み発注先</div>
+
+    <div class="client-search-box">
+      <div class="client-search-row">
+        <input id="cm_search" type="search"
+               placeholder="発注先名・担当者・住所・電話番号で検索"
+               oninput="renderClients()">
+        <button type="button" class="secondary client-search-clear"
+                onclick="clearClientSearch()">クリア</button>
+      </div>
+      <div class="client-search-info">
+        <span id="cm_count_total">登録 0件</span>
+        <span>／</span>
+        <span id="cm_count_visible">表示 0件</span>
+        <span class="client-search-sort">五十音順</span>
+      </div>
+    </div>
+
+    <div id="cm_list"></div>
+   </div>
+  </div>
+ </section>
+
+ <section id="companyPanel" class="card">
+  <div class="card-title">自社マスター</div>
+  <div style="padding:12px 16px 0;">
+    <div class="keyboard-hint">
+      Enter／↓／Tab：次へ　　↑／Shift+Tab：前へ
+    </div>
+  </div>
+
+  <div class="layout">
+   <div class="panel">
+    <div class="band">基本情報</div>
+    <div class="grid">
+      <label class="span2">自社名
+        <input id="co_name" placeholder="自社名">
+      </label>
+
+      <label>郵便番号
+        <div class="zip-row">
+          <input id="co_zip" placeholder="000-0000" inputmode="numeric" maxlength="8">
+          <button type="button" class="zip-btn" onclick="lookupCompanyZipAddress()">住所検索</button>
+        </div>
+        <span id="co_zip_status" class="field-help">7桁入力すると住所を自動検索します</span>
+      </label>
+
+      <label>電話番号
+        <input id="co_tel" placeholder="00-0000-0000">
+      </label>
+
+      <label>代表者
+        <input id="co_representative" placeholder="代表者名">
+      </label>
+
+      <label>登録番号
+        <input id="co_registrationNo" placeholder="例：T1234567890123">
+      </label>
+
+      <label class="span2">住所
+        <div class="zip-row">
+          <input id="co_address" placeholder="住所">
+          <button type="button" class="zip-btn" onclick="lookupCompanyPostalCode()">郵便番号検索</button>
+        </div>
+        <span id="co_address_status" class="field-help">住所から郵便番号も検索できます</span>
+      </label>
+    </div>
+
+    <div class="band">請求担当者</div>
+    <label>担当者名（複数登録可）
+      <textarea id="co_staff" rows="3" placeholder="例：菅尾 基弘、○○ ○○"></textarea>
+    </label>
+    <label style="margin-top:8px;">既定の請求担当者
+      <select id="co_defaultStaff">
+        <option value="">選択してください</option>
+      </select>
+    </label>
+
+    <div class="band" style="margin-top:14px;">振込先</div>
+    <div class="grid">
+      <label>銀行名
+        <input id="co_bank" placeholder="例：静岡銀行">
+      </label>
+      <label>支店名
+        <input id="co_branch" placeholder="例：三島支店">
+      </label>
+      <label>口座種別
+        <select id="co_accountType">
+          <option value="">選択してください</option>
+          <option>普通</option>
+          <option>当座</option>
+          <option>貯蓄</option>
+          <option>その他</option>
+        </select>
+      </label>
+      <label>口座番号
+        <input id="co_accountNo" inputmode="numeric" placeholder="1234567">
+      </label>
+      <label class="span2">口座名義
+        <input id="co_accountName" placeholder="口座名義">
+      </label>
+    </div>
+
+    <div class="actions">
+      <button class="primary" id="co_save" type="button" onclick="saveCompanyMaster()">自社情報を保存</button>
+      <button class="secondary" type="button" onclick="resetCompanyMaster()">入力をクリア</button>
+    </div>
+   </div>
+
+   <div class="panel">
+    <div class="band">登録済み自社情報</div>
+    <div id="co_summary" class="empty">まだ登録されていません。</div>
+   </div>
+  </div>
+ </section>
+</main>
+
+<script src="invoice_storage.js"></script>
+<script>
+const CLIENT_KEY="ms_invoice_client_master_v1";
+let editingClientId=null;
+
+function showMaster(type){
+ const client=type==="client";
+ document.getElementById("clientPanel").style.display=client?"block":"none";
+ document.getElementById("companyPanel").style.display=client?"none":"block";
+ document.getElementById("tabClient").classList.toggle("active",client);
+ document.getElementById("tabCompany").classList.toggle("active",!client);
+}
+function loadClients(){
+ try{const v=JSON.parse(localStorage.getItem(CLIENT_KEY)||"[]");return Array.isArray(v)?v:[]}catch(e){return[]}
+}
+function storeClients(v){
+ const raw=JSON.stringify(v);
+ localStorage.setItem(CLIENT_KEY,raw);
+ try{if(window.MSInvoiceStorage)window.MSInvoiceStorage.set(CLIENT_KEY,raw)}catch(e){}
+}
+function value(id){return document.getElementById(id)?.value.trim()||""}
+function put(id,v){const e=document.getElementById(id);if(e)e.value=v||""}
+function masterMoneyNumber(id){return Number(value(id).replace(/,/g,"")||0)}
+function formatMasterMoney(el){
+ const raw=String(el?.value||"").replace(/,/g,"").replace(/[^0-9]/g,"");
+ if(!el)return;
+ el.value=raw===""?"":Number(raw).toLocaleString("ja-JP");
+}
+
+function selectedValue(selectId, otherId){
+  const v=value(selectId);
+  return v==="その他" ? value(otherId) : v;
+}
+function putChoice(selectId, otherId, v){
+  const sel=document.getElementById(selectId);
+  const other=document.getElementById(otherId);
+  if(!sel||!other)return;
+  const options=[...sel.options].map(o=>o.value);
+  if(!v){
+    sel.value="";
+    other.value="";
+    other.classList.add("hide");
+  }else if(options.includes(v)){
+    sel.value=v;
+    other.value="";
+    other.classList.add("hide");
+  }else{
+    sel.value="その他";
+    other.value=v;
+    other.classList.remove("hide");
+  }
+}
+window.toggleOther=function(selectId,otherId){
+  const sel=document.getElementById(selectId);
+  const other=document.getElementById(otherId);
+  if(!sel||!other)return;
+  other.classList.toggle("hide",sel.value!=="その他");
+  if(sel.value==="その他") setTimeout(()=>other.focus(),0);
+};
+function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function makeId(){return "C"+Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
+
+function resetClient(){
+ editingClientId=null;
+ ["cm_name","cm_zip","cm_tel","cm_address","cm_managers",
+    "cm_closingDayOther","cm_paymentTermsOther","cm_retentionOther","cm_safetyFeeOther"].forEach(id=>put(id,""));
+ ["cm_closingDay","cm_paymentTerms","cm_retention","cm_safetyFee"].forEach(id=>put(id,"")); put("cm_retentionMinAmount","300,000"); put("cm_adjustmentTiming","anytime"); put("cm_retentionIncludeIncrease","1"); put("cm_retentionIncludeReduction","1");
+ ["cm_closingDayOther","cm_paymentTermsOther","cm_retentionOther","cm_safetyFeeOther"].forEach(id=>document.getElementById(id)?.classList.add("hide"));
+ const zs=document.getElementById("cm_zip_status");
+ if(zs){zs.textContent="7桁入力すると住所を自動検索します";zs.className="field-help";}
+ document.getElementById("cm_save").textContent="発注先を登録";
+ document.getElementById("cm_name").focus();
+}
+function saveClient(){
+ const name=value("cm_name");
+ if(!name){alert("発注先名を入力してください。");document.getElementById("cm_name").focus();return}
+ const list=loadClients();
+ const data={name,zip:value("cm_zip"),address:value("cm_address"),tel:value("cm_tel"),closingDay:value("cm_closingDay"),paymentTerms:value("cm_paymentTerms"),retention:value("cm_retention"),retentionMinAmount:masterMoneyNumber("cm_retentionMinAmount"),adjustmentTiming:value("cm_adjustmentTiming")||"anytime",retentionIncludeIncrease:value("cm_retentionIncludeIncrease")!=="0",retentionIncludeReduction:value("cm_retentionIncludeReduction")!=="0",safetyFee:value("cm_safetyFee"),managers:value("cm_managers").split(/[、,\n]+/).map(x=>x.trim()).filter(Boolean)};
+ if(editingClientId){const i=list.findIndex(x=>x.id===editingClientId);if(i>=0)list[i]={...list[i],...data}}
+ else list.push({id:makeId(),...data});
+ storeClients(list);resetClient();renderClients();
+}
+function editClient(id){
+ const x=loadClients().find(v=>v.id===id);if(!x)return;
+ editingClientId=id;
+ put("cm_name",x.name);put("cm_zip",x.zip);put("cm_tel",x.tel);put("cm_address",x.address);
+ putChoice("cm_closingDay","cm_closingDayOther",x.closingDay);
+ putChoice("cm_paymentTerms","cm_paymentTermsOther",x.paymentTerms);
+ putChoice("cm_retention","cm_retentionOther",x.retention);
+ put("cm_retentionMinAmount",Number(x.retentionMinAmount||0).toLocaleString("ja-JP"));
+ put("cm_adjustmentTiming",x.adjustmentTiming==="final"?"final":"anytime");
+ put("cm_retentionIncludeIncrease",x.retentionIncludeIncrease===false?"0":"1");
+ put("cm_retentionIncludeReduction",x.retentionIncludeReduction===false?"0":"1");
+ putChoice("cm_safetyFee","cm_safetyFeeOther",x.safetyFee);
+ put("cm_managers",(x.managers||[]).join("、"));
+ document.getElementById("cm_save").textContent="発注先を更新";document.getElementById("cm_name").focus();
+}
+function deleteClient(id){
+ const list=loadClients(),x=list.find(v=>v.id===id);if(!x)return;
+ if(!confirm("「"+x.name+"」を削除しますか？"))return;
+ storeClients(list.filter(v=>v.id!==id));if(editingClientId===id)resetClient();renderClients();
+}
+function renderClients(){
+ const box=document.getElementById("cm_list");
+ if(!box)return;
+
+ const all=loadClients();
+
+ /* 五十音順：日本語ロケールで発注先名を並べる */
+ const sorted=[...all].sort((a,b)=>
+   String(a.name||"").localeCompare(String(b.name||""),"ja",{sensitivity:"base"})
+ );
+
+ const searchEl=document.getElementById("cm_search");
+ const q=(searchEl?.value||"").trim().toLocaleLowerCase("ja");
+
+ const filtered=!q ? sorted : sorted.filter(x=>{
+   const target=[
+     x.name,
+     x.zip,
+     x.address,
+     x.tel,
+     x.closingDay,
+     x.paymentTerms,
+     x.retention,
+     x.retentionMinAmount,
+     x.safetyFee,
+     ...(Array.isArray(x.managers)?x.managers:[])
+   ].filter(Boolean).join(" ").toLocaleLowerCase("ja");
+   return target.includes(q);
+ });
+
+ const totalEl=document.getElementById("cm_count_total");
+ const visibleEl=document.getElementById("cm_count_visible");
+ if(totalEl)totalEl.textContent="登録 "+all.length+"件";
+ if(visibleEl)visibleEl.textContent="表示 "+filtered.length+"件";
+
+ if(!all.length){
+   box.innerHTML='<div class="empty">まだ登録されていません。</div>';
+   return;
+ }
+
+ if(!filtered.length){
+   box.innerHTML='<div class="client-no-result">該当する発注先が見つかりません。</div>';
+   return;
+ }
+
+ box.innerHTML=filtered.map(x=>`
+   <div class="item">
+     <div class="item-head">
+       <div class="item-name">${esc(x.name)}</div>
+       <div class="item-buttons">
+         <button class="secondary" onclick="editClient('${x.id}')">編集</button>
+         <button class="danger" onclick="deleteClient('${x.id}')">削除</button>
+       </div>
+     </div>
+     <div class="meta">
+       ${x.zip||x.address?`<div>〒${esc(x.zip)}　${esc(x.address)}</div>`:""}
+       ${x.tel?`<div>電話：${esc(x.tel)}</div>`:""}
+       ${x.closingDay||x.paymentTerms?`<div>締日：${esc(x.closingDay)}　支払条件：${esc(x.paymentTerms)}</div>`:""}
+       ${x.managers?.length?`<div>発注先担当者：${esc(x.managers.join("、"))}</div>`:""}
+       ${x.retention||x.safetyFee||Number(x.retentionMinAmount||0)>0?`<div>保留金条件：${esc(x.retention)}　発生基準額：${Number(x.retentionMinAmount||0).toLocaleString("ja-JP")}円　安全管理費：${esc(x.safetyFee)}</div>`:""}
+     </div>
+   </div>`).join("");
+}
+
+window.clearClientSearch=function(){
+ const el=document.getElementById("cm_search");
+ if(el){
+   el.value="";
+   el.focus();
+ }
+ renderClients();
+};
+
+async function lookupZipAddress(){
+ const zipEl=document.getElementById("cm_zip");
+ const addrEl=document.getElementById("cm_address");
+ const status=document.getElementById("cm_zip_status");
+ if(!zipEl||!addrEl)return;
+
+ const zip=(zipEl.value||"").replace(/\D/g,"");
+ if(zip.length!==7){
+   if(status){status.textContent="郵便番号は7桁で入力してください";status.className="field-help error";}
+   return;
+ }
+ zipEl.value=zip.slice(0,3)+"-"+zip.slice(3);
+
+ if(status){status.textContent="住所を検索しています…";status.className="field-help";}
+ try{
+   const res=await fetch("https://zipcloud.ibsnet.co.jp/api/search?zipcode="+encodeURIComponent(zip));
+   if(!res.ok) throw new Error("network");
+   const data=await res.json();
+   if(data && data.results && data.results.length){
+     const r=data.results[0];
+     addrEl.value=(r.address1||"")+(r.address2||"")+(r.address3||"");
+     if(status){status.textContent="住所を自動入力しました";status.className="field-help ok";}
+     addrEl.focus();
+   }else{
+     if(status){status.textContent="住所が見つかりませんでした。手入力してください";status.className="field-help error";}
+   }
+ }catch(e){
+   if(status){status.textContent="住所検索が利用できません。手入力してください";status.className="field-help error";}
+ }
+}
+
+function setupZipAutoLookup(){
+ const zip=document.getElementById("cm_zip");
+ if(!zip)return;
+ zip.addEventListener("input",()=>{
+   const digits=(zip.value||"").replace(/\D/g,"").slice(0,7);
+   if(digits.length<=3) zip.value=digits;
+   else zip.value=digits.slice(0,3)+"-"+digits.slice(3);
+   if(digits.length===7){
+     clearTimeout(zip._lookupTimer);
+     zip._lookupTimer=setTimeout(lookupZipAddress,350);
+   }
+ });
+}
+
+document.addEventListener("DOMContentLoaded",()=>{renderClients();setupZipAutoLookup();});
+</script>
+
+<script id="client-master-keyboard-script">
+/* ===== 発注先マスター キーボード操作 ===== */
+(function(){
+  const fieldIds = [
+    "cm_name",
+    "cm_zip",
+    "cm_tel",
+    "cm_address",
+    "cm_closingDay",
+    "cm_closingDayOther",
+    "cm_paymentTerms",
+    "cm_paymentTermsOther",
+    "cm_retention",
+    "cm_retentionOther",
+    "cm_safetyFee",
+    "cm_safetyFeeOther",
+    "cm_managers"
+  ];
+
+  const selectIds = new Set([
+    "cm_closingDay",
+    "cm_paymentTerms",
+    "cm_retention",
+    "cm_safetyFee"
+  ]);
+
+  function visibleFields(){
+    return fieldIds
+      .map(id=>document.getElementById(id))
+      .filter(el=>el && !el.classList.contains("hide") && !el.disabled);
+  }
+
+  function focusAt(index){
+    const list=visibleFields();
+    if(!list.length) return;
+    const i=Math.max(0,Math.min(index,list.length-1));
+    const el=list[i];
+    el.focus();
+    if(el.tagName==="INPUT" || el.tagName==="TEXTAREA"){
+      setTimeout(()=>{
+        try{
+          if(el.type!=="date") el.select();
+        }catch(e){}
+      },0);
+    }
+  }
+
+  function moveFrom(el,step){
+    const list=visibleFields();
+    const i=list.indexOf(el);
+    if(i<0) return;
+    focusAt(i+step);
+  }
+
+  function enterSelectMode(sel){
+    sel.dataset.msSelectMode="1";
+    sel.classList.add("ms-select-editing");
+  }
+
+  function exitSelectMode(sel){
+    sel.dataset.msSelectMode="0";
+    sel.classList.remove("ms-select-editing");
+    try{
+      const ev=new Event("change",{bubbles:true});
+      sel.dispatchEvent(ev);
+    }catch(e){}
+  }
+
+  function changeSelect(sel,step){
+    const opts=[...sel.options].filter(o=>!o.disabled);
+    if(!opts.length) return;
+    let idx=opts.findIndex(o=>o.value===sel.value);
+    if(idx<0) idx=0;
+    idx=Math.max(0,Math.min(idx+step,opts.length-1));
+    sel.value=opts[idx].value;
+  }
+
+  document.addEventListener("DOMContentLoaded",()=>{
+    fieldIds.forEach(id=>{
+      const el=document.getElementById(id);
+      if(!el || el.dataset.msKeyboardBound==="1") return;
+      el.dataset.msKeyboardBound="1";
+
+      el.addEventListener("keydown",e=>{
+        if(e.altKey || e.ctrlKey || e.metaKey) return;
+
+        const isSelect=selectIds.has(el.id);
+        const inSelectMode=isSelect && el.dataset.msSelectMode==="1";
+
+        if(isSelect){
+          if(e.key===" " || e.code==="Space"){
+            e.preventDefault();
+            if(inSelectMode){
+              exitSelectMode(el);
+            }else{
+              enterSelectMode(el);
+            }
+            return;
+          }
+
+          if(inSelectMode){
+            if(e.key==="ArrowDown"){
+              e.preventDefault();
+              changeSelect(el,1);
+              return;
+            }
+            if(e.key==="ArrowUp"){
+              e.preventDefault();
+              changeSelect(el,-1);
+              return;
+            }
+            if(e.key==="Enter"){
+              e.preventDefault();
+              exitSelectMode(el);
+              moveFrom(el,1);
+              return;
+            }
+            if(e.key==="Escape"){
+              e.preventDefault();
+              exitSelectMode(el);
+              return;
+            }
+            /* 選択モード中はTabも確定して次へ */
+            if(e.key==="Tab"){
+              exitSelectMode(el);
+              return;
+            }
+          }
+        }
+
+        /* 通常移動 */
+        if(e.key==="Enter" || e.key==="ArrowDown"){
+          e.preventDefault();
+          moveFrom(el,1);
+        }else if(e.key==="ArrowUp"){
+          e.preventDefault();
+          moveFrom(el,-1);
+        }
+        /* Tab / Shift+Tab はブラウザ標準で移動 */
+      });
+
+      /* フォーカスを外れたら選択モード解除 */
+      if(selectIds.has(el.id)){
+        el.addEventListener("blur",()=>{
+          if(el.dataset.msSelectMode==="1") exitSelectMode(el);
+        });
+      }
+    });
+
+    /* 起動時は発注先名 */
+    setTimeout(()=>document.getElementById("cm_name")?.focus(),120);
+
+    /* 新しい入力後も発注先名 */
+    const newBtn=document.querySelector('#clientPanel button.secondary[onclick="resetClient()"]');
+    if(newBtn){
+      newBtn.addEventListener("click",()=>{
+        setTimeout(()=>document.getElementById("cm_name")?.focus(),80);
+      });
+    }
+  });
+})();
+</script>
+
+
+<script id="reverse-postal-script">
+async function lookupPostalCodeFromAddress(){
+  const addrEl=document.getElementById("cm_address");
+  const zipEl=document.getElementById("cm_zip");
+  const status=document.getElementById("cm_address_status");
+  if(!addrEl||!zipEl)return;
+
+  const q=(addrEl.value||"").trim();
+  if(q.length<3){
+    if(status){status.textContent="住所を3文字以上入力してください";status.className="field-help error";}
+    addrEl.focus();
+    return;
+  }
+
+  if(status){status.textContent="郵便番号を検索しています…";status.className="field-help";}
+
+  try{
+    /* zipcloud supports address keyword search through its search endpoint on many deployments.
+       Try encoded address query first; if unsupported, show a safe manual-entry message. */
+    const urls=[
+      "https://zipcloud.ibsnet.co.jp/api/search?address="+encodeURIComponent(q),
+      "https://zipcloud.ibsnet.co.jp/api/search?zipcode="+encodeURIComponent(q)
+    ];
+
+    let results=[];
+    for(const url of urls){
+      try{
+        const res=await fetch(url);
+        if(!res.ok) continue;
+        const data=await res.json();
+        if(data && Array.isArray(data.results) && data.results.length){
+          results=data.results;
+          break;
+        }
+      }catch(e){}
+    }
+
+    /* Some public postcode APIs do not provide reverse search.
+       Use a geocoding-style postal search fallback. */
+    if(!results.length){
+      try{
+        const res=await fetch("https://nominatim.openstreetmap.org/search?format=json&countrycodes=jp&addressdetails=1&limit=10&q="+encodeURIComponent(q),
+                              {headers:{"Accept":"application/json"}});
+        if(res.ok){
+          const data=await res.json();
+          results=(Array.isArray(data)?data:[])
+            .filter(x=>x && x.address && x.address.postcode)
+            .map(x=>({
+              zipcode:String(x.address.postcode||"").replace(/\D/g,""),
+              address1:x.address.province||x.address.state||"",
+              address2:x.address.city||x.address.town||x.address.village||x.address.county||"",
+              address3:x.address.suburb||x.address.quarter||x.address.neighbourhood||x.name||"",
+              _display:x.display_name||""
+            }))
+            .filter(x=>x.zipcode.length===7);
+        }
+      }catch(e){}
+    }
+
+    /* de-duplicate */
+    const seen=new Set();
+    results=results.filter(r=>{
+      const z=String(r.zipcode||"").replace(/\D/g,"");
+      const key=z+"|"+(r.address1||"")+(r.address2||"")+(r.address3||"");
+      if(z.length!==7||seen.has(key))return false;
+      seen.add(key);return true;
+    });
+
+    if(!results.length){
+      if(status){
+        status.textContent="郵便番号が見つかりませんでした。郵便番号は手入力できます";
+        status.className="field-help error";
+      }
+      return;
+    }
+
+    if(results.length===1){
+      applyPostalChoice(results[0]);
+      if(status){status.textContent="郵便番号を自動入力しました";status.className="field-help ok";}
+      return;
+    }
+
+    showPostalChoices(results);
+    if(status){status.textContent=results.length+"件の候補が見つかりました";status.className="field-help";}
+  }catch(e){
+    if(status){
+      status.textContent="郵便番号検索が利用できません。手入力してください";
+      status.className="field-help error";
+    }
+  }
+}
+
+function applyPostalChoice(r){
+  const zipEl=document.getElementById("cm_zip");
+  if(!zipEl)return;
+  const z=String(r.zipcode||"").replace(/\D/g,"");
+  if(z.length===7) zipEl.value=z.slice(0,3)+"-"+z.slice(3);
+  const overlay=document.getElementById("postalChoiceOverlay");
+  if(overlay)overlay.remove();
+}
+
+function showPostalChoices(results){
+  document.getElementById("postalChoiceOverlay")?.remove();
+  const overlay=document.createElement("div");
+  overlay.id="postalChoiceOverlay";
+  overlay.className="postal-choice-overlay";
+
+  const box=document.createElement("div");
+  box.className="postal-choice-box";
+
+  const head=document.createElement("div");
+  head.className="postal-choice-head";
+  head.innerHTML='<span>郵便番号の候補を選択してください</span><button type="button">閉じる</button>';
+  head.querySelector("button").onclick=()=>overlay.remove();
+
+  const list=document.createElement("div");
+  list.className="postal-choice-list";
+
+  results.forEach(r=>{
+    const z=String(r.zipcode||"").replace(/\D/g,"");
+    const addr=(r.address1||"")+(r.address2||"")+(r.address3||"");
+    const btn=document.createElement("button");
+    btn.type="button";
+    btn.className="postal-choice-item";
+    const code=document.createElement("span");
+    code.className="postal-choice-code";
+    code.textContent="〒"+z.slice(0,3)+"-"+z.slice(3);
+    btn.appendChild(code);
+    btn.appendChild(document.createTextNode(addr || r._display || ""));
+    btn.onclick=()=>{
+      applyPostalChoice(r);
+      const status=document.getElementById("cm_address_status");
+      if(status){status.textContent="郵便番号を入力しました";status.className="field-help ok";}
+    };
+    list.appendChild(btn);
+  });
+
+  box.appendChild(head);box.appendChild(list);overlay.appendChild(box);
+  overlay.addEventListener("click",e=>{if(e.target===overlay)overlay.remove();});
+  document.body.appendChild(overlay);
+}
+</script>
+
+
+<script id="company-master-script">
+/* ===== 自社マスター ===== */
+(function(){
+  const KEY="ms_invoice_company_master_v1";
+
+  function loadCompany(){
+    try{
+      const v=JSON.parse(localStorage.getItem(KEY)||"null");
+      return v && typeof v==="object" ? v : null;
+    }catch(e){ return null; }
+  }
+
+  function saveCompany(v){
+    const raw=JSON.stringify(v);
+    localStorage.setItem(KEY,raw);
+    try{if(window.MSInvoiceStorage)window.MSInvoiceStorage.set(KEY,raw)}catch(e){}
+  }
+
+  function val(id){
+    const el=document.getElementById(id);
+    return el ? el.value.trim() : "";
+  }
+
+  function setVal(id,v){
+    const el=document.getElementById(id);
+    if(el) el.value=v||"";
+  }
+
+  function esc2(s){
+    return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  }
+
+  function staffList(){
+    return val("co_staff").split(/[、,\n]+/).map(s=>s.trim()).filter(Boolean);
+  }
+
+  function refreshDefaultStaff(selected){
+    const sel=document.getElementById("co_defaultStaff");
+    if(!sel)return;
+    const list=staffList();
+    const current=selected!==undefined ? selected : sel.value;
+    sel.innerHTML='<option value="">選択してください</option>'+
+      list.map(s=>`<option value="${esc2(s)}">${esc2(s)}</option>`).join("");
+    if(list.includes(current)) sel.value=current;
+    else if(list.length===1) sel.value=list[0];
+  }
+
+  window.resetCompanyMaster=function(){
+    ["co_name","co_zip","co_tel","co_representative","co_registrationNo","co_address","co_staff","co_bank","co_branch","co_accountNo","co_accountName"].forEach(id=>setVal(id,""));
+    setVal("co_accountType","");
+    refreshDefaultStaff("");
+    const z=document.getElementById("co_zip_status");
+    if(z){z.textContent="7桁入力すると住所を自動検索します";z.className="field-help";}
+    const a=document.getElementById("co_address_status");
+    if(a){a.textContent="住所から郵便番号も検索できます";a.className="field-help";}
+    document.getElementById("co_name")?.focus();
+  };
+
+  window.saveCompanyMaster=function(){
+    const name=val("co_name");
+    if(!name){
+      alert("自社名を入力してください。");
+      document.getElementById("co_name")?.focus();
+      return;
+    }
+
+    const data={
+      name,
+      zip:val("co_zip"),
+      address:val("co_address"),
+      tel:val("co_tel"),
+      representative:val("co_representative"),
+      registrationNo:val("co_registrationNo"),
+      staff:staffList(),
+      defaultStaff:val("co_defaultStaff"),
+      bank:val("co_bank"),
+      branch:val("co_branch"),
+      accountType:val("co_accountType"),
+      accountNo:val("co_accountNo"),
+      accountName:val("co_accountName")
+    };
+
+    saveCompany(data);
+    renderCompanyMaster();
+    alert("自社情報を保存しました。");
+  };
+
+  function renderCompanyMaster(){
+    const box=document.getElementById("co_summary");
+    if(!box)return;
+    const x=loadCompany();
+    if(!x){
+      box.className="empty";
+      box.innerHTML="まだ登録されていません。";
+      return;
+    }
+
+    box.className="company-summary";
+    box.innerHTML=`
+      <div class="company-summary-name">${esc2(x.name||"")}</div>
+      <div class="company-summary-meta">
+        ${x.zip||x.address ? `<div>〒${esc2(x.zip||"")}　${esc2(x.address||"")}</div>`:""}
+        ${x.tel ? `<div>電話：${esc2(x.tel)}</div>`:""}
+        ${x.representative ? `<div>代表者：${esc2(x.representative)}</div>`:""}
+        ${x.registrationNo ? `<div>登録番号：${esc2(x.registrationNo)}</div>`:""}
+        ${x.staff?.length ? `<div>請求担当者：${esc2(x.staff.join("、"))}</div>`:""}
+        ${x.defaultStaff ? `<div>既定担当者：${esc2(x.defaultStaff)}</div>`:""}
+      </div>
+      <div class="company-summary-bank">
+        <b>振込先</b><br>
+        ${[x.bank,x.branch,x.accountType,x.accountNo,x.accountName].filter(Boolean).map(esc2).join("　") || "未登録"}
+      </div>`;
+
+    setVal("co_name",x.name);
+    setVal("co_zip",x.zip);
+    setVal("co_address",x.address);
+    setVal("co_tel",x.tel);
+    setVal("co_representative",x.representative);
+    setVal("co_registrationNo",x.registrationNo);
+    setVal("co_staff",(x.staff||[]).join("、"));
+    refreshDefaultStaff(x.defaultStaff||"");
+    setVal("co_bank",x.bank);
+    setVal("co_branch",x.branch);
+    setVal("co_accountType",x.accountType);
+    setVal("co_accountNo",x.accountNo);
+    setVal("co_accountName",x.accountName);
+  }
+
+  async function reversePostal(address,statusId,zipId){
+    const status=document.getElementById(statusId);
+    const zipEl=document.getElementById(zipId);
+    if(address.length<3){
+      if(status){status.textContent="住所を3文字以上入力してください";status.className="field-help error";}
+      return;
+    }
+    if(status){status.textContent="郵便番号を検索しています…";status.className="field-help";}
+    try{
+      const res=await fetch("https://nominatim.openstreetmap.org/search?format=json&countrycodes=jp&addressdetails=1&limit=5&q="+encodeURIComponent(address),
+                            {headers:{"Accept":"application/json"}});
+      if(!res.ok) throw new Error("network");
+      const data=await res.json();
+      const found=(Array.isArray(data)?data:[]).find(x=>x?.address?.postcode);
+      if(!found) throw new Error("notfound");
+      const z=String(found.address.postcode||"").replace(/\D/g,"");
+      if(z.length!==7) throw new Error("badzip");
+      zipEl.value=z.slice(0,3)+"-"+z.slice(3);
+      if(status){status.textContent="郵便番号を自動入力しました";status.className="field-help ok";}
+    }catch(e){
+      if(status){status.textContent="郵便番号が見つかりません。手入力してください";status.className="field-help error";}
+    }
+  }
+
+  window.lookupCompanyZipAddress=async function(){
+    const zipEl=document.getElementById("co_zip");
+    const addrEl=document.getElementById("co_address");
+    const status=document.getElementById("co_zip_status");
+    const zip=(zipEl?.value||"").replace(/\D/g,"");
+    if(zip.length!==7){
+      if(status){status.textContent="郵便番号は7桁で入力してください";status.className="field-help error";}
+      return;
+    }
+    zipEl.value=zip.slice(0,3)+"-"+zip.slice(3);
+    if(status){status.textContent="住所を検索しています…";status.className="field-help";}
+    try{
+      const res=await fetch("https://zipcloud.ibsnet.co.jp/api/search?zipcode="+encodeURIComponent(zip));
+      if(!res.ok)throw new Error("network");
+      const data=await res.json();
+      if(data?.results?.length){
+        const r=data.results[0];
+        addrEl.value=(r.address1||"")+(r.address2||"")+(r.address3||"");
+        if(status){status.textContent="住所を自動入力しました";status.className="field-help ok";}
+        addrEl.focus();
+      }else throw new Error("notfound");
+    }catch(e){
+      if(status){status.textContent="住所検索が利用できません。手入力してください";status.className="field-help error";}
+    }
+  };
+
+  window.lookupCompanyPostalCode=function(){
+    reversePostal(val("co_address"),"co_address_status","co_zip");
+  };
+
+  function setupCompanyKeyboard(){
+    const ids=[
+      "co_name","co_zip","co_tel","co_representative","co_registrationNo","co_address","co_staff","co_defaultStaff",
+      "co_bank","co_branch","co_accountType","co_accountNo","co_accountName"
+    ];
+    const selectIds=new Set(["co_defaultStaff","co_accountType"]);
+
+    function visible(){
+      return ids.map(id=>document.getElementById(id)).filter(Boolean);
+    }
+    function move(el,step){
+      const list=visible();
+      const i=list.indexOf(el);
+      if(i<0)return;
+      const j=Math.max(0,Math.min(i+step,list.length-1));
+      list[j].focus();
+      if(list[j].tagName==="INPUT"||list[j].tagName==="TEXTAREA"){
+        setTimeout(()=>{try{list[j].select()}catch(e){}},0);
+      }
+    }
+
+    ids.forEach(id=>{
+      const el=document.getElementById(id);
+      if(!el)return;
+
+      el.addEventListener("keydown",e=>{
+        if(e.altKey||e.ctrlKey||e.metaKey)return;
+        if(selectIds.has(id)){
+          const active=el.dataset.msSelectMode==="1";
+          if(e.key===" "||e.code==="Space"){
+            e.preventDefault();
+            el.dataset.msSelectMode=active?"0":"1";
+            el.classList.toggle("ms-select-editing",!active);
+            return;
+          }
+          if(active){
+            if(e.key==="ArrowDown"||e.key==="ArrowUp"){
+              e.preventDefault();
+              const opts=[...el.options];
+              let i=opts.findIndex(o=>o.value===el.value);
+              if(i<0)i=0;
+              i=Math.max(0,Math.min(i+(e.key==="ArrowDown"?1:-1),opts.length-1));
+              el.value=opts[i].value;
+              return;
+            }
+          }
+        }
+        if(e.key==="Enter"||e.key==="ArrowDown"){e.preventDefault();move(el,1);}
+        else if(e.key==="ArrowUp"){e.preventDefault();move(el,-1);}
+      });
+    });
+
+    const staff=document.getElementById("co_staff");
+    if(staff) staff.addEventListener("input",()=>refreshDefaultStaff());
+  }
+
+  function setupCompanyZipAuto(){
+    const zip=document.getElementById("co_zip");
+    if(!zip)return;
+    zip.addEventListener("input",()=>{
+      const d=(zip.value||"").replace(/\D/g,"").slice(0,7);
+      zip.value=d.length<=3 ? d : d.slice(0,3)+"-"+d.slice(3);
+      if(d.length===7){
+        clearTimeout(zip._t);
+        zip._t=setTimeout(lookupCompanyZipAddress,350);
+      }
+    });
+  }
+
+  document.addEventListener("DOMContentLoaded",()=>{
+    renderCompanyMaster();
+    setupCompanyKeyboard();
+    setupCompanyZipAuto();
+  });
+})();
+</script>
+
+
+<script id="master-shared-storage-refresh">
+window.addEventListener("msinvoice-storage-ready",function(){
+  try{ if(typeof renderClients==="function") renderClients(); }catch(e){}
+  try{ if(typeof renderCompanyMaster==="function") renderCompanyMaster(); }catch(e){}
+});
+try{
+  if(window.MSInvoiceStorage && window.MSInvoiceStorage.ready){
+    window.MSInvoiceStorage.ready.then(function(){
+      try{ if(typeof renderClients==="function") renderClients(); }catch(e){}
+      try{ if(typeof renderCompanyMaster==="function") renderCompanyMaster(); }catch(e){}
+    });
+  }
+}catch(e){}
+</script>
+
+<style id="master-human-error-prevention-style">
+.cm-condition-summary{margin-top:10px;padding:9px 10px;border:1px solid #c7dce9;border-radius:8px;background:#eef6fb;color:#355f78;font-size:12px;line-height:1.6}
+.cm-condition-summary-title{font-weight:900;color:#245b80;margin-bottom:2px}
+</style>
+<script id="master-human-error-prevention-script">
+(function(){
+ "use strict";
+ const txt=id=>document.getElementById(id)?.value||"";
+ const yn=id=>txt(id)==="0"?"含めない":"含める";
+ const fmt=v=>(Number(String(v||0).replace(/,/g,""))||0).toLocaleString("ja-JP")+"円";
+ function summary(){
+   const retention=txt("cm_retention")||"未設定";
+   const min=fmt(txt("cm_retentionMinAmount"));
+   const timing=txt("cm_adjustmentTiming")==="final"?"工事完了時":"随時";
+   return `保留金：${retention} ｜ 発生基準額：${min}以上 ｜ 増額：${yn("cm_retentionIncludeIncrease")} ｜ 減額：${yn("cm_retentionIncludeReduction")} ｜ 増減反映：${timing}`;
+ }
+ function refresh(){const e=document.getElementById("cm_condition_summary_text");if(e)e.textContent=summary()}
+ window.safeSaveClient=function(){
+   const name=txt("cm_name").trim();
+   if(!name){return typeof saveClient==="function"?saveClient():false}
+   const retention=txt("cm_retention");
+   const min=Number(String(txt("cm_retentionMinAmount")).replace(/,/g,""))||0;
+   const warnings=[];
+   if(!retention)warnings.push("保留金条件が未選択です。");
+   if(retention && retention!=="なし" && min<=0)warnings.push("保留金ありの設定ですが、保留金発生基準額が0円です。");
+   const msg=`「${name}」を次の請求条件で登録します。\n\n${summary().replace(/ ｜ /g,"\n")}\n`+(warnings.length?"\n⚠ 確認事項\n"+warnings.map(x=>"・"+x).join("\n")+"\n":"")+"\nこの内容で保存しますか？";
+   if(!confirm(msg))return false;
+   return typeof saveClient==="function"?saveClient():false;
+ };
+ document.addEventListener("DOMContentLoaded",()=>setTimeout(refresh,150));
+ document.addEventListener("change",e=>{if(["cm_retention","cm_retentionMinAmount","cm_adjustmentTiming","cm_retentionIncludeIncrease","cm_retentionIncludeReduction"].includes(e.target?.id))refresh()});
+ document.addEventListener("input",e=>{if(e.target?.id==="cm_retentionMinAmount")refresh()});
+})();
+</script>
+
+</body>
+</html>
