@@ -1481,7 +1481,7 @@ html.ms-password-locked body{visibility:hidden!important;}
   <span class="ms-thismonth-heading">
     <span>今月の出来高（税抜）</span>
     <span id="msFinalAmountCard" class="ms-final-inline-guide hide" aria-live="polite">
-      工事完了まで <b id="msFinalAmountCardValue">—</b>
+      工事完了時 <b id="msFinalAmountCardValue">—</b>
       <small id="msFinalAmountCardNote"></small>
     </span>
   </span>
@@ -3913,7 +3913,7 @@ document.addEventListener("click",(e)=>{
     card.classList.add("hide");
     value.textContent="—";
     note.textContent="";
-    if(!s || isFinal) return;
+    if(!s || !finalOnly(s) || isFinal) return;
 
     let calcSite=s;
     try{
@@ -3926,6 +3926,7 @@ document.addEventListener("click",(e)=>{
 
     const inc=n(calcSite.increaseNet);
     const red=n(calcSite.reductionNet);
+    if(inc<=0 && red<=0) return;
 
     value.textContent=fmt(target);
     const parts=[];
