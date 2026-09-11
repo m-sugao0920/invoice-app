@@ -174,7 +174,7 @@
     document.querySelectorAll(".tab").forEach(b=>{
       b.classList.toggle("active", b.dataset.view===view);
     });
-    ["home","settings","sites","monthly","print","summary","data-management"].forEach(v=>{
+    ["home","settings","sites","monthly","print","summary"].forEach(v=>{
       const el=document.getElementById("view-"+v);
       if(el) el.classList.toggle("hide", v!==view);
     });
@@ -966,7 +966,12 @@ function migrateRetention(){
     // 工事完了月でも保留金は消さない。
     // 通常の「工事完了」は最終出来高を確定する月であり、保留金の解除月ではない。
     // 保留金の解除は専用の「保留金を請求」操作だけで行う。
-    const retentionOnlyDraft = !!document.getElementById("m_isFinal")?.dataset?.retentionOnlyClaim;
+    // 保留金請求の保存後は dataset が消えるため、保存済みレコードの印も確認する。
+    // これにより保存直後・再読込後とも、実請求済累計と未請求額へ保留金請求分を反映する。
+    const savedRecForSummary = getRec(month, siteId);
+    const retentionOnlyDraft =
+      !!document.getElementById("m_isFinal")?.dataset?.retentionOnlyClaim ||
+      savedRecForSummary?.retentionOnlyClaim === true;
     const retRemain = (reached && !retentionOnlyDraft) ? cap : 0;
 
     const elRemain = document.getElementById("sum_retRemain");
@@ -1949,7 +1954,7 @@ document.addEventListener("DOMContentLoaded", function(){
 
   setTimeout(function(){
     const view=localStorage.getItem("ms_invoice_open_view") || "sites";
-    const ids=["settings","sites","monthly","print","summary","data-management"];
+    const ids=["settings","sites","monthly","print","summary"];
     ids.forEach(function(v){
       const el=document.getElementById("view-"+v);
       if(el) el.classList.toggle("hide", v!==view);
