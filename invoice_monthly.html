@@ -2231,11 +2231,14 @@ function goToSiteEdit(){
       ensureBlankSiteOption();
       if(site) site.value="";
       const amountEl=document.getElementById("m_thisMonthNet");
+      const increaseEl=document.getElementById("m_increaseNet");
+      const reductionEl=document.getElementById("m_reductionNet");
       const finalEl=document.getElementById("m_isFinal");
-      if(amountEl){
-        amountEl.value="0";
-        try{ if(typeof formatCommaInput==="function") formatCommaInput(amountEl); }catch(e){}
-      }
+      [amountEl,increaseEl,reductionEl].forEach(el=>{
+        if(!el) return;
+        el.value="0";
+        try{ if(typeof formatCommaInput==="function") formatCommaInput(el); }catch(e){}
+      });
       if(finalEl) finalEl.value="0";
       refreshIdentity();
       try{ if(typeof refreshSiteSummaryAndHistory==="function") refreshSiteSummaryAndHistory(); }catch(e){}
@@ -3540,17 +3543,22 @@ document.addEventListener("click",(e)=>{
       try{document.getElementById("m_reductionNet")?.focus();}catch(_){}
       return false;
     }
+
+    const finalSel=document.getElementById("m_isFinal");
+
+    /* 「工事完了時に反映」の増減があり、今回の出来高で最終金額へ到達した場合は、
+       先に「通常月／工事完了」の確認を出す。
+       これまでは出来高超過チェックが先に走るため、工事完了へ切り替える前に
+       保存を止めてしまっていた。 */
+    const skipCompletionOnce=finalSel?.dataset?.skipNextCompletionCheck==="1";
+    if(skipCompletionOnce) delete finalSel.dataset.skipNextCompletionCheck;
+    if(f.completionCheck && !skipCompletionOnce){showCompletionChoice(f);return false}
+
     if(f.overrunCheck){
       alert("保存できません。\n\n出来高累計が最終注文金額を "+fmt(f.overrunAmount)+" 超えています。\n増額工事がある場合は、先に増額を入力してください。\n\n入力金額を確認してください。");
       try{document.getElementById("m_thisMonthNet")?.focus();}catch(_){}
       return false;
     }
-
-    const finalSel=document.getElementById("m_isFinal");
-
-    const skipCompletionOnce=finalSel?.dataset?.skipNextCompletionCheck==="1";
-    if(skipCompletionOnce) delete finalSel.dataset.skipNextCompletionCheck;
-    if(f.completionCheck && !skipCompletionOnce){showCompletionChoice(f);return false}
 
     const skipFinalShortfallOnce=finalSel?.dataset?.skipNextFinalShortfallCheck==="1";
     if(skipFinalShortfallOnce) delete finalSel.dataset.skipNextFinalShortfallCheck;
@@ -3811,11 +3819,16 @@ document.addEventListener("click",(e)=>{
       return c;
     }
 
-    // 「工事完了時に反映」の増減は、通常月の月次履歴に記録してある。
-    // 工事データ site.increaseNet だけを基準にすると、通常月で記録した増減が
-    // 最終請求へ反映されないケースがあるため、最終月より前の月次履歴を正本として集計する。
+    /* 共通計算 adjustmentAtMonth() と同じ考え方に一本化する。
+       最終注文金額 = 工事情報で登録済みの増減
+                    + 過去月の月次増減
+                    + 当月の増減
+       以前のコードは「履歴がある時は工事情報側を捨てる」「表示欄で当月分をさらに足す」
+       という2系統が混在し、20万円を二重計上して140万円になる可能性があった。 */
     const month=document.getElementById("m_month")?.value||"";
-    let inc=0, red=0;
+    let inc=n(site.increaseNet);
+    let red=n(site.reductionNet);
+
     try{
       for(const m of Object.keys(state?.monthly||{}).sort()){
         if(month && m>=month) break;
@@ -3824,20 +3837,20 @@ document.addEventListener("click",(e)=>{
         inc+=n(r.increaseNet);
         red+=n(r.reductionNet);
       }
+
+      // 当月は「手入力中なら入力値」、保存済み月を見直しているなら保存値」を1回だけ加える。
+      const cur=month
+        ? (state?.monthly?.[month]?.[String(site.id)] ?? state?.monthly?.[month]?.[site.id] ?? null)
+        : null;
+
+      if(String(site.id)===selectedId()){
+        inc += userIncEdited ? currentInc() : n(cur?.increaseNet);
+        red += userRedEdited ? currentRed() : n(cur?.reductionNet);
+      }else{
+        inc += n(cur?.increaseNet);
+        red += n(cur?.reductionNet);
+      }
     }catch(e){}
-
-    // 最終月に新しく入力した増減だけを加える。
-    // 過去値が画面へ自動表示されただけの場合は user*Edited=false なので二重計上しない。
-    if(String(site.id)===selectedId()){
-      if(userIncEdited) inc+=currentInc();
-      if(userRedEdited) red+=currentRed();
-    }
-
-    // 履歴がまだ無い旧データ等に限り、工事データ側の集約値をフォールバックとして使う。
-    if(inc===0 && red===0){
-      inc=n(site.increaseNet);
-      red=n(site.reductionNet);
-    }
 
     c.increaseNet=inc;
     c.reductionNet=red;
@@ -3935,21 +3948,40 @@ document.addEventListener("click",(e)=>{
     note.textContent="";
     if(!s || isFinal) return;
 
-    let calcSite=s;
-    try{
-      if(typeof getSiteForCalc==="function") calcSite=getSiteForCalc(s,true,month)||s;
-    }catch(e){calcSite=s;}
-
-    // 登録済みの注文金額・増減に加え、今この月で入力中の増額・減額も
-    // 「工事完了まで」の案内へ即時反映する。
+    // 当月の増額・減額入力も「工事完了まで」の試算へ即時反映する。
+    // getSiteForCalc は随時反映会社では draftIncrease / draftReduction を受け取れる。
+    // 工事完了時反映会社は既存の canonicalSite 側がDOM入力を1回だけ集計するため、
+    // どちらの会社設定でも二重計上せず同じ表示経路を使える。
     const inputInc=n(document.getElementById("m_increaseNet")?.value);
     const inputRed=n(document.getElementById("m_reductionNet")?.value);
+
+    let calcSite=s;
+    try{
+      if(typeof getSiteForCalc==="function") calcSite=getSiteForCalc(s,true,month,inputInc,inputRed)||s;
+    }catch(e){calcSite=s;}
+
+    // 増減は getSiteForCalc / canonicalSite 側で当月分まで1回だけ集計済み。
+    // ここで入力欄の増減を再加算すると二重計上になるため、最終注文金額はこの1本だけを使う。
     const finalOrder=Math.max(0,
       n(calcSite.contractNet)+n(calcSite.increaseNet)-n(calcSite.reductionNet)
-      +inputInc-inputRed
     );
     const prevWork=n(document.getElementById("sum_prevCum")?.textContent);
-    const target=Math.max(0,finalOrder-prevWork);
+
+    // 保存済み月を見直している場合は、その月の出来高まで含めた累計を差し引く。
+    // 未保存月では従来どおり「前月までの累計」を差し引き、
+    // これから入力すべき出来高の目安として表示する。
+    let workBase=prevWork;
+    try{
+      const siteId=document.getElementById("m_site")?.value||"";
+      const savedRec=(month && siteId && typeof state!=="undefined")
+        ? state?.monthly?.[month]?.[siteId]
+        : null;
+      if(savedRec){
+        workBase += n(savedRec.thisMonthNet);
+      }
+    }catch(e){}
+
+    const target=Math.max(0,finalOrder-workBase);
 
     value.textContent=fmt(target);
     const parts=[];
@@ -4671,6 +4703,96 @@ document.addEventListener("click",(e)=>{
 
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",setup,{once:true});
   else setup();
+})();
+</script>
+
+
+<script id="ms-saved-month-summary-source-fix">
+(function(){
+  "use strict";
+
+  function n(v){
+    return Number(String(v ?? "").replace(/,/g,"")) || 0;
+  }
+
+  function currentSavedRecord(){
+    try{
+      const month=document.getElementById("m_month")?.value || "";
+      const siteId=document.getElementById("m_site")?.value || "";
+      if(!month || !siteId || typeof state==="undefined") return null;
+      return state?.monthly?.[month]?.[siteId] || null;
+    }catch(e){
+      return null;
+    }
+  }
+
+  function syncSavedRecordToForm(){
+    const rec=currentSavedRecord();
+    if(!rec) return false;
+
+    const amount=document.getElementById("m_thisMonthNet");
+    const inc=document.getElementById("m_increaseNet");
+    const red=document.getElementById("m_reductionNet");
+    const fin=document.getElementById("m_isFinal");
+
+    // 保存済み月の表示は、画面に残っている一時値ではなく
+    // 保存済み月次レコードを正本として再計算する。
+    // 値を代入するだけで input/change は発火しないため、
+    // 「ユーザーが増減を再入力した」とは判定されない。
+    if(amount) amount.value=String(n(rec.thisMonthNet));
+    if(inc) inc.value=String(n(rec.increaseNet));
+    if(red) red.value=String(n(rec.reductionNet));
+    if(fin) fin.value=rec.isFinal ? "1" : "0";
+
+    [amount,inc,red].forEach(el=>{
+      if(!el) return;
+      try{
+        if(typeof formatCommaInput==="function") formatCommaInput(el);
+      }catch(e){}
+    });
+    return true;
+  }
+
+  function install(){
+    if(typeof window.refreshSiteSummaryAndHistory!=="function") return false;
+    if(window.refreshSiteSummaryAndHistory.__msSavedMonthSourceFixed) return true;
+
+    const old=window.refreshSiteSummaryAndHistory;
+    const wrapped=function(){
+      // 保存済みの【済】工事を開き直した時だけ、保存レコードから
+      // 出来高・増減・工事完了区分を復元してから既存計算を実行する。
+      // 未保存月の入力中には一切触れない。
+      syncSavedRecordToForm();
+      return old.apply(this,arguments);
+    };
+    wrapped.__msSavedMonthSourceFixed=true;
+    window.refreshSiteSummaryAndHistory=wrapped;
+    return true;
+  }
+
+  function refreshSaved(){
+    if(!currentSavedRecord()) return;
+    if(!install()) return;
+    try{ window.refreshSiteSummaryAndHistory(); }catch(e){}
+    try{
+      if(typeof window.__updateFinalContractNote==="function"){
+        window.__updateFinalContractNote();
+      }
+    }catch(e){}
+  }
+
+  document.addEventListener("DOMContentLoaded",()=>{
+    [120,420,800].forEach(ms=>setTimeout(()=>{
+      install();
+      refreshSaved();
+    },ms));
+  });
+
+  document.addEventListener("change",e=>{
+    if(["m_site","m_month"].includes(e.target?.id)){
+      [20,100,260].forEach(ms=>setTimeout(refreshSaved,ms));
+    }
+  },true);
 })();
 </script>
 

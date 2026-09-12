@@ -58,18 +58,6 @@
       if(!silent) alert("読み込みに失敗しました");
     }
   }
-  function clearAll(){
-    if(!confirm("全データを削除します。よろしいですか？")) return;
-    try{ localStorage.removeItem(KEY); }catch(e){}
-    try{
-      if(window.MSInvoiceStorage){
-        window.MSInvoiceStorage.remove(KEY).finally(()=>location.reload());
-        return;
-      }
-    }catch(e){}
-    location.reload();
-  }
-
   // ====== Utils ======
   function uid(){ return "S" + Math.random().toString(36).slice(2,9); }
   function round(n){ return Math.round(Number(n||0)); }
@@ -174,7 +162,7 @@
     document.querySelectorAll(".tab").forEach(b=>{
       b.classList.toggle("active", b.dataset.view===view);
     });
-    ["home","settings","sites","monthly","print","summary"].forEach(v=>{
+    ["home","settings","sites","monthly","print","summary","data-management"].forEach(v=>{
       const el=document.getElementById("view-"+v);
       if(el) el.classList.toggle("hide", v!==view);
     });
@@ -1954,7 +1942,7 @@ document.addEventListener("DOMContentLoaded", function(){
 
   setTimeout(function(){
     const view=localStorage.getItem("ms_invoice_open_view") || "sites";
-    const ids=["settings","sites","monthly","print","summary"];
+    const ids=["settings","sites","monthly","print","summary","data-management"];
     ids.forEach(function(v){
       const el=document.getElementById("view-"+v);
       if(el) el.classList.toggle("hide", v!==view);

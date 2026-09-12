@@ -794,6 +794,82 @@ html.ms-password-locked body{visibility:hidden!important;}
 </style>
 
 
+
+<style id="ms-data-management-header-unified">
+#view-data-management .invoice-lwall-header{
+  position:relative;
+  width:100vw;
+  margin-left:calc(50% - 50vw);
+  margin-right:calc(50% - 50vw);
+  background:linear-gradient(135deg,#0070C0,#2b8ae2);
+  color:#fff;
+  padding:18px 0;
+  box-sizing:border-box;
+  border-radius:0;
+}
+#view-data-management .invoice-lwall-wrap{
+  width:100%;
+  max-width:1400px;
+  margin:0 auto;
+  padding:0 14px;
+  box-sizing:border-box;
+  display:flex;
+  gap:12px;
+  align-items:center;
+  justify-content:space-between;
+  flex-wrap:wrap;
+}
+#view-data-management .invoice-lwall-header h1{
+  font-size:18px;
+  margin:0;
+  color:#fff;
+  font-weight:900;
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans JP","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;
+}
+#view-data-management .invoice-lwall-header .sub{
+  margin-top:3px;
+  font-size:12px;
+  opacity:.95;
+  color:#fff;
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans JP","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;
+}
+#view-data-management .invoice-home-link{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  min-width:150px;
+  height:38px;
+  padding:0 14px;
+  border-radius:999px;
+  background:rgba(255,255,255,.18);
+  color:#fff;
+  border:1px solid rgba(255,255,255,.55);
+  text-decoration:none;
+  font-size:13px;
+  font-weight:900;
+  box-shadow:0 6px 14px rgba(0,0,0,.12);
+  white-space:nowrap;
+  box-sizing:border-box;
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans JP","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;
+}
+#view-data-management .invoice-home-link:hover{
+  background:rgba(255,255,255,.28);
+}
+#view-data-management .invoice-lwall-header + .ms-data-management-card{
+  margin-top:16px;
+}
+@media(max-width:700px){
+  #view-data-management .invoice-home-link{
+    width:100%;
+    margin-top:8px;
+  }
+}
+@media print{
+  #view-data-management .invoice-lwall-header{display:none!important;}
+}
+</style>
+
 <style id="ms-data-management-style">
 #view-data-management{max-width:980px;margin:0 auto;}
 .ms-data-management-card{overflow:hidden;}
@@ -847,51 +923,8 @@ html.ms-password-locked body{visibility:hidden!important;}
   font-size:10px;
   line-height:1.6;
 }
-.ms-danger-zone{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  gap:14px;
-  margin-top:24px;
-  padding:12px;
-  border:1px solid #e2c7c7;
-  border-radius:9px;
-  background:#fffafa;
-}
-.ms-danger-zone>div{display:grid;gap:3px;}
-.ms-danger-zone b{color:#9a4545;font-size:12px;}
-.ms-danger-zone span{color:#8a7474;font-size:10px;}
-.ms-danger-zone button{width:auto;min-width:140px;height:34px;}
 @media(max-width:700px){
   .ms-data-management-grid{grid-template-columns:1fr;}
-  .ms-danger-zone{align-items:stretch;flex-direction:column;}
-  .ms-danger-zone button{width:100%;}
-}
-</style>
-
-
-<style id="ms-data-management-head-fix">
-.ms-data-management-head{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:12px;
-  padding:0 0 10px;
-}
-.ms-data-management-head h2{margin:0;}
-.ms-data-management-head button{
-  width:auto;
-  min-width:130px;
-  height:34px;
-  padding:0 12px;
-  white-space:nowrap;
-}
-@media(max-width:560px){
-  .ms-data-management-head{
-    align-items:stretch;
-    flex-direction:column;
-  }
-  .ms-data-management-head button{width:100%;}
 }
 </style>
 
@@ -1007,11 +1040,19 @@ html.ms-password-locked body{visibility:hidden!important;}
 
 <!-- データ管理 -->
 <section class="hide" id="view-data-management">
-  <div class="card ms-data-management-card">
-    <div class="ms-data-management-head">
-      <h2>データ管理</h2>
-      <button class="secondary" type="button" onclick="location.href='index.html'">メイン画面に戻る</button>
+  <header class="invoice-lwall-header">
+    <div class="invoice-lwall-wrap">
+      <div>
+        <h1>MS請求書システム</h1>
+        <div class="sub">バックアップ・復元・データ管理</div>
+      </div>
+      <div class="invoice-header-actions" style="display:flex;gap:8px;align-items:center;">
+        <a class="invoice-home-link" href="index.html">🏠 メイン画面に戻る</a>
+      </div>
     </div>
+  </header>
+  <div class="card ms-data-management-card">
+    <h2>データ管理</h2>
     <div class="body">
       <div class="ms-data-management-intro">
         大切な請求データをバックアップ・復元します。
@@ -1028,19 +1069,11 @@ html.ms-password-locked body{visibility:hidden!important;}
       </div>
       <div class="ms-backup-last" id="msBackupLast">最終バックアップ：まだありません</div>
       <div class="ms-data-note">
-        ※ 復元すると現在の保存データは、選択したバックアップの内容に置き換わります。<br/>
-        ※ 心配な場合は、復元前に「バックアップを保存」を実行してください。<br/>
+        ※ 復元する前に、必要であれば「バックアップを保存」で現在のデータを保存してください。<br/>
         ※ 復元後は画面を再読み込みして、復元したデータを反映します。
       </div>
       <input class="hide" id="msBackupRestoreFile" type="file" accept=".json,application/json"/>
 
-      <div class="ms-danger-zone">
-        <div>
-          <b>危険な操作</b>
-          <span>通常は使用しません。システム内の保存データをすべて削除します。</span>
-        </div>
-        <button class="danger" id="msAllDeleteBtn" type="button">全データを削除</button>
-      </div>
     </div>
   </div>
 </section>
@@ -1970,25 +2003,6 @@ html.ms-password-locked body{visibility:hidden!important;}
     setTimeout(()=>URL.revokeObjectURL(url),1000);
   };
 
-  window.msClearAll = function(){
-    if(!confirm("登録済み工事と月次請求データをすべて削除します。\nよろしいですか？")) return;
-    if(!confirm("この操作は元に戻せません。\n本当に全削除しますか？")) return;
-
-    try{
-      state.sites = [];
-      state.monthly = {};
-      saveAll();
-      resetSiteForm();
-      refreshSiteTable();
-      refreshSiteSelects();
-      if(typeof refreshMonthlyTable==="function") refreshMonthlyTable();
-      if(typeof refreshSiteSummaryAndHistory==="function") refreshSiteSummaryAndHistory();
-      renderMsSitesCards();
-    }catch(e){
-      console.error(e);
-      alert("全削除の処理中にエラーが発生しました。");
-    }
-  };
 
   /* 共通JSの保存・リセット後にもカード一覧を必ず同期 */
   document.addEventListener("DOMContentLoaded", function(){
@@ -3785,16 +3799,27 @@ document.addEventListener("DOMContentLoaded",()=>setTimeout(()=>{
     setTimeout(()=>URL.revokeObjectURL(url),1000);
   }
 
+  function isInvoiceStorageKey(k){
+    return k==="invoice_app_v3" || String(k||"").startsWith("ms_invoice_");
+  }
+
   function collectStorage(storage){
     const obj={};
     for(let i=0;i<storage.length;i++){
       const k=storage.key(i);
-      if(k==null) continue;
-      /* password session token is authentication state, not invoice data */
-      if(k==="ms_invoice_auth_v1") continue;
+      if(k==null || !isInvoiceStorageKey(k)) continue;
       obj[k]=storage.getItem(k);
     }
     return obj;
+  }
+
+  function clearInvoiceStorage(){
+    const keys=[];
+    for(let i=0;i<localStorage.length;i++){
+      const k=localStorage.key(i);
+      if(k!=null && isInvoiceStorageKey(k)) keys.push(k);
+    }
+    keys.forEach(function(k){ localStorage.removeItem(k); });
   }
 
   function makeBackup(reason){
@@ -3839,11 +3864,11 @@ document.addEventListener("DOMContentLoaded",()=>setTimeout(()=>{
   }
 
   function restoreData(data){
-    /* 復元対象はバックアップに含まれる請求書システムのlocalStorage全体。
-       認証用sessionStorageは変更しない。 */
-    localStorage.clear();
+    /* MS請求書システムの保存領域だけを置き換える。
+       同じoriginにある他アプリのlocalStorageは変更しない。 */
+    clearInvoiceStorage();
     Object.keys(data.localStorage).forEach(function(k){
-      if(k==="ms_invoice_auth_v1") return;
+      if(!isInvoiceStorageKey(k)) return;
       localStorage.setItem(k,String(data.localStorage[k]??""));
     });
   }
@@ -3858,7 +3883,7 @@ document.addEventListener("DOMContentLoaded",()=>setTimeout(()=>{
 
     const created=data.createdAt?new Date(data.createdAt):null;
     const when=created && !Number.isNaN(created.getTime()) ? displayStamp(created) : "日時不明";
-    if(!confirm("バックアップを復元します。\n\nバックアップ日時："+when+"\n現在のデータは置き換わります。\n\n復元しますか？")) return;
+    if(!confirm("バックアップを復元します。\n\nバックアップ日時："+when+"\n\n現在のデータは置き換わります。続けますか？")) return;
 
     try{
       restoreData(data);
@@ -3887,22 +3912,6 @@ document.addEventListener("DOMContentLoaded",()=>setTimeout(()=>{
       handleRestoreFile(file);
     });
 
-    el("msAllDeleteBtn")?.addEventListener("click",function(){
-      if(!confirm("全データを削除します。\n\nバックアップは保存しましたか？")) return;
-      if(!confirm("最終確認です。\n工事情報・請求履歴・マスター・設定などの保存データを削除します。\n\n本当に全削除しますか？")) return;
-      try{
-        saveBackup("before_delete",false);
-        if(typeof msClearAll==="function"){
-          msClearAll();
-        }else{
-          localStorage.clear();
-          alert("全データを削除しました。");
-          location.reload();
-        }
-      }catch(e){
-        alert("全削除を実行できませんでした。");
-      }
-    });
     updateLast();
   }
 
