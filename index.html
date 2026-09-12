@@ -365,6 +365,149 @@ html.ms-password-locked #msPasswordGate{display:flex;}
 }
 </style>
 
+
+<style id="ms-ver100-notice-style">
+#msNoticeModal{
+  position:fixed;
+  inset:0;
+  z-index:99990;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:24px;
+  background:rgba(20,38,58,.34);
+  box-sizing:border-box;
+}
+#msNoticeModal .ms-release-card{
+  width:min(760px,96vw);
+  max-height:90vh;
+  overflow:auto;
+  background:#fff;
+  border:1px solid #c5d4e0;
+  border-radius:15px;
+  box-shadow:0 24px 60px rgba(21,42,65,.28);
+  color:#243746;
+}
+#msNoticeModal .ms-release-head{
+  padding:20px 24px 18px;
+  background:linear-gradient(135deg,#173f6b,#245b86);
+  color:#fff;
+}
+#msNoticeModal .ms-release-kicker{
+  display:inline-block;
+  margin-bottom:8px;
+  padding:4px 10px;
+  border:1px solid rgba(255,255,255,.55);
+  border-radius:999px;
+  background:rgba(255,255,255,.12);
+  font-size:11px;
+  font-weight:800;
+  letter-spacing:.07em;
+}
+#msNoticeModal .ms-release-title{
+  margin:0;
+  font-size:25px;
+  font-weight:900;
+  line-height:1.35;
+}
+#msNoticeModal .ms-release-sub{
+  margin-top:6px;
+  font-size:13px;
+  font-weight:700;
+  opacity:.95;
+}
+#msNoticeModal .ms-release-body{
+  padding:19px 22px 10px;
+}
+#msNoticeModal .ms-release-lead{
+  margin:0 0 14px;
+  padding:12px 14px;
+  border:1px solid #c9dfef;
+  border-radius:10px;
+  background:#eef6fb;
+  color:#173f6b;
+  font-size:14px;
+  font-weight:800;
+  line-height:1.8;
+}
+#msNoticeModal .ms-release-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:11px;
+}
+#msNoticeModal .ms-release-box{
+  padding:13px 14px;
+  border:1px solid #d4dee6;
+  border-radius:10px;
+  background:#fbfcfd;
+}
+#msNoticeModal .ms-release-box h3{
+  margin:0 0 8px;
+  font-size:14px;
+  color:#173f6b;
+  font-weight:900;
+}
+#msNoticeModal .ms-release-box p{
+  margin:0;
+  font-size:13px;
+  line-height:1.85;
+}
+#msNoticeModal .ms-release-wide{
+  grid-column:1 / -1;
+}
+#msNoticeModal .ms-release-free{
+  border-color:#c9dfcf;
+  background:#f1f8f3;
+}
+#msNoticeModal .ms-release-free h3{
+  color:#2f6f44;
+}
+#msNoticeModal .ms-release-use{
+  border-color:#cad8e5;
+  background:#f5f8fb;
+}
+#msNoticeModal .ms-release-caution{
+  border-color:#d9dfbf;
+  background:#f7faef;
+}
+#msNoticeModal .ms-release-caution h3{
+  color:#4e6d34;
+}
+#msNoticeModal .ms-release-sign{
+  margin:12px 1px 0;
+  text-align:right;
+  font-size:12px;
+  font-weight:800;
+  color:#617280;
+}
+#msNoticeModal .ms-release-foot{
+  display:flex;
+  justify-content:flex-end;
+  padding:12px 22px 18px;
+}
+#msNoticeModal .ms-release-close{
+  min-width:108px;
+  height:38px;
+  border:0;
+  border-radius:8px;
+  background:#173f6b;
+  color:#fff;
+  font-size:13px;
+  font-weight:900;
+  cursor:pointer;
+}
+#msNoticeModal .ms-release-close:hover{
+  background:#0f3156;
+}
+@media(max-width:620px){
+  #msNoticeModal .ms-release-grid{grid-template-columns:1fr;}
+  #msNoticeModal .ms-release-wide{grid-column:auto;}
+  #msNoticeModal .ms-release-title{font-size:21px;}
+  #msNoticeModal .ms-release-lead{font-size:13px;}
+  #msNoticeModal .ms-release-box p{font-size:12.5px;}
+}
+</style>
+
 </head>
 <body class="ms-index-page">
 <section id="view-home">
@@ -498,6 +641,77 @@ html.ms-password-locked #msPasswordGate{display:flex;}
 </section>
 <script src="invoice_storage.js"></script>
 <script src="invoice_common.js"></script>
+
+<script id="ms-ver100-notice">
+(function(){
+  "use strict";
+
+  window.showMsNotice=function(){
+    const old=document.getElementById("msNoticeModal");
+    if(old) old.remove();
+
+    const bg=document.createElement("div");
+    bg.id="msNoticeModal";
+    bg.innerHTML=`<div class="ms-release-card" role="dialog" aria-modal="true" aria-label="MS請求書システム Ver1.0.0 公開のお知らせ">
+      <div class="ms-release-head">
+        <div class="ms-release-kicker">RELEASE INFORMATION</div>
+        <h2 class="ms-release-title">MS請求書システム Ver1.0.0 公開</h2>
+        <div class="ms-release-sub">請求業務を、もっと簡単に。もっと分かりやすく。</div>
+      </div>
+
+      <div class="ms-release-body">
+        <div class="ms-release-lead">
+          毎月の請求業務の負担を減らし、入力・計算ミスを少なくするために作成しました。<br>
+          事務作業を少しでも短くして、社員が少しでも早く帰れるようにすることも目標の一つです。
+        </div>
+
+        <div class="ms-release-grid">
+          <div class="ms-release-box ms-release-free">
+            <h3>● 無料でご利用いただけます</h3>
+            <p>会社・個人事業主を問わず、ご自身・自社の請求業務に無料でお使いいただけます。</p>
+          </div>
+
+          <div class="ms-release-box">
+            <h3>● 主な機能</h3>
+            <p>工事情報、月次出来高、請求額、保留金、増減工事、工事別請求書、総括請求書などを管理できます。</p>
+          </div>
+
+          <div class="ms-release-box ms-release-wide ms-release-use">
+            <h3>● 利用条件</h3>
+            <p>再配布・転載、改変したものの配布・公開、本システム自体の販売・有料サービス等への利用は認めていません。</p>
+          </div>
+
+          <div class="ms-release-box ms-release-wide ms-release-caution">
+            <h3>● ご利用上の注意</h3>
+            <p>請求書提出前に、注文金額・出来高・増減・保留金・消費税・請求金額をご確認ください。<br>
+            本システムの利用によるデータ消失・計算誤り・その他の損害について、作者は責任を負いません。ご利用は自己責任でお願いいたします。<br>
+            大切なデータは、定期的にバックアップを保存してください。</p>
+          </div>
+        </div>
+
+        <div class="ms-release-sign">MSランドスケープ</div>
+      </div>
+
+      <div class="ms-release-foot">
+        <button class="ms-release-close" type="button">閉じる</button>
+      </div>
+    </div>`;
+
+    const close=()=>bg.remove();
+    bg.querySelector(".ms-release-close")?.addEventListener("click",close);
+    bg.addEventListener("click",function(e){ if(e.target===bg) close(); });
+    document.addEventListener("keydown",function esc(e){
+      if(e.key==="Escape"){
+        document.removeEventListener("keydown",esc);
+        if(document.body.contains(bg)) close();
+      }
+    });
+
+    document.body.appendChild(bg);
+  };
+})();
+</script>
+
 
 <script id="ms4-month-dashboard-script">
 (function(){
