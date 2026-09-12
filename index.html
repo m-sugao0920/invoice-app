@@ -311,6 +311,60 @@ html.ms-password-locked #msPasswordGate{display:flex;}
 })();
 </script>
 
+
+<style id="ms4-done-search-style">
+.ms4-done-search-panel{
+  display:grid;
+  grid-template-columns:minmax(120px,.8fr) minmax(160px,1fr) minmax(190px,1.2fr) auto;
+  gap:8px 10px;
+  align-items:end;
+  margin:9px 0 11px;
+  padding:9px 10px;
+  background:#f7fafc;
+  border:1px solid #d8e3e9;
+  border-radius:7px;
+}
+.ms4-done-search-panel label{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  font-size:11px;
+  font-weight:700;
+  color:#385363;
+}
+.ms4-done-search-panel select,
+.ms4-done-search-panel input[type="search"]{
+  width:100%;
+  box-sizing:border-box;
+  min-height:32px;
+  padding:5px 7px;
+  border:1px solid #b9cbd5;
+  border-radius:5px;
+  background:#fff;
+  font-size:12px;
+}
+#ms4DoneSearchClear{
+  min-height:32px;
+  padding:5px 10px;
+  border:1px solid #b9cbd5;
+  border-radius:5px;
+  background:#fff;
+  color:#385363;
+  font-size:11px;
+  font-weight:700;
+  cursor:pointer;
+}
+.ms4-done-search-status{
+  grid-column:1 / -1;
+  font-size:10px;
+  color:#6b7d88;
+}
+@media (max-width:760px){
+  .ms4-done-search-panel{grid-template-columns:1fr;}
+  .ms4-done-search-status{grid-column:auto;}
+}
+</style>
+
 </head>
 <body class="ms-index-page">
 <section id="view-home">
@@ -379,9 +433,31 @@ html.ms-password-locked #msPasswordGate{display:flex;}
         </div>
         <div class="ms4-panel-body">
           <div class="ms4-list-tabs">
-            <button id="ms4PendingTab" class="active" onclick="ms4ShowList('pending')">未請求の工事</button>
-            <button id="ms4DoneTab" class="plain" onclick="ms4ShowList('done')">請求完了</button>
+            <button id="ms4PendingTab" class="active" onclick="ms4ShowList('pending')">未請求工事</button>
+            <button id="ms4DoneTab" class="plain" onclick="ms4ShowList('done')">完了工事</button>
           </div>
+
+          <div id="ms4DoneSearchPanel" class="ms4-done-search-panel" style="display:none;">
+            <label>
+              <span>年で絞る</span>
+              <select id="ms4DoneYearFilter">
+                <option value="">すべての年</option>
+              </select>
+            </label>
+            <label>
+              <span>発注先で絞る</span>
+              <select id="ms4DoneClientFilter">
+                <option value="">すべての発注先</option>
+              </select>
+            </label>
+            <label>
+              <span>工事名で検索</span>
+              <input id="ms4DoneNameSearch" type="search" placeholder="工事名の一部を入力">
+            </label>
+            <button id="ms4DoneSearchClear" type="button">絞り込み解除</button>
+            <div id="ms4DoneSearchStatus" class="ms4-done-search-status"></div>
+          </div>
+
           <div class="ms4-site-list" id="ms4SiteList"></div>
         </div>
       </div>

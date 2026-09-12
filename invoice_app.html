@@ -1216,6 +1216,12 @@ html.ms-password-locked body{visibility:hidden!important;}
 
 <div class="ms-sites-filter-panel" id="msSitesFilterPanel">
   <label class="ms-sites-filter-field">
+    <span>年で絞る</span>
+    <select id="msSiteListYearFilter">
+      <option value="">すべての年</option>
+    </select>
+  </label>
+  <label class="ms-sites-filter-field">
     <span>発注先で絞る</span>
     <select id="msSiteListClientFilter">
       <option value="">すべての発注先</option>
@@ -1230,7 +1236,7 @@ html.ms-password-locked body{visibility:hidden!important;}
     <span>完了工事を表示</span>
   </label>
   <button class="ms-sites-new-button" id="msSiteListNewButton" type="button">新しい工事を入力</button>
-  <div class="ms-sites-filter-status" id="msSitesFilterStatus">発注先または工事名で絞り込めます。</div>
+  <div class="ms-sites-filter-status" id="msSitesFilterStatus">年・発注先・工事名で絞り込めます。</div>
 </div>
 <div class="ms-sites-card-list" id="msSitesCardList"></div>
 <!-- 既存JS互換用：従来テーブルは非表示で残す -->
@@ -3485,6 +3491,31 @@ document.addEventListener("DOMContentLoaded",()=>setTimeout(()=>{
     return hasFinal && work >= finalOrder-0.5;
   }
 
+  function siteYear(site){
+    const reg=String(site?.regDate||"").trim();
+    if(/^\d{4}-\d{2}/.test(reg)) return reg.slice(0,4);
+
+    const months=allMonths().filter(function(m){return !!monthlyRec(m,site?.id);});
+    if(months.length && /^\d{4}-\d{2}$/.test(months[0])) return months[0].slice(0,4);
+
+    return "";
+  }
+
+  function populateYearFilter(){
+    const sel=el("msSiteListYearFilter");
+    if(!sel) return;
+    const keep=sel.value||"";
+    const years=[...new Set(allSites().map(siteYear).filter(Boolean))]
+      .sort(function(a,b){return Number(b)-Number(a);});
+    sel.innerHTML='<option value="">すべての年</option>';
+    years.forEach(function(y){
+      const o=document.createElement("option");
+      o.value=y; o.textContent=y+"年"; sel.appendChild(o);
+    });
+    if(years.includes(keep)) sel.value=keep;
+    else sel.value="";
+  }
+
   function populateClientFilter(){
     const sel=el("msSiteListClientFilter");
     if(!sel) return;
@@ -3501,10 +3532,12 @@ document.addEventListener("DOMContentLoaded",()=>setTimeout(()=>{
   }
 
   function filteredSites(){
+    const year=String(el("msSiteListYearFilter")?.value||"");
     const client=String(el("msSiteListClientFilter")?.value||"");
     const q=String(el("msSiteListNameSearch")?.value||"").trim().toLocaleLowerCase("ja");
     const showCompleted=!!el("msSiteListShowCompleted")?.checked;
     return allSites().filter(function(s){
+      if(year && siteYear(s)!==year) return false;
       if(client && String(s.clientName||"")!==client) return false;
       if(q && !String(s.name||"").toLocaleLowerCase("ja").includes(q)) return false;
       if(!showCompleted && siteCompleted(s)) return false;
@@ -3515,6 +3548,7 @@ document.addEventListener("DOMContentLoaded",()=>setTimeout(()=>{
   function updateStatus(shown,total){
     const st=el("msSitesFilterStatus");
     if(!st) return;
+    const year=String(el("msSiteListYearFilter")?.value||"");
     const client=String(el("msSiteListClientFilter")?.value||"");
     const q=String(el("msSiteListNameSearch")?.value||"").trim();
     const showCompleted=!!el("msSiteListShowCompleted")?.checked;
@@ -3522,7 +3556,7 @@ document.addEventListener("DOMContentLoaded",()=>setTimeout(()=>{
     if(shown===0){
       st.classList.add("none");
       st.textContent="条件に該当する工事はありません。";
-    }else if(client || q || showCompleted){
+    }else if(year || client || q || showCompleted){
       st.classList.add("ok");
       st.textContent=shown+"件を表示しています（登録済み "+total+"件）。";
     }else{
@@ -3535,6 +3569,7 @@ document.addEventListener("DOMContentLoaded",()=>setTimeout(()=>{
     const count=el("msSitesCount");
     if(!box || typeof state==="undefined") return;
 
+    populateYearFilter();
     populateClientFilter();
     const sites=filteredSites();
     const total=allSites().length;

@@ -1729,11 +1729,16 @@ document.addEventListener("DOMContentLoaded",()=>{
     ms4ListMode = mode === "done" ? "done" : "pending";
     const p=document.getElementById("ms4PendingTab");
     const d=document.getElementById("ms4DoneTab");
+    const searchPanel=document.getElementById("ms4DoneSearchPanel");
+
     if(p){p.className=ms4ListMode==="pending"?"active":"plain";}
     if(d){d.className=ms4ListMode==="done"?"active":"plain";}
+    if(searchPanel){searchPanel.style.display=ms4ListMode==="done"?"grid":"none";}
+
     refreshMs4Home();
   }
   function refreshMs4Home(){
+    ms4BindDoneSearch();
     const list=document.getElementById("ms4SiteList");
     if(!list) return;
     const pending=[],done=[];
@@ -1747,10 +1752,62 @@ document.addEventListener("DOMContentLoaded",()=>{
     const sm=document.getElementById("ms4ListSummary");
     if(sm) sm.textContent=`未請求 ${pending.length}件 ／ 完了 ${done.length}件`;
 
-    const rows = ms4ListMode==="done" ? done : pending;
+    // 完了工事タブだけ、発注先と工事名で絞り込めるようにする。
+    let rows = ms4ListMode==="done" ? done : pending;
+
+    if(ms4ListMode==="done"){
+      const yearSel=document.getElementById("ms4DoneYearFilter");
+      const clientSel=document.getElementById("ms4DoneClientFilter");
+      const nameSearch=document.getElementById("ms4DoneNameSearch");
+      const status=document.getElementById("ms4DoneSearchStatus");
+
+      if(yearSel){
+        const keep=String(yearSel.value||"");
+        const years=[...new Set(done.map(r=>ms4SiteYear(r.site)).filter(Boolean))]
+          .sort((a,b)=>Number(b)-Number(a));
+        yearSel.innerHTML='<option value="">すべての年</option>';
+        years.forEach(y=>{
+          const o=document.createElement("option");
+          o.value=y; o.textContent=y+"年"; yearSel.appendChild(o);
+        });
+        yearSel.value=years.includes(keep)?keep:"";
+      }
+
+      // 完了工事に存在する発注先だけを候補として表示する。
+      if(clientSel){
+        const keep=String(clientSel.value||"");
+        const clients=[...new Set(done.map(r=>String(r.site?.clientName||"").trim()).filter(Boolean))]
+          .sort((a,b)=>a.localeCompare(b,"ja"));
+        clientSel.innerHTML='<option value="">すべての発注先</option>';
+        clients.forEach(name=>{
+          const o=document.createElement("option");
+          o.value=name;
+          o.textContent=name;
+          clientSel.appendChild(o);
+        });
+        clientSel.value=clients.includes(keep)?keep:"";
+      }
+
+      const year=String(yearSel?.value||"");
+      const client=String(clientSel?.value||"");
+      const q=String(nameSearch?.value||"").trim().toLocaleLowerCase("ja");
+      rows=done.filter(({site})=>{
+        if(year && ms4SiteYear(site)!==year) return false;
+        if(client && String(site?.clientName||"")!==client) return false;
+        if(q && !String(site?.name||"").toLocaleLowerCase("ja").includes(q)) return false;
+        return true;
+      });
+
+      if(status){
+        status.textContent=(year||client||q)
+          ? `完了工事 ${done.length}件のうち ${rows.length}件を表示しています。`
+          : `完了工事 ${done.length}件。年・発注先・工事名で探せます。`;
+      }
+    }
+
     list.innerHTML="";
     if(!rows.length){
-      list.innerHTML=`<div class="ms4-empty">${ms4ListMode==="done"?"請求完了した工事はありません。":"未請求の工事はありません。"}</div>`;
+      list.innerHTML=`<div class="ms4-empty">${ms4ListMode==="done"?"条件に該当する完了工事はありません。":"未請求の工事はありません。"}</div>`;
     } else {
       rows.forEach(({site,received,order,balance})=>{
         const item=document.createElement("div");
@@ -1758,7 +1815,7 @@ document.addEventListener("DOMContentLoaded",()=>{
         const selected=site.id===ms4SelectedSiteId;
         item.innerHTML=`
           <div>
-            <div class="ms4-site-name">${escapeHtml(site.name||"")}${selected?' <span class="current-mark">選択中</span>':''}</div>
+            <div class="ms4-site-name">${ms4ListMode==="done"?'<span style="color:#6f7f89;font-size:10px;margin-right:5px;">【完了】</span>':""}${escapeHtml(site.name||"")}${selected?' <span class="current-mark">選択中</span>':''}</div>
             <div class="ms4-site-meta">
               最終注文 ${yen(order)} 円　／　請求済 ${yen(received)} 円
               ${ms4ListMode==="pending"?(ms4RetentionWaiting(site)?`　／　<span class="ms4-site-amt">保留金待ち ${yen(balance)} 円</span>`:`　／　<span class="ms4-site-amt">残 ${yen(balance)} 円</span>`):""}
@@ -1786,6 +1843,47 @@ document.addEventListener("DOMContentLoaded",()=>{
       }
     }
   }
+  function ms4SiteYear(site){
+    // 登録日を優先。登録日が無い旧データは最初の請求月の「年」で補完。
+    const reg=String(site?.regDate||"").trim();
+    if(/^\d{4}-\d{2}/.test(reg)) return reg.slice(0,4);
+
+    const months=Object.keys(state?.monthly||{}).filter(m=>state.monthly?.[m]?.[site?.id]).sort();
+    if(months.length && /^\d{4}-\d{2}$/.test(months[0])) return months[0].slice(0,4);
+
+    return "";
+  }
+
+  function ms4BindDoneSearch(){
+    const year=document.getElementById("ms4DoneYearFilter");
+    const client=document.getElementById("ms4DoneClientFilter");
+    const search=document.getElementById("ms4DoneNameSearch");
+    const clear=document.getElementById("ms4DoneSearchClear");
+
+    if(year && year.dataset.msBound!=="1"){
+      year.dataset.msBound="1";
+      year.addEventListener("change",refreshMs4Home);
+    }
+
+    if(client && client.dataset.msBound!=="1"){
+      client.dataset.msBound="1";
+      client.addEventListener("change",refreshMs4Home);
+    }
+    if(search && search.dataset.msBound!=="1"){
+      search.dataset.msBound="1";
+      search.addEventListener("input",refreshMs4Home);
+    }
+    if(clear && clear.dataset.msBound!=="1"){
+      clear.dataset.msBound="1";
+      clear.addEventListener("click",()=>{
+        if(year) year.value="";
+        if(client) client.value="";
+        if(search) search.value="";
+        refreshMs4Home();
+      });
+    }
+  }
+
   function ms4RequireSite(){
     if(ms4SelectedSiteId && state.sites.some(s=>s.id===ms4SelectedSiteId)) return true;
     alert("左の工事一覧から工事を選択してください。");
