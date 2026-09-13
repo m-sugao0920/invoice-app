@@ -1417,7 +1417,7 @@ html.ms-password-locked body{visibility:hidden!important;}
 <label>工事名で検索<input id="m_siteSearch" type="search" placeholder="工事名の一部を入力" autocomplete="off"/><small id="msSiteSearchStatus">文字を入力すると、その場で工事を絞り込みます。</small></label>
 <label>工事を選択<select id="m_site"></select></label>
 </div>
-<div class="ms-show-saved-toggle"><input id="m_showSaved" type="checkbox"/><label for="m_showSaved">済工事を表示</label><span class="note">通常は未登録の工事だけを表示します。</span></div>
+<div class="ms-show-saved-toggle"><input id="m_showSaved" type="checkbox"/><label for="m_showSaved">済工事を表示</label><span class="note">通常は未登録・未完了の工事だけを表示します。</span></div>
 <div class="month-project-info">
 <div class="wide"><span>工事名</span><b id="msm_siteName">—</b></div>
 <div class="wide"><span>請求先</span><b id="msm_client">—</b></div>
@@ -1896,6 +1896,24 @@ function goToSiteEdit(){
 
   window.__monthlyRetentionWaiting=retentionWaiting;
 
+  // 工事選択フィルタ用。本来の【完了】表示と同じ判定を使う。
+  window.__monthlyIsFullyCompletedForList=function(site,month){
+    try{
+      if(!site || !month) return false;
+      // 保存した当月は「済工事を表示」で確認・再印刷できるよう完了扱いにしない。
+      if(getRec(month,site.id)) return false;
+      if(!isCompletedBefore(site.id,month)) return false;
+      if(retentionWaiting(site)>0) return false;
+
+      let finalOrder=0, billed=0;
+      try{ finalOrder=Math.max(0,Number(displayContract(site)||0)); }catch(e){}
+      try{ billed=Math.max(0,Number(billedCum(site)||0)); }catch(e){}
+      return Math.max(0,finalOrder-billed)<=0;
+    }catch(e){
+      return false;
+    }
+  };
+
   function decorateSiteOptions(){
     const sel=document.getElementById("m_site");
     if(!sel || typeof state==="undefined" || !Array.isArray(state.sites)) return;
@@ -2186,20 +2204,39 @@ function goToSiteEdit(){
     // 工事または対象月を変えたときは、その組み合わせの保存済み月次を自動読込。
     // invoice_common.js の loadMonthlyToForm() は、
     // 保存済みデータがなければ「出来高 0 / 通常月」へ戻す既存仕様。
-    function syncMonthlyFormForSelection(){
+    function syncMonthlyFormForSelection(source){
+      // 工事選択時は、選択欄そのものを再構築しない。
+      // refreshSiteSelects() をここで呼ぶと【済】工事の選択が一度外れ、
+      // 表示更新が1操作遅れることがあるため、選択IDを保持したまま
+      // 保存済み月次と画面表示だけを更新する。
+      const selectedSiteId=site?.value||"";
       try{
         if(typeof loadMonthlyToForm==="function") loadMonthlyToForm();
       }catch(e){
         console.warn("月次データ自動読込:",e);
       }
-      setTimeout(refreshAll,0);
+
+      setTimeout(()=>{
+        if(selectedSiteId && site && [...site.options].some(o=>String(o.value)===String(selectedSiteId))){
+          site.value=selectedSiteId;
+        }
+        refreshIdentity();
+        try{ if(typeof refreshSiteSummaryAndHistory==="function") refreshSiteSummaryAndHistory(); }catch(e){}
+        try{ if(typeof refreshMonthlyTable==="function") refreshMonthlyTable(); }catch(e){}
+        try{ if(typeof window.__syncSavedActionsOneRow==="function") window.__syncSavedActionsOneRow(); }catch(e){}
+        try{ if(typeof window.__updateRetentionClaimUI==="function") window.__updateRetentionClaimUI(); }catch(e){}
+        try{ if(typeof window.__updateFinalContractNote==="function") window.__updateFinalContractNote(); }catch(e){}
+      },0);
+
+      // 対象月を変えた場合だけ、工事候補の済／未請求状態を作り直す。
+      if(source==="month") setTimeout(refreshAll,40);
     }
 
     if(site){
-      site.addEventListener("change",()=>setTimeout(syncMonthlyFormForSelection,0));
+      site.addEventListener("change",()=>syncMonthlyFormForSelection("site"));
     }
     if(month){
-      month.addEventListener("change",()=>setTimeout(syncMonthlyFormForSelection,0));
+      month.addEventListener("change",()=>syncMonthlyFormForSelection("month"));
     }
 
     // 金額欄：Enter / ↓ で請求区分へ、↑ で工事選択へ
@@ -4547,16 +4584,33 @@ document.addEventListener("click",(e)=>{
     const wantedClient=client.value||"";
     const word=normalizeText(search.value);
     const showSaved=!!document.getElementById(SHOW_SAVED_ID)?.checked;
-    // 月を戻した時、現在選択中の工事がその月の「済」であっても
-    // 選択を解除しない。これにより「この工事の月別履歴」を継続表示する。
-    // ただし、未選択の他の済工事は従来どおり「済工事を表示」OFFなら隠す。
-    const selectedSiteId=String(site.value||"");
+
+    // 保存直後の工事は【済】になって通常候補から外れるが、
+    // その瞬間に現在選択まで解除すると「工事別請求書を印刷」が使えなくなる。
+    // そこで「今まさに選択中の工事」だけは一時的に候補へ残す。
+    // 他の済工事は従来どおり「済工事を表示」がOFFなら隠すため、
+    // 昨日整えた【済】表示・完了工事の除外ルールは変更しない。
+    const currentSelectedSiteId=String(site.value||"");
 
     const allowed=new Set(
       state.sites.filter(s=>{
         if(wantedClient && clientNameOf(s)!==wantedClient) return false;
         if(word && !normalizeText(siteNameOf(s)).includes(word)) return false;
-        if(!showSaved && isSavedThisMonth(s.id) && String(s.id)!==selectedSiteId) return false;
+
+        const isCurrentSelected=currentSelectedSiteId && String(s.id)===currentSelectedSiteId;
+
+        // 「済工事を表示」OFFなら今月保存済みは非表示。
+        // ただし保存直後の現在選択中工事だけは、確認・印刷のため保持する。
+        if(!showSaved && isSavedThisMonth(s.id) && !isCurrentSelected) return false;
+
+        // 過去月ですでに完全完了した工事は通常の月次入力候補には出さない。
+        // 現在選択中の工事だけは、保存直後の印刷を可能にするため保持する。
+        try{
+          if(!isCurrentSelected &&
+             typeof window.__monthlyIsFullyCompletedForList==="function" &&
+             window.__monthlyIsFullyCompletedForList(s,currentMonth())) return false;
+        }catch(e){}
+
         return true;
       }).map(s=>String(s.id))
     );
@@ -4664,17 +4718,23 @@ document.addEventListener("click",(e)=>{
     });
 
     showSaved.addEventListener("change",()=>{
-      const before=site.value||"";
-      rebuildAndFilter(true);
-      if(before && ![...site.options].some(o=>String(o.value)===String(before))){
-        site.value="";
-        try{site.dispatchEvent(new Event("change",{bubbles:true}));}catch(e){}
-      }
+      // 「済工事を表示」は候補を増減するだけ。
+      // チェック直後に済工事を自動選択せず、必ず「工事を選択してください」の未選択状態に戻す。
+      rebuildAndFilter(false);
+      site.value="";
+      try{site.dispatchEvent(new Event("change",{bubbles:true}));}catch(e){}
       site.focus();
     });
 
     document.getElementById("m_month")?.addEventListener("change",()=>{
-      setTimeout(()=>rebuildAndFilter(true),30);
+      // 月を変更したら、前の月で選んでいた工事は引き継がない。
+      // 候補だけ現在月用に作り直し、「工事を選択してください」の未選択状態へ戻す。
+      setTimeout(()=>{
+        rebuildAndFilter(false);
+        site.value="";
+        try{site.dispatchEvent(new Event("change",{bubbles:true}));}catch(e){}
+        site.focus();
+      },30);
     });
 
     search.addEventListener("keydown",e=>{
@@ -4796,6 +4856,92 @@ document.addEventListener("click",(e)=>{
 })();
 </script>
 
+
+
+
+<script id="ms-saved-buttons-authoritative-final-20260912">
+(function(){
+  "use strict";
+  function savedCurrent(){
+    try{
+      const sid=document.getElementById("m_site")?.value||"";
+      const mon=document.getElementById("m_month")?.value||"";
+      return !!(sid && mon && state?.monthly?.[mon]?.[sid]);
+    }catch(e){ return false; }
+  }
+  function syncFinal(){
+    const saved=savedCurrent();
+    const save=document.getElementById("btnSaveMonthly");
+    const print=document.getElementById("btnDirectInvoicePrint");
+    const box=document.querySelector(".month-actions.ms-final-actions");
+    if(save){
+      save.disabled=saved;
+      save.setAttribute("aria-disabled",saved?"true":"false");
+      save.textContent=saved?"保存済み":"今月の請求を保存";
+      save.title=saved?"この月の請求は登録済みです。":"";
+      if(saved) save.style.display="none";
+      else save.style.removeProperty("display");
+    }
+    if(print){
+      print.disabled=!saved;
+      print.setAttribute("aria-disabled",saved?"false":"true");
+      print.title=saved?"保存したこの工事の請求書を開きます":"先に今月の請求を保存してください";
+    }
+    if(box) box.classList.toggle("ms-saved-one-row",saved);
+    const claim=document.getElementById("retClaimBtn");
+    if(claim && saved) claim.classList.add("hide");
+  }
+  window.__msSyncSavedButtonsFinal=syncFinal;
+  function schedule(){ [0,40,120,260,600,1000].forEach(ms=>setTimeout(syncFinal,ms)); }
+  document.addEventListener("DOMContentLoaded",schedule);
+  window.addEventListener("pageshow",schedule);
+  document.addEventListener("change",e=>{
+    if(["m_site","m_month","m_isFinal"].includes(e.target?.id)) schedule();
+  },true);
+  document.addEventListener("click",e=>{
+    const b=e.target.closest("button");
+    if(!b) return;
+    if(b.id==="btnSaveMonthly" && savedCurrent()){
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      syncFinal();
+      return;
+    }
+    const txt=(b.textContent||"").trim();
+    if(/保存|工事完了|保留金/.test(txt)) schedule();
+  },true);
+  const mo=new MutationObserver(()=>setTimeout(syncFinal,0));
+  document.addEventListener("DOMContentLoaded",()=>{
+    const target=document.querySelector(".month-actions.ms-final-actions");
+    if(target) mo.observe(target,{attributes:true,childList:true,subtree:true});
+  });
+})();
+</script>
+
+<script id="ms-month-change-clear-site-final-20260913">
+(function(){
+  "use strict";
+  function clearSelectedSite(){
+    const site=document.getElementById("m_site");
+    if(!site) return;
+    if(site.value!=="") site.value="";
+    try{site.dispatchEvent(new Event("change",{bubbles:true}));}catch(e){}
+  }
+  function setup(){
+    const month=document.getElementById("m_month");
+    if(!month || month.__msMonthClearSiteBound) return;
+    month.__msMonthClearSiteBound=true;
+    month.addEventListener("change",function(){
+      // 月変更時だけ、前月の選択工事を引き継がない。
+      // 既存の候補再構築・済工事判定が終わった後に選択値だけ解除する。
+      // 保存・保留金・印刷・済工事フィルターのロジックには触れない。
+      setTimeout(clearSelectedSite,120);
+    });
+  }
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",setup,{once:true});
+  else setup();
+})();
+</script>
 </body>
 </html>
 <script id="ms-monthly-print-state-preserve-v2">

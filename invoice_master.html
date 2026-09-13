@@ -493,6 +493,15 @@ html.ms-password-locked body{visibility:hidden!important;}
        </select>
        <input id="cm_safetyFeeOther" class="other-input hide" placeholder="安全管理費を入力">
      </label>
+     <label>請求書の印刷形式
+       <select id="cm_printPattern">
+         <option value="A">Aパターン（従来様式）</option>
+         <option value="B">Bパターン（新様式）</option>
+         <option value="C">Cパターン（シンプル・モノトーン）</option>
+         <option value="D">Dパターン（濃紺・写真デザイン）</option>
+       </select>
+       <span class="field-help">この発注先の工事別請求書・総括請求書に自動適用します。</span>
+     </label>
     </div>
 
     <div class="band">発注先担当者</div>
@@ -693,7 +702,7 @@ function resetClient(){
  editingClientId=null;
  ["cm_name","cm_zip","cm_tel","cm_address","cm_managers",
     "cm_closingDayOther","cm_paymentTermsOther","cm_retentionOther","cm_safetyFeeOther"].forEach(id=>put(id,""));
- ["cm_closingDay","cm_paymentTerms","cm_retention","cm_safetyFee"].forEach(id=>put(id,"")); put("cm_retentionMinAmount","300,000"); put("cm_adjustmentTiming","anytime"); put("cm_retentionIncludeIncrease","1"); put("cm_retentionIncludeReduction","1");
+ ["cm_closingDay","cm_paymentTerms","cm_retention","cm_safetyFee"].forEach(id=>put(id,"")); put("cm_retentionMinAmount","300,000"); put("cm_adjustmentTiming","anytime"); put("cm_retentionIncludeIncrease","1"); put("cm_retentionIncludeReduction","1"); put("cm_printPattern","A");
  ["cm_closingDayOther","cm_paymentTermsOther","cm_retentionOther","cm_safetyFeeOther"].forEach(id=>document.getElementById(id)?.classList.add("hide"));
  const zs=document.getElementById("cm_zip_status");
  if(zs){zs.textContent="7桁入力すると住所を自動検索します";zs.className="field-help";}
@@ -704,7 +713,7 @@ function saveClient(){
  const name=value("cm_name");
  if(!name){alert("発注先名を入力してください。");document.getElementById("cm_name").focus();return}
  const list=loadClients();
- const data={name,zip:value("cm_zip"),address:value("cm_address"),tel:value("cm_tel"),closingDay:value("cm_closingDay"),paymentTerms:value("cm_paymentTerms"),retention:value("cm_retention"),retentionMinAmount:masterMoneyNumber("cm_retentionMinAmount"),adjustmentTiming:value("cm_adjustmentTiming")||"anytime",retentionIncludeIncrease:value("cm_retentionIncludeIncrease")!=="0",retentionIncludeReduction:value("cm_retentionIncludeReduction")!=="0",safetyFee:value("cm_safetyFee"),managers:value("cm_managers").split(/[、,\n]+/).map(x=>x.trim()).filter(Boolean)};
+ const data={name,zip:value("cm_zip"),address:value("cm_address"),tel:value("cm_tel"),closingDay:value("cm_closingDay"),paymentTerms:value("cm_paymentTerms"),retention:value("cm_retention"),retentionMinAmount:masterMoneyNumber("cm_retentionMinAmount"),adjustmentTiming:value("cm_adjustmentTiming")||"anytime",retentionIncludeIncrease:value("cm_retentionIncludeIncrease")!=="0",retentionIncludeReduction:value("cm_retentionIncludeReduction")!=="0",safetyFee:value("cm_safetyFee"),printPattern:["A","B","C","D"].includes(value("cm_printPattern"))?value("cm_printPattern"):"A",managers:value("cm_managers").split(/[、,\n]+/).map(x=>x.trim()).filter(Boolean)};
  if(editingClientId){const i=list.findIndex(x=>x.id===editingClientId);if(i>=0)list[i]={...list[i],...data}}
  else list.push({id:makeId(),...data});
  storeClients(list);resetClient();renderClients();
@@ -721,6 +730,7 @@ function editClient(id){
  put("cm_retentionIncludeIncrease",x.retentionIncludeIncrease===false?"0":"1");
  put("cm_retentionIncludeReduction",x.retentionIncludeReduction===false?"0":"1");
  putChoice("cm_safetyFee","cm_safetyFeeOther",x.safetyFee);
+ put("cm_printPattern",["A","B","C","D"].includes(x.printPattern)?x.printPattern:"A");
  put("cm_managers",(x.managers||[]).join("、"));
  document.getElementById("cm_save").textContent="発注先を更新";document.getElementById("cm_name").focus();
 }
@@ -754,6 +764,7 @@ function renderClients(){
      x.retention,
      x.retentionMinAmount,
      x.safetyFee,
+     x.printPattern==="D"?"Dパターン":(x.printPattern==="C"?"Cパターン":(x.printPattern==="B"?"Bパターン":"Aパターン")),
      ...(Array.isArray(x.managers)?x.managers:[])
    ].filter(Boolean).join(" ").toLocaleLowerCase("ja");
    return target.includes(q);
@@ -789,6 +800,7 @@ function renderClients(){
        ${x.closingDay||x.paymentTerms?`<div>締日：${esc(x.closingDay)}　支払条件：${esc(x.paymentTerms)}</div>`:""}
        ${x.managers?.length?`<div>発注先担当者：${esc(x.managers.join("、"))}</div>`:""}
        ${x.retention||x.safetyFee||Number(x.retentionMinAmount||0)>0?`<div>保留金条件：${esc(x.retention)}　発生基準額：${Number(x.retentionMinAmount||0).toLocaleString("ja-JP")}円　安全管理費：${esc(x.safetyFee)}</div>`:""}
+       <div>請求書様式：${x.printPattern==="D"?"Dパターン（濃紺・写真デザイン）":(x.printPattern==="C"?"Cパターン（シンプル・モノトーン）":(x.printPattern==="B"?"Bパターン（新様式）":"Aパターン（従来様式）")) }</div>
      </div>
    </div>`).join("");
 }
@@ -866,6 +878,7 @@ document.addEventListener("DOMContentLoaded",()=>{renderClients();setupZipAutoLo
     "cm_retentionOther",
     "cm_safetyFee",
     "cm_safetyFeeOther",
+    "cm_printPattern",
     "cm_managers"
   ];
 
@@ -873,7 +886,8 @@ document.addEventListener("DOMContentLoaded",()=>{renderClients();setupZipAutoLo
     "cm_closingDay",
     "cm_paymentTerms",
     "cm_retention",
-    "cm_safetyFee"
+    "cm_safetyFee",
+    "cm_printPattern"
   ]);
 
   function visibleFields(){

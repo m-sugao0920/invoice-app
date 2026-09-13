@@ -1282,7 +1282,11 @@ const taxRate = Number(state.settings.taxRate || 10);
   }
 
   function renderSummary(){
-    syncFormToSettings();
+    // 総括請求書の単独ページには設定フォームが無いため、
+    // 設定画面が存在するときだけフォーム値を state へ同期する。
+    try{
+      if(document.getElementById("s_myName")) syncFormToSettings();
+    }catch(e){ console.warn("総括設定同期:", e); }
 
     const month = (document.getElementById("sr_month")?.value || "").trim();
     const billDate = (document.getElementById("sr_billDate")?.value || "").trim();
@@ -1384,6 +1388,38 @@ function exportData(){
       bind("m_reductionNet","input",refreshSiteSummaryAndHistory);
       bind("m_thisMonthNet","input",refreshSiteSummaryAndHistory);
       bind("m_isFinal","change",refreshSiteSummaryAndHistory);
+    }
+
+    // 総括請求書の単独ページ
+    if(document.getElementById("view-summary") && !document.getElementById("view-settings")){
+      const summaryView = document.getElementById("view-summary");
+      summaryView.classList.remove("hide");
+
+      const bind=(id,event,fn)=>{
+        const el=document.getElementById(id);
+        if(el && !el.dataset.msInvoiceBound){
+          el.dataset.msInvoiceBound="1";
+          el.addEventListener(event,fn);
+        }
+      };
+
+      // 初期月：未設定なら今月
+      const sm=document.getElementById("sr_month");
+      if(sm && !sm.value){
+        const d=new Date();
+        sm.value=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
+      }
+      const sd=document.getElementById("sr_billDate");
+      if(sd && !sd.value){
+        const d=new Date();
+        sd.value=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+      }
+
+      bind("sr_month","change",renderSummary);
+      bind("sr_billDate","change",renderSummary);
+      bind("sr_safeRate","change",renderSummary);
+      bind("sr_safeRate","input",renderSummary);
+      try{ renderSummary(); }catch(e){ console.warn("総括初期表示:",e); }
     }
 
     // invoice_app.html に存在する画面だけ初期化する
@@ -1923,6 +1959,7 @@ document.addEventListener("DOMContentLoaded",()=>{
     if(view==="home"){ location.href="index.html"; return; }
     if(view==="settings" || view==="master"){ location.href="invoice_master.html"; return; }
     if(view==="monthly"){ location.href="invoice_monthly.html"; return; }
+    if(view==="summary"){ location.href="invoice_summary.html"; return; }
     localStorage.setItem("ms_invoice_open_view",view||"sites");
     location.href="invoice_app.html";
   };
