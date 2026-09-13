@@ -1393,6 +1393,22 @@ html.ms-password-locked body{visibility:hidden!important;}
 }
 </style>
 
+
+<style id="ms-monthly-layout-compact-final-20260913">
+/* 工事名と請求先を横並び。既存の情報カードの見た目はそのまま使用 */
+.month-project-info > div:nth-child(1),
+.month-project-info > div:nth-child(2){min-width:0;}
+.month-project-info > div:nth-child(1) b,
+.month-project-info > div:nth-child(2) b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+/* 計算詳細は通常操作の後、一番下へ配置 */
+.ms-calculation-detail-bottom{margin:0 10px 10px;padding-top:2px;}
+.ms-calculation-detail-bottom-title{margin:0 0 5px;color:#718493;font-size:9.5px;font-weight:700;}
+.ms-calculation-detail-bottom .month-detail-toggle{margin:0;}
+@media(max-width:650px){
+  .month-project-info > div:nth-child(1) b,
+  .month-project-info > div:nth-child(2) b{white-space:normal;}
+}
+</style>
 </head>
 <body class="ms-invoice-page">
 <header class="invoice-monthly-header">
@@ -1419,8 +1435,8 @@ html.ms-password-locked body{visibility:hidden!important;}
 </div>
 <div class="ms-show-saved-toggle"><input id="m_showSaved" type="checkbox"/><label for="m_showSaved">済工事を表示</label><span class="note">通常は未登録・未完了の工事だけを表示します。</span></div>
 <div class="month-project-info">
-<div class="wide"><span>工事名</span><b id="msm_siteName">—</b></div>
-<div class="wide"><span>請求先</span><b id="msm_client">—</b></div>
+<div><span>工事名</span><b id="msm_siteName">—</b></div>
+<div><span>請求先</span><b id="msm_client">—</b></div>
 <div><span>発注担当者</span><b id="msm_orderManager">—</b></div>
 <div><span>請求担当者</span><b id="msm_billingManager">—</b></div>
 </div>
@@ -1446,21 +1462,7 @@ html.ms-password-locked body{visibility:hidden!important;}
 <span>今月の請求額（税抜）</span>
 <b id="sum_thisRetHeld">—</b>
 </div>
-<details class="month-detail-toggle">
-<summary>計算詳細を表示</summary>
-<div class="month-detail-grid">
-<div class="status-box"><span>当初注文金額</span><b id="sum_contract">—</b></div>
-<div class="status-box"><span>増額</span><b id="sum_increase">—</b></div>
-<div class="status-box"><span>減額</span><b id="sum_reduction">—</b></div>
-<div class="status-box"><span>保留金判定額</span><b id="sum_effective">—</b></div>
-<div class="status-box"><span>保留金発生基準額</span><b id="sum_retMin">—</b></div>
-<div class="status-box"><span>保留上限</span><b id="sum_retCap">—</b></div>
-<div class="status-box"><span>通常請求上限</span><b id="sum_trigger">—</b></div>
-<div class="status-box retention"><span>保留金</span><b id="sum_retRemain">—</b></div>
-<div class="status-box"><span>前月まで出来高</span><b id="sum_prevCum">—</b></div>
-<div class="status-box"><span>出来高累計</span><b id="sum_workCum">—</b></div>
-</div>
-</details>
+
 </section>
 <section class="month-section">
 <div class="month-section-title"><span>③</span>今月の入力</div>
@@ -1489,6 +1491,16 @@ html.ms-password-locked body{visibility:hidden!important;}
   <span style="font-size:9px;font-weight:500;color:#71808b;line-height:1.35;">工事完了時も、上の未請求額を確認して入力してください。</span>
 </label>
 </div>
+<div class="month-actions ms-final-actions">
+  <div class="ms-final-actions-title">請求書の保存・印刷</div>
+  <div class="ms-final-actions-main">
+    <button class="ret-claim-button hide" id="retClaimBtn" onclick="prepareRetentionOnlyClaim()" type="button">保留金を請求</button>
+    <button id="btnSaveMonthly" onclick="safeSaveMonthly()">今月の請求を保存</button>
+    <button class="secondary ms-direct-print" id="btnDirectInvoicePrint" onclick="openCurrentInvoicePrint()" type="button">工事別請求書を印刷</button>
+  </div>
+  <div class="ms-final-actions-sub">
+  </div>
+</div>
 <div id="msAdjustmentTimingNote" class="month-help" style="margin-top:7px;">増減の反映時期：—</div>
 <div id="msSafetyConditions" class="ms-safety-conditions" aria-live="polite">
   <div class="ms-safety-title">今回の計算条件</div>
@@ -1507,19 +1519,28 @@ html.ms-password-locked body{visibility:hidden!important;}
 <div class="ret-input-warning hide" id="retInputWarning">
             この工事は保留金待ちです。保留金だけを請求する場合、今月の出来高へ保留金額を入力しないでください。
           </div>
-<div class="month-actions ms-final-actions">
-  <div class="ms-final-actions-title">請求書の保存・印刷</div>
-  <div class="ms-final-actions-main">
-    <button class="ret-claim-button hide" id="retClaimBtn" onclick="prepareRetentionOnlyClaim()" type="button">保留金を請求</button>
-    <button id="btnSaveMonthly" onclick="safeSaveMonthly()">今月の請求を保存</button>
-    <button class="secondary ms-direct-print" id="btnDirectInvoicePrint" onclick="openCurrentInvoicePrint()" type="button">工事別請求書を印刷</button>
-  </div>
-  <div class="ms-final-actions-sub">
-  </div>
-</div>
+
 <div class="month-help">
             保留金ありの工事は、会社ごとの保留金条件と増減額の取扱設定から通常請求上限を計算し、その上限に達すると通常月の請求を停止します。工事完了月に「工事完了（最終請求）」を選ぶと、最終請求として増減と保留金を確定します。
           </div>
+<div class="ms-calculation-detail-bottom">
+<div class="ms-calculation-detail-bottom-title">計算詳細</div>
+<details class="month-detail-toggle">
+<summary>計算詳細を表示</summary>
+<div class="month-detail-grid">
+<div class="status-box"><span>当初注文金額</span><b id="sum_contract">—</b></div>
+<div class="status-box"><span>増額</span><b id="sum_increase">—</b></div>
+<div class="status-box"><span>減額</span><b id="sum_reduction">—</b></div>
+<div class="status-box"><span>保留金判定額</span><b id="sum_effective">—</b></div>
+<div class="status-box"><span>保留金発生基準額</span><b id="sum_retMin">—</b></div>
+<div class="status-box"><span>保留上限</span><b id="sum_retCap">—</b></div>
+<div class="status-box"><span>通常請求上限</span><b id="sum_trigger">—</b></div>
+<div class="status-box retention"><span>保留金</span><b id="sum_retRemain">—</b></div>
+<div class="status-box"><span>前月まで出来高</span><b id="sum_prevCum">—</b></div>
+<div class="status-box"><span>出来高累計</span><b id="sum_workCum">—</b></div>
+</div>
+</details>
+</div>
 <div class="hide" id="siteSummary"></div>
 </section>
 </div>
@@ -4939,6 +4960,150 @@ document.addEventListener("click",(e)=>{
     });
   }
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",setup,{once:true});
+  else setup();
+})();
+</script>
+
+
+<style id="ms-target-filter-collapse-style-20260913">
+/* 工事選択後は検索用の欄だけを畳み、入力エリアを上へ詰める */
+#msSelectedSiteCompact{
+  display:none;
+  min-height:36px;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:6px 9px;
+  border:1px solid #c9dce9;
+  border-radius:7px;
+  background:#f7fafc;
+  box-sizing:border-box;
+}
+#msSelectedSiteCompact .ms-selected-site-text{
+  min-width:0;
+  color:#263f50;
+  font-size:12px;
+  font-weight:800;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+#msSelectedSiteCompact .ms-selected-site-text small{
+  margin-right:5px;
+  color:#6e8290;
+  font-size:10px;
+  font-weight:700;
+}
+#msSelectedSiteCompact button{
+  flex:0 0 auto;
+  min-height:28px;
+  padding:4px 10px;
+  border:1px solid #9eb9ca;
+  border-radius:6px;
+  background:#fff;
+  color:#31566f;
+  font:inherit;
+  font-size:10.5px;
+  font-weight:800;
+  cursor:pointer;
+}
+#msSelectedSiteCompact button:hover{background:#eef6fb;}
+
+/* 選択後は、対象月だけ残して検索・選択用コントロールを畳む */
+#invoiceMonthlyTargetGrid.ms-target-collapsed > label:has(#m_clientFilter),
+#invoiceMonthlyTargetGrid.ms-target-collapsed > label:has(#m_siteSearch),
+#invoiceMonthlyTargetGrid.ms-target-collapsed > label:has(#m_site){display:none !important;}
+#invoiceMonthlyTargetGrid.ms-target-collapsed #msSelectedSiteCompact{display:flex;}
+#invoiceMonthlyTargetGrid.ms-target-collapsed + .ms-show-saved-toggle{display:none !important;}
+
+@media(max-width:760px){
+  #invoiceMonthlyTargetGrid.ms-target-collapsed #msSelectedSiteCompact{grid-column:1 / -1;}
+}
+</style>
+
+<script id="ms-target-filter-collapse-script-20260913">
+(function(){
+  'use strict';
+  const GRID_ID='invoiceMonthlyTargetGrid';
+  const SITE_ID='m_site';
+  const MONTH_ID='m_month';
+  let manuallyExpanded=false;
+
+  function siteName(){
+    const site=document.getElementById(SITE_ID);
+    if(!site || !site.value) return '';
+    const opt=site.options && site.selectedIndex>=0 ? site.options[site.selectedIndex] : null;
+    let name=(opt?.textContent||'').trim();
+    name=name.replace(/^【[^】]+】\s*/,'');
+    if(!name || name==='工事を選択してください'){
+      name=(document.getElementById('msm_siteName')?.textContent||'').trim();
+    }
+    return name && name!=='—' ? name : '選択中の工事';
+  }
+
+  function ensureCompactBar(){
+    const grid=document.getElementById(GRID_ID);
+    if(!grid) return null;
+    let bar=document.getElementById('msSelectedSiteCompact');
+    if(bar) return bar;
+    bar=document.createElement('div');
+    bar.id='msSelectedSiteCompact';
+    bar.setAttribute('aria-live','polite');
+    bar.innerHTML='<div class="ms-selected-site-text"><small>選択中：</small><span id="msSelectedSiteCompactName">—</span></div><button type="button" id="msReselectSiteBtn">工事を選び直す</button>';
+    grid.appendChild(bar);
+    bar.querySelector('#msReselectSiteBtn')?.addEventListener('click',function(){
+      manuallyExpanded=true;
+      grid.classList.remove('ms-target-collapsed');
+      setTimeout(()=>{
+        const search=document.getElementById('m_siteSearch');
+        const site=document.getElementById(SITE_ID);
+        try{ (search||site)?.focus(); }catch(e){}
+      },20);
+    });
+    return bar;
+  }
+
+  function sync(forceCollapse){
+    const grid=document.getElementById(GRID_ID);
+    const site=document.getElementById(SITE_ID);
+    const bar=ensureCompactBar();
+    if(!grid || !site || !bar) return;
+    const selected=!!site.value;
+    const name=document.getElementById('msSelectedSiteCompactName');
+    if(name) name.textContent=selected ? siteName() : '—';
+
+    if(!selected){
+      manuallyExpanded=false;
+      grid.classList.remove('ms-target-collapsed');
+      return;
+    }
+    if(forceCollapse || !manuallyExpanded){
+      grid.classList.add('ms-target-collapsed');
+      manuallyExpanded=false;
+    }
+  }
+
+  function setup(){
+    ensureCompactBar();
+    const site=document.getElementById(SITE_ID);
+    const month=document.getElementById(MONTH_ID);
+    if(!site) return;
+
+    site.addEventListener('change',function(){
+      manuallyExpanded=false;
+      setTimeout(()=>sync(true),90);
+    });
+    month?.addEventListener('change',function(){
+      manuallyExpanded=false;
+      /* 既存の「月変更時は工事未選択」処理が終わってから表示状態を合わせる */
+      setTimeout(()=>sync(false),180);
+    });
+
+    /* 初期表示・印刷から戻った時など、既存処理の選択復元にも追従 */
+    [0,120,350,700].forEach(ms=>setTimeout(()=>sync(false),ms));
+  }
+
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',setup,{once:true});
   else setup();
 })();
 </script>
