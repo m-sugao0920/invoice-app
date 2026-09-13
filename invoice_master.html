@@ -387,7 +387,7 @@ html.ms-password-locked body{visibility:hidden!important;}
 
 </head>
 <body>
-<header>
+<header id="fixedClientAdminTrigger">
  <div class="wrap head">
   <div><h1>MS請求書システム</h1><div class="sub">マスター管理</div></div>
   <a class="back" href="index.html">🏠 メイン画面に戻る</a>
@@ -400,8 +400,19 @@ html.ms-password-locked body{visibility:hidden!important;}
   <button class="tab" id="tabCompany" onclick="showMaster('company')">自社マスター</button>
  </div>
 
- <section id="clientPanel" class="card">
+ 
+<style id="fixed-client-master-style">
+.fixed-client-badge{display:inline-block;margin-left:8px;padding:2px 8px;border-radius:999px;background:#eef3f7;color:#466274;font-size:11px;font-weight:800;vertical-align:middle}
+.fixed-client-note{margin-top:6px;color:#60727d;font-size:11px;font-weight:700}
+.fixed-client-locked{opacity:.55;cursor:not-allowed!important}
+body.fixed-client-admin-mode .fixed-client-badge{background:#fff2cc;color:#7a5a00}
+#fixedClientAdminNotice{display:none;margin:8px 0 0;padding:8px 10px;border:1px solid #d9c16c;border-radius:8px;background:#fff8d9;color:#705800;font-size:12px;font-weight:800}
+body.fixed-client-admin-mode #fixedClientAdminNotice{display:block}
+</style>
+
+<section id="clientPanel" class="card">
   <div class="card-title">発注先マスター</div>
+  <div id="fixedClientAdminNotice">固定会社設定モードです。固定会社の内容を編集できます。終了するときは、上の帯を5回クリックしてください。</div>
   <div style="padding:12px 16px 0;">
     <div class="keyboard-hint">
       Enter／↓／Tab：次へ　　↑／Shift+Tab：前へ　　
@@ -640,6 +651,43 @@ html.ms-password-locked body{visibility:hidden!important;}
 <script>
 const CLIENT_KEY="ms_invoice_client_master_v1";
 let editingClientId=null;
+let fixedClientAdminMode=false;
+const FIXED_CLIENT_ID="MS_FIXED_CLIENT_A";
+function isFixedClient(x){return !!x && (x.fixedClient===true || String(x.id||"")===FIXED_CLIENT_ID)}
+function setFixedClientAdminMode(on){
+ fixedClientAdminMode=!!on;
+ document.body.classList.toggle("fixed-client-admin-mode",fixedClientAdminMode);
+ renderClients();
+ if(!fixedClientAdminMode && editingClientId===FIXED_CLIENT_ID) resetClient();
+}
+function toggleFixedClientAdmin(){
+ if(fixedClientAdminMode){
+   if(!confirm("固定会社設定モードを終了しますか？\n\n保存していない変更は破棄されます。"))return;
+   setFixedClientAdminMode(false);
+   return;
+ }
+ if(!confirm("固定会社設定モードを開きます。\n\n固定会社の請求条件を変更するための管理用機能です。\n変更しますか？"))return;
+ setFixedClientAdminMode(true);
+ const x=loadClients().find(isFixedClient);
+ if(x) editClient(x.id);
+}
+let fixedAdminClickCount=0;
+let fixedAdminClickTimer=null;
+document.addEventListener("DOMContentLoaded",()=>{
+ const trigger=document.getElementById("fixedClientAdminTrigger");
+ if(!trigger)return;
+ trigger.addEventListener("click",e=>{
+   if(e.target.closest("a,button,input,select,textarea,label"))return;
+   fixedAdminClickCount++;
+   clearTimeout(fixedAdminClickTimer);
+   fixedAdminClickTimer=setTimeout(()=>{fixedAdminClickCount=0},3000);
+   if(fixedAdminClickCount>=5){
+     fixedAdminClickCount=0;
+     clearTimeout(fixedAdminClickTimer);
+     toggleFixedClientAdmin();
+   }
+ });
+});
 
 function showMaster(type){
  const client=type==="client";
@@ -707,6 +755,7 @@ function resetClient(){
  const zs=document.getElementById("cm_zip_status");
  if(zs){zs.textContent="7桁入力すると住所を自動検索します";zs.className="field-help";}
  document.getElementById("cm_save").textContent="発注先を登録";
+ const pp=document.getElementById("cm_printPattern"); if(pp)pp.disabled=false;
  document.getElementById("cm_name").focus();
 }
 function saveClient(){
@@ -714,12 +763,23 @@ function saveClient(){
  if(!name){alert("発注先名を入力してください。");document.getElementById("cm_name").focus();return}
  const list=loadClients();
  const data={name,zip:value("cm_zip"),address:value("cm_address"),tel:value("cm_tel"),closingDay:value("cm_closingDay"),paymentTerms:value("cm_paymentTerms"),retention:value("cm_retention"),retentionMinAmount:masterMoneyNumber("cm_retentionMinAmount"),adjustmentTiming:value("cm_adjustmentTiming")||"anytime",retentionIncludeIncrease:value("cm_retentionIncludeIncrease")!=="0",retentionIncludeReduction:value("cm_retentionIncludeReduction")!=="0",safetyFee:value("cm_safetyFee"),printPattern:["A","B","C","D"].includes(value("cm_printPattern"))?value("cm_printPattern"):"A",managers:value("cm_managers").split(/[、,\n]+/).map(x=>x.trim()).filter(Boolean)};
- if(editingClientId){const i=list.findIndex(x=>x.id===editingClientId);if(i>=0)list[i]={...list[i],...data}}
+ if(editingClientId){
+   const i=list.findIndex(x=>x.id===editingClientId);
+   if(i>=0){
+     if(isFixedClient(list[i]) && !fixedClientAdminMode){alert("固定会社は通常モードでは変更できません。");return}
+     const fixed=isFixedClient(list[i]);
+     list[i]={...list[i],...data,...(fixed?{id:FIXED_CLIENT_ID,fixedClient:true,fixedRole:"A_PATTERN_CLIENT",printPattern:"A"}:{})};
+   }
+ }
  else list.push({id:makeId(),...data});
  storeClients(list);resetClient();renderClients();
 }
 function editClient(id){
  const x=loadClients().find(v=>v.id===id);if(!x)return;
+ if(isFixedClient(x) && !fixedClientAdminMode){
+   alert("この会社は固定会社です。通常は編集できません。");
+   return;
+ }
  editingClientId=id;
  put("cm_name",x.name);put("cm_zip",x.zip);put("cm_tel",x.tel);put("cm_address",x.address);
  putChoice("cm_closingDay","cm_closingDayOther",x.closingDay);
@@ -730,12 +790,14 @@ function editClient(id){
  put("cm_retentionIncludeIncrease",x.retentionIncludeIncrease===false?"0":"1");
  put("cm_retentionIncludeReduction",x.retentionIncludeReduction===false?"0":"1");
  putChoice("cm_safetyFee","cm_safetyFeeOther",x.safetyFee);
- put("cm_printPattern",["A","B","C","D"].includes(x.printPattern)?x.printPattern:"A");
+ put("cm_printPattern",isFixedClient(x)?"A":(["A","B","C","D"].includes(x.printPattern)?x.printPattern:"A"));
  put("cm_managers",(x.managers||[]).join("、"));
- document.getElementById("cm_save").textContent="発注先を更新";document.getElementById("cm_name").focus();
+ const pp=document.getElementById("cm_printPattern"); if(pp)pp.disabled=isFixedClient(x);
+ document.getElementById("cm_save").textContent=isFixedClient(x)?"固定会社を更新":"発注先を更新";document.getElementById("cm_name").focus();
 }
 function deleteClient(id){
  const list=loadClients(),x=list.find(v=>v.id===id);if(!x)return;
+ if(isFixedClient(x)){alert("固定会社は削除できません。");return}
  if(!confirm("「"+x.name+"」を削除しますか？"))return;
  storeClients(list.filter(v=>v.id!==id));if(editingClientId===id)resetClient();renderClients();
 }
@@ -788,13 +850,17 @@ function renderClients(){
  box.innerHTML=filtered.map(x=>`
    <div class="item">
      <div class="item-head">
-       <div class="item-name">${esc(x.name)}</div>
+       <div class="item-name">${esc(x.name)}${isFixedClient(x)?`<span class="fixed-client-badge">固定会社・Aパターン</span>`:""}</div>
        <div class="item-buttons">
-         <button class="secondary" onclick="editClient('${x.id}')">編集</button>
-         <button class="danger" onclick="deleteClient('${x.id}')">削除</button>
+         ${isFixedClient(x)
+           ? (fixedClientAdminMode
+             ? `<button class="secondary" onclick="editClient('${x.id}')">管理編集</button><button class="danger fixed-client-locked" disabled>削除不可</button>`
+             : `<button class="secondary fixed-client-locked" disabled>編集不可</button><button class="danger fixed-client-locked" disabled>削除不可</button>`)
+           : `<button class="secondary" onclick="editClient('${x.id}')">編集</button><button class="danger" onclick="deleteClient('${x.id}')">削除</button>`}
        </div>
      </div>
      <div class="meta">
+       ${isFixedClient(x)?`<div class="fixed-client-note">この会社はアプリに初期登録されている固定会社です。</div>`:""}
        ${x.zip||x.address?`<div>〒${esc(x.zip)}　${esc(x.address)}</div>`:""}
        ${x.tel?`<div>電話：${esc(x.tel)}</div>`:""}
        ${x.closingDay||x.paymentTerms?`<div>締日：${esc(x.closingDay)}　支払条件：${esc(x.paymentTerms)}</div>`:""}

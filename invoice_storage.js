@@ -116,8 +116,70 @@
     }
   };
 
+  /* ===== 固定発注先（Aパターン専用） =====
+     通常ユーザーは登録・編集・削除を行わない。
+     初回起動時に自動登録し、既存データがある場合は内容を上書きせず固定フラグだけ補完する。 */
+  const FIXED_CLIENT_ID = 'MS_FIXED_CLIENT_A';
+  const FIXED_CLIENT_DEFAULT = {
+    id: FIXED_CLIENT_ID,
+    fixedClient: true,
+    fixedRole: 'A_PATTERN_CLIENT',
+    name: '鶴よし建設株式会社',
+    zip: '',
+    address: '',
+    tel: '',
+    closingDay: '末日',
+    paymentTerms: '翌月末払い',
+    retention: '5%',
+    retentionMinAmount: 300000,
+    adjustmentTiming: 'final',
+    retentionIncludeIncrease: true,
+    retentionIncludeReduction: true,
+    safetyFee: '0.5%',
+    printPattern: 'A',
+    managers: []
+  };
+
+  function normalizeFixedName(v){
+    return String(v||'').replace(/\s+/g,'').replace(/御中$/,'');
+  }
+
+  async function ensureFixedClient(){
+    const key='ms_invoice_client_master_v1';
+    let list=[];
+    try{
+      const raw=localGet(key);
+      const parsed=JSON.parse(raw||'[]');
+      list=Array.isArray(parsed)?parsed:[];
+    }catch(e){ list=[]; }
+
+    let i=list.findIndex(x=>String(x?.id||'')===FIXED_CLIENT_ID);
+    if(i<0){
+      const target=normalizeFixedName(FIXED_CLIENT_DEFAULT.name);
+      i=list.findIndex(x=>normalizeFixedName(x?.name)===target);
+    }
+
+    if(i>=0){
+      // すでにユーザーが登録済みの場合は、その内容を尊重して固定属性だけ付ける。
+      list[i]={...list[i],id:FIXED_CLIENT_ID,fixedClient:true,fixedRole:'A_PATTERN_CLIENT'};
+    }else{
+      list.push({...FIXED_CLIENT_DEFAULT});
+    }
+
+    const text=JSON.stringify(list);
+    localSet(key,text);
+    try{ await idbSet(key,text); }catch(e){ console.warn('固定発注先の保存はlocalStorageで継続します:',e); }
+    window.MSInvoiceFixedClient={
+      id:FIXED_CLIENT_ID,
+      defaults:{...FIXED_CLIENT_DEFAULT},
+      isFixed(client){ return !!client && (client.fixedClient===true || String(client.id||'')===FIXED_CLIENT_ID); }
+    };
+    return list;
+  }
+
   window.MSInvoiceStorage=api;
-  api.ready=api.sync().then(result=>{
+  api.ready=api.sync().then(async result=>{
+    await ensureFixedClient();
     window.dispatchEvent(new CustomEvent('msinvoice-storage-ready',{detail:result}));
     return result;
   });
