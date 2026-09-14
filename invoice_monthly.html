@@ -4620,9 +4620,10 @@ document.addEventListener("click",(e)=>{
 
         const isCurrentSelected=currentSelectedSiteId && String(s.id)===currentSelectedSiteId;
 
-        // 「済工事を表示」OFFなら今月保存済みは非表示。
-        // ただし保存直後の現在選択中工事だけは、確認・印刷のため保持する。
-        if(!showSaved && isSavedThisMonth(s.id) && !isCurrentSelected) return false;
+        // 「済工事を表示」OFFなら今月保存済みは必ず非表示。
+        // 現在選択中であっても例外にしない。
+        // これにより、保存済み工事がチェックOFFの候補に残ることを防ぐ。
+        if(!showSaved && isSavedThisMonth(s.id)) return false;
 
         // 過去月ですでに完全完了した工事は通常の月次入力候補には出さない。
         // 現在選択中の工事だけは、保存直後の印刷を可能にするため保持する。
