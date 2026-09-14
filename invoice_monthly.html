@@ -5107,6 +5107,49 @@ document.addEventListener("click",(e)=>{
   else setup();
 })();
 </script>
+
+
+<script id="ms-monthly-main-reentry-clear-site-20260914">
+(function(){
+  "use strict";
+
+  const PRINT_DRAFT_KEY="ms_invoice_monthly_print_draft_v1";
+
+  function hasDirectSite(){
+    try{
+      return !!new URLSearchParams(location.search||"").get("site");
+    }catch(e){ return false; }
+  }
+
+  function hasValidPrintDraft(){
+    try{
+      const d=JSON.parse(sessionStorage.getItem(PRINT_DRAFT_KEY)||"null");
+      return !!(d && d.at && Date.now()-d.at<=10*60*1000 && d.site);
+    }catch(e){ return false; }
+  }
+
+  function clearSiteForNormalEntry(){
+    // 工事指定付きの直接遷移と、印刷からの復帰は既存処理に任せる。
+    if(hasDirectSite() || hasValidPrintDraft()) return;
+
+    const site=document.getElementById("m_site");
+    if(!site) return;
+
+    try{ if(typeof ensureBlankSiteOption==="function") ensureBlankSiteOption(); }catch(e){}
+    if(site.value!==""){
+      site.value="";
+      try{ site.dispatchEvent(new Event("change",{bubbles:true})); }catch(e){}
+    }
+  }
+
+  // 戻る/進むキャッシュ(BFCache)で月次画面がそのまま復元された場合にも、
+  // メイン画面からの通常入場なら必ず「工事を選択してください」へ戻す。
+  window.addEventListener("pageshow",function(){
+    setTimeout(clearSiteForNormalEntry,40);
+  });
+})();
+</script>
+
 </body>
 </html>
 <script id="ms-monthly-print-state-preserve-v2">
