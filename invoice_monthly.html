@@ -1577,6 +1577,23 @@ html.ms-password-locked body{visibility:hidden!important;}
 </section>
 </div>
 </main>
+<script id="ms-monthly-entry-site-reset-20260914">
+(function(){
+  "use strict";
+  // 月次請求の入口を明確に分ける。
+  // 通常の「月次請求」では、前回の「選択中工事」を共通処理が読み込む前に解除する。
+  // 未請求工事一覧の［請求］から site=... が渡された場合だけ、その工事を引き継ぐ。
+  try{
+    const p=new URLSearchParams(location.search||"");
+    const directSite=p.get("site")||"";
+    if(directSite){
+      localStorage.setItem("ms_invoice_selected_site",directSite);
+    }else{
+      localStorage.removeItem("ms_invoice_selected_site");
+    }
+  }catch(e){}
+})();
+</script>
 <script src="invoice_storage.js"></script>
 <script src="invoice_common.js"></script>
 <script id="invoice-monthly-site-edit-link">
