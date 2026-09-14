@@ -919,13 +919,7 @@ html.ms-password-locked #msPasswordGate{display:flex;}
 
     const p=new URLSearchParams();
     p.set("month",month);
-    if(siteId){
-      p.set("site",siteId);
-    }else{
-      // メイン画面の「月次請求」から入ったことを明示する。
-      // 月次側では、この入口だけ前回選択を復元せず「工事未選択」にする。
-      p.set("entry","main");
-    }
+    if(siteId) p.set("site",siteId);
 
     location.href="invoice_monthly.html?"+p.toString();
   };
