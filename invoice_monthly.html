@@ -3294,18 +3294,17 @@ document.addEventListener("click",(e)=>{
        「随時」で増額と出来高を同じ月に入力した場合の誤警告を防ぐ。 */
     let directInputLimitContract;
     if(finalOnly(t,s) && isFinal && typeof getSiteForCalc==="function"){
-      // 「増減は工事完了時に反映」の最終月は、
-      // 前月までに記録済みの増減を含む正式な計算用工事データを基準にする。
-      // そのうえで、今月まだ保存していない増額・減額だけを追加する。
+      // 「増減は工事完了時に反映」の最終月は、getSiteForCalc() 側で
+      // 当月入力中の増額・減額まで1回だけ集計済み。
+      // ここで inc / red をもう一度加減すると二重計上になるため、
+      // 集約済みの最終注文金額をそのまま保存前上限として使う。
       try{
         const monthKey=document.getElementById("m_month")?.value||"";
         const cs=getSiteForCalc(s,true,monthKey)||s;
         directInputLimitContract=
           Number(cs.contractNet||0) +
           Number(cs.increaseNet||0) -
-          Number(cs.reductionNet||0) +
-          Number(inc||0) -
-          Number(red||0);
+          Number(cs.reductionNet||0);
       }catch(_){
         directInputLimitContract=inputLimitContract;
       }
@@ -4621,7 +4620,7 @@ document.addEventListener("click",(e)=>{
         const isCurrentSelected=currentSelectedSiteId && String(s.id)===currentSelectedSiteId;
 
         // 「済工事を表示」OFFなら今月保存済みは必ず非表示。
-        if(!showSaved && isSavedThisMonth(s.id)) return false;
+        if(!showSaved && isSavedThisMonth(s.id) && !isCurrentSelected) return false;
 
         // 過去月ですでに完全完了した工事は通常の月次入力候補には出さない。
         // 現在選択中の工事だけは、保存直後の印刷を可能にするため保持する。
