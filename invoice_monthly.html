@@ -4621,7 +4621,6 @@ document.addEventListener("click",(e)=>{
         const isCurrentSelected=currentSelectedSiteId && String(s.id)===currentSelectedSiteId;
 
         // 「済工事を表示」OFFなら今月保存済みは必ず非表示。
-        // 現在選択中であっても例外にしない。
         if(!showSaved && isSavedThisMonth(s.id)) return false;
 
         // 過去月ですでに完全完了した工事は通常の月次入力候補には出さない。
@@ -5107,67 +5106,6 @@ document.addEventListener("click",(e)=>{
   else setup();
 })();
 </script>
-
-<script id="ms-monthly-clear-display-when-no-site-20260914">
-(function(){
-  "use strict";
-
-  function dash(id){
-    const el=document.getElementById(id);
-    if(el) el.textContent="—";
-  }
-
-  function clearDisplayIfNoSite(){
-    const site=document.getElementById("m_site");
-    if(!site || site.value) return;
-
-    // 対象工事の表示
-    [
-      "msm_siteName","msm_client","msm_orderManager","msm_billingManager",
-      "msm_closingDay","msm_paymentTerms","msm_retention","msm_safetyFee"
-    ].forEach(dash);
-
-    // 注文・請求状況の表示だけを初期状態へ戻す
-    [
-      "sum_displayContract","sum_actualBilled","sum_balance","sum_workBalance",
-      "sum_thisRetHeld","sum_prevCum","sum_trigger","sum_retention",
-      "sum_thisWork","sum_thisActual","sum_cumWork"
-    ].forEach(dash);
-
-    const note=document.getElementById("sum_displayContractNote");
-    if(note) note.textContent="";
-
-    // 工事別履歴は、工事未選択なら表示しない
-    const historyBody=document.querySelector("#siteHistoryTable tbody");
-    if(historyBody) historyBody.innerHTML="";
-
-    // 前の工事に由来する保留金表示も消す
-    const alertBox=document.getElementById("retAlert");
-    const alertAmt=document.getElementById("retAlertAmt");
-    const warning=document.getElementById("retInputWarning");
-    if(alertBox) alertBox.classList.add("hide");
-    if(alertAmt) alertAmt.textContent="0";
-    if(warning) warning.classList.add("hide");
-  }
-
-  document.addEventListener("change",function(e){
-    if(e.target?.id==="m_site"){
-      // 既存の共通再描画が終わった後に、未選択なら表示だけを確実に消す
-      [0,80,180].forEach(ms=>setTimeout(clearDisplayIfNoSite,ms));
-    }
-  },true);
-
-  document.addEventListener("DOMContentLoaded",function(){
-    // 起動時の既存初期化（360ms）後にも確認
-    [420,650].forEach(ms=>setTimeout(clearDisplayIfNoSite,ms));
-  },{once:true});
-
-  window.addEventListener("pageshow",function(){
-    setTimeout(clearDisplayIfNoSite,120);
-  });
-})();
-</script>
-
 </body>
 </html>
 <script id="ms-monthly-print-state-preserve-v2">
@@ -5294,8 +5232,85 @@ document.addEventListener("click",(e)=>{
     return originalReprint.apply(this,arguments);
   };
 
-  window.addEventListener("pageshow",restorePrintDraft);
-  if(document.readyState!=="loading") restorePrintDraft();
-  else document.addEventListener("DOMContentLoaded",restorePrintDraft,{once:true});
+  function isBackForwardNavigation(){
+    try{
+      const nav=performance.getEntriesByType && performance.getEntriesByType("navigation")[0];
+      return !!nav && nav.type==="back_forward";
+    }catch(e){ return false; }
+  }
+
+  window.addEventListener("pageshow",function(){
+    // 印刷画面からブラウザの「戻る」で帰った場合だけ復元する。
+    // メイン画面から通常に月次請求へ入った場合は、前回工事を復元しない。
+    if(isBackForwardNavigation()) restorePrintDraft();
+  });
+
+  // 通常の DOMContentLoaded では復元しない。
+  // 古い一時データが通常入場を汚さないよう、期限切れでなくても通常入場時は破棄する。
+  if(!isBackForwardNavigation()){
+    try{ sessionStorage.removeItem(KEY); }catch(e){}
+  }
 })();
 </script>
+
+<script id="ms-monthly-no-site-display-clear-final-20260914">
+(function(){
+  "use strict";
+
+  function setDash(id){
+    const el=document.getElementById(id);
+    if(el) el.textContent="—";
+  }
+
+  function clearOnlyDisplayWhenNoSite(){
+    const site=document.getElementById("m_site");
+    if(!site || site.value) return;
+
+    [
+      "msm_siteName","msm_client","msm_orderManager","msm_billingManager",
+      "msm_closingDay","msm_paymentTerms","msm_retention","msm_safetyFee",
+      "sum_displayContract","sum_actualBilled","sum_balance","sum_workBalance",
+      "sum_thisRetHeld","sum_prevCum","sum_trigger","sum_retention",
+      "sum_thisWork","sum_thisActual","sum_cumWork"
+    ].forEach(setDash);
+
+    const note=document.getElementById("sum_displayContractNote");
+    if(note) note.textContent="";
+
+    const history=document.querySelector("#siteHistoryTable tbody");
+    if(history) history.innerHTML="";
+
+    const alertBox=document.getElementById("retAlert");
+    const alertAmt=document.getElementById("retAlertAmt");
+    const warning=document.getElementById("retInputWarning");
+    if(alertBox) alertBox.classList.add("hide");
+    if(alertAmt) alertAmt.textContent="0";
+    if(warning) warning.classList.add("hide");
+  }
+
+  function bind(){
+    const site=document.getElementById("m_site");
+    if(!site) return;
+
+    site.addEventListener("change",function(){
+      [0,60,160,320].forEach(ms=>setTimeout(clearOnlyDisplayWhenNoSite,ms));
+    },true);
+
+    // refreshSiteSelects() で候補そのものが作り直された場合も監視する。
+    const obs=new MutationObserver(function(){
+      setTimeout(clearOnlyDisplayWhenNoSite,0);
+      setTimeout(clearOnlyDisplayWhenNoSite,120);
+    });
+    obs.observe(site,{childList:true,subtree:true});
+
+    [420,700,1000].forEach(ms=>setTimeout(clearOnlyDisplayWhenNoSite,ms));
+  }
+
+  if(document.readyState==="loading"){
+    document.addEventListener("DOMContentLoaded",bind,{once:true});
+  }else{
+    bind();
+  }
+})();
+</script>
+
