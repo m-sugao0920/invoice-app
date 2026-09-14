@@ -5107,51 +5107,61 @@ document.addEventListener("click",(e)=>{
   else setup();
 })();
 </script>
-
-
-<script id="ms-monthly-main-reentry-clear-site-20260914">
+</body>
+</html>
+<script id="ms-monthly-main-entry-guard-20260914">
 (function(){
   "use strict";
+  const KEY="ms_invoice_monthly_print_draft_v1";
 
-  const PRINT_DRAFT_KEY="ms_invoice_monthly_print_draft_v1";
-
-  function hasDirectSite(){
-    try{
-      return !!new URLSearchParams(location.search||"").get("site");
-    }catch(e){ return false; }
+  function isMainEntry(){
+    try{ return new URLSearchParams(location.search||"").get("entry")==="main"; }
+    catch(e){ return false; }
   }
 
-  function hasValidPrintDraft(){
-    try{
-      const d=JSON.parse(sessionStorage.getItem(PRINT_DRAFT_KEY)||"null");
-      return !!(d && d.at && Date.now()-d.at<=10*60*1000 && d.site);
-    }catch(e){ return false; }
-  }
+  function clearForMainEntry(){
+    if(!isMainEntry()) return;
 
-  function clearSiteForNormalEntry(){
-    // 工事指定付きの直接遷移と、印刷からの復帰は既存処理に任せる。
-    if(hasDirectSite() || hasValidPrintDraft()) return;
+    // メインからの通常入場では、以前の印刷復帰用データを持ち越さない。
+    // 「済」判定・保存データ・履歴には一切触れない。
+    try{ sessionStorage.removeItem(KEY); }catch(e){}
 
     const site=document.getElementById("m_site");
-    if(!site) return;
-
-    try{ if(typeof ensureBlankSiteOption==="function") ensureBlankSiteOption(); }catch(e){}
-    if(site.value!==""){
-      site.value="";
-      try{ site.dispatchEvent(new Event("change",{bubbles:true})); }catch(e){}
+    if(site){
+      try{ if(typeof ensureBlankSiteOption==="function") ensureBlankSiteOption(); }catch(e){}
+      if(site.value!==""){
+        site.value="";
+        try{ site.dispatchEvent(new Event("change",{bubbles:true})); }catch(e){}
+      }
     }
   }
 
-  // 戻る/進むキャッシュ(BFCache)で月次画面がそのまま復元された場合にも、
-  // メイン画面からの通常入場なら必ず「工事を選択してください」へ戻す。
-  window.addEventListener("pageshow",function(){
-    setTimeout(clearSiteForNormalEntry,40);
-  });
+  function finishMainEntry(){
+    if(!isMainEntry()) return;
+    clearForMainEntry();
+
+    // 初回の未選択化が終わったら entry=main だけURLから外す。
+    // これにより、この後に印刷して戻る場合は従来どおり印刷前の工事を復元できる。
+    try{
+      const u=new URL(location.href);
+      u.searchParams.delete("entry");
+      history.replaceState(history.state,"",u.pathname+(u.searchParams.toString()?"?"+u.searchParams.toString():"")+u.hash);
+    }catch(e){}
+  }
+
+  if(document.readyState==="loading"){
+    document.addEventListener("DOMContentLoaded",function(){
+      // 他の初期化が選択を戻しても、最後に未選択へ合わせる。
+      [0,180,420,760].forEach(ms=>setTimeout(clearForMainEntry,ms));
+      setTimeout(finishMainEntry,980);
+    },{once:true});
+  }else{
+    [0,180,420,760].forEach(ms=>setTimeout(clearForMainEntry,ms));
+    setTimeout(finishMainEntry,980);
+  }
 })();
 </script>
 
-</body>
-</html>
 <script id="ms-monthly-print-state-preserve-v2">
 (function(){
   "use strict";
@@ -5185,6 +5195,16 @@ document.addEventListener("click",(e)=>{
 
   function restorePrintDraft(){
     if(restoring) return;
+
+    // メイン画面からの通常入場では、印刷復帰用の一時データを復元しない。
+    // この判定は「済」・請求保存・保留金のデータには触れない。
+    try{
+      if(new URLSearchParams(location.search||"").get("entry")==="main"){
+        sessionStorage.removeItem(KEY);
+        return;
+      }
+    }catch(e){}
+
     const d=readDraft();
     if(!d) return;
     restoring=true;
