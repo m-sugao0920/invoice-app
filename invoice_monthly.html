@@ -5277,6 +5277,20 @@ document.addEventListener("click",(e)=>{
     const note=document.getElementById("sum_displayContractNote");
     if(note) note.textContent="";
 
+    // 工事未選択なら入力欄も「入力前」の状態へ戻す。
+    // 保存済みデータそのものには触れず、画面上の入力値だけを初期化する。
+    ["m_increaseNet","m_reductionNet","m_thisMonthNet"].forEach(function(id){
+      const el=document.getElementById(id);
+      if(!el) return;
+      el.value="0";
+      try{
+        if(typeof formatCommaInput==="function") formatCommaInput(el);
+      }catch(e){}
+    });
+
+    const finalSel=document.getElementById("m_isFinal");
+    if(finalSel) finalSel.value="0";
+
     const history=document.querySelector("#siteHistoryTable tbody");
     if(history) history.innerHTML="";
 
