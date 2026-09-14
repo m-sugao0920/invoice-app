@@ -1577,23 +1577,6 @@ html.ms-password-locked body{visibility:hidden!important;}
 </section>
 </div>
 </main>
-<script id="ms-monthly-entry-site-reset-20260914">
-(function(){
-  "use strict";
-  // 月次請求の入口を明確に分ける。
-  // 通常の「月次請求」では、前回の「選択中工事」を共通処理が読み込む前に解除する。
-  // 未請求工事一覧の［請求］から site=... が渡された場合だけ、その工事を引き継ぐ。
-  try{
-    const p=new URLSearchParams(location.search||"");
-    const directSite=p.get("site")||"";
-    if(directSite){
-      localStorage.setItem("ms_invoice_selected_site",directSite);
-    }else{
-      localStorage.removeItem("ms_invoice_selected_site");
-    }
-  }catch(e){}
-})();
-</script>
 <script src="invoice_storage.js"></script>
 <script src="invoice_common.js"></script>
 <script id="invoice-monthly-site-edit-link">
@@ -5122,6 +5105,111 @@ document.addEventListener("click",(e)=>{
   else setup();
 })();
 </script>
+
+<!-- ===== 通常の月次請求：初期工事選択を完全解除 2026-09-14 ===== -->
+<script id="ms-normal-monthly-no-initial-site-final">
+(function(){
+  "use strict";
+
+  function hasExplicitSite(){
+    try{
+      return !!new URLSearchParams(location.search || "").get("site");
+    }catch(e){
+      return false;
+    }
+  }
+
+  function isBackForward(){
+    try{
+      const nav = performance.getEntriesByType("navigation")[0];
+      if(nav && nav.type === "back_forward") return true;
+      if(performance.navigation && performance.navigation.type === 2) return true;
+    }catch(e){}
+    return false;
+  }
+
+  // 工事一覧の「請求」から入った場合は、その工事を選択する従来動作を残す。
+  // 印刷から戻った場合も、印刷前の工事復元を優先する。
+  if(hasExplicitSite() || isBackForward()) return;
+
+  let stopped = false;
+  let timer = null;
+  let ticks = 0;
+
+  function ensureBlankOption(site){
+    if(!site) return;
+    let blank = [...site.options].find(o => o.value === "");
+    if(!blank){
+      blank = document.createElement("option");
+      blank.value = "";
+      site.insertBefore(blank, site.firstChild);
+    }
+    blank.textContent = "工事を選択してください";
+    blank.disabled = false;
+  }
+
+  function clearInitialSelection(){
+    if(stopped) return;
+    const site = document.getElementById("m_site");
+    if(!site) return;
+
+    ensureBlankOption(site);
+
+    // 初期化処理が何度候補を作り直しても、通常入口では空欄を維持する。
+    if(site.value !== "") site.value = "";
+
+    ticks++;
+    if(ticks === 1 || ticks % 5 === 0){
+      try{ if(typeof refreshIdentity === "function") refreshIdentity(); }catch(e){}
+      try{ if(typeof refreshSiteSummaryAndHistory === "function") refreshSiteSummaryAndHistory(); }catch(e){}
+    }
+  }
+
+  function stopGuard(){
+    if(stopped) return;
+    stopped = true;
+    if(timer) clearInterval(timer);
+
+    const site = document.getElementById("m_site");
+    if(site){
+      ensureBlankOption(site);
+      if(site.value !== "") site.value = "";
+    }
+
+    try{ if(typeof refreshIdentity === "function") refreshIdentity(); }catch(e){}
+    try{ if(typeof refreshSiteSummaryAndHistory === "function") refreshSiteSummaryAndHistory(); }catch(e){}
+    try{ if(typeof window.__syncSavedActionsOneRow === "function") window.__syncSavedActionsOneRow(); }catch(e){}
+    try{ if(typeof window.__updateRetentionClaimUI === "function") window.__updateRetentionClaimUI(); }catch(e){}
+  }
+
+  function start(){
+    const site = document.getElementById("m_site");
+    if(!site) return;
+
+    // ユーザー自身が工事欄を操作し始めたらガードを解除。
+    ["pointerdown","mousedown","touchstart","keydown"].forEach(type=>{
+      site.addEventListener(type, function(){
+        stopped = true;
+        if(timer) clearInterval(timer);
+      }, {once:true, capture:true});
+    });
+
+    clearInitialSelection();
+
+    // この画面には 80/220/280/360/430/520ms 付近など複数の初期化があるため、
+    // それらが終わる間だけ通常入口の未選択状態を維持する。
+    timer = setInterval(clearInitialSelection, 60);
+    setTimeout(stopGuard, 1800);
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", start, {once:true});
+  }else{
+    start();
+  }
+})();
+</script>
+
 </body>
 </html>
 <script id="ms-monthly-print-state-preserve-v2">

@@ -1718,15 +1718,6 @@ document.addEventListener("DOMContentLoaded",()=>{
   let ms4SelectedSiteId = "";
   let ms4ListMode = "pending";
 
-  // メイン画面では旧仕様の「選択中工事」を残さない。
-  // 通常の月次請求は必ず未選択で開始し、工事一覧の「請求」だけが site= を渡す。
-  try{
-    const currentPage=(location.pathname.split("/").pop()||"index.html").toLowerCase();
-    if(currentPage==="index.html" || currentPage===""){
-      localStorage.removeItem("ms_invoice_selected_site");
-    }
-  }catch(e){}
-
 
   function sumActualBilled(siteId){
     const site=state.sites.find(s=>s.id===siteId);
@@ -1857,7 +1848,7 @@ document.addEventListener("DOMContentLoaded",()=>{
       rows.forEach(({site,received,order,balance})=>{
         const item=document.createElement("div");
         item.className="ms4-site-item";
-        const selected=false; // 工事一覧では「選択中」を表示しない
+        const selected=site.id===ms4SelectedSiteId;
         item.innerHTML=`
           <div>
             <div class="ms4-site-name">${ms4ListMode==="done"?'<span style="color:#6f7f89;font-size:10px;margin-right:5px;">【完了】</span>':""}${escapeHtml(site.name||"")}${selected?' <span class="current-mark">選択中</span>':''}</div>
@@ -1867,15 +1858,26 @@ document.addEventListener("DOMContentLoaded",()=>{
             </div>
           </div>
           <div class="ms4-site-buttons">
+            <button class="ms4-open" onclick="ms4SelectSite('${site.id}')">選択</button>
             ${ms4ListMode==="pending"?`<button class="ms4-subbtn" onclick="MSInvoiceOpenMonthlyWithMonth('${site.id}')">請求</button>`:""}
           </div>`;
         list.appendChild(item);
       });
     }
 
-    // 工事一覧では「選択中工事」を持たない。
-    // 月次請求へ進む工事は、各行の「請求」ボタンから site= で明示して渡す。
-    ms4SelectedSiteId = "";
+    // If nothing selected, select first pending site for convenience only when possible.
+    if(!ms4SelectedSiteId){
+      const first = pending[0] || done[0];
+      if(first){
+        ms4SelectedSiteId = first.site.id;
+        const n=document.getElementById("ms4CurrentName");
+        const o=document.getElementById("ms4CurrentOrder");
+        const b=document.getElementById("ms4CurrentBalance");
+        if(n)n.textContent=first.site.name||"（工事名なし）";
+        if(o)o.textContent=yen(first.order)+" 円";
+        if(b)b.textContent=yen(first.balance)+" 円";
+      }
+    }
   }
   function ms4SiteYear(site){
     // 登録日を優先。登録日が無い旧データは最初の請求月の「年」で補完。
