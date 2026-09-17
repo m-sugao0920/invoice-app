@@ -610,8 +610,17 @@
 
     targets.forEach(el=>{
       const keep = el.value || "";
-      el.innerHTML = opts || empty;
-      if(keep && state.sites.some(s=>s.id===keep)) el.value = keep;
+      // 月次請求だけは必ず「未選択」を持たせる。
+      // 工事が1件以上ある状態で innerHTML を工事だけにすると、
+      // ブラウザが先頭工事を自動選択してしまうため。
+      // 印刷側 pr_site の従来動作は変更しない。
+      if(el.id === "m_site"){
+        el.innerHTML = `<option value="">（工事を選択してください）</option>` + opts;
+        el.value = (keep && state.sites.some(s=>s.id===keep)) ? keep : "";
+      }else{
+        el.innerHTML = opts || empty;
+        if(keep && state.sites.some(s=>s.id===keep)) el.value = keep;
+      }
     });
   }
 
