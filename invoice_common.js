@@ -1505,7 +1505,11 @@ function exportData(){
       if(sid){
         const ms=document.getElementById("m_site");
         const ps=document.getElementById("pr_site");
-        if(ms && [...ms.options].some(o=>o.value===sid)){ ms.value=sid; try{loadMonthlyToForm();}catch(e){} }
+        // 月次請求は、共有データ再読込時に「前回選択工事」を自動復元しない。
+        // メイン画面から月次請求を開いた場合は未選択を維持し、
+        // 工事指定遷移・印刷復帰は URL の site= を使う既存処理に任せる。
+        // これにより ms_invoice_selected_site は他画面連携用として残したまま、
+        // 月次請求だけが古い選択工事を勝手に復元することを防ぐ。
         if(ps && [...ps.options].some(o=>o.value===sid)){ ps.value=sid; try{renderPrint();}catch(e){} }
       }
     }catch(e){ console.warn("共通DB読込:",e); }
