@@ -5459,6 +5459,68 @@ document.addEventListener("click",(e)=>{
 })();
 </script>
 
+<!-- 2026-09-17 保存直後の「月＋工事」状態をボタン表示の正本にする -->
+<script id="ms-post-save-actions-persistent-20260917">
+(function(){
+  "use strict";
+  let syncing=false;
+
+  function contextSaved(){
+    try{
+      const ctx=window.__msPostSavedContext;
+      const mon=document.getElementById("m_month")?.value||"";
+      return !!(ctx && ctx.month===mon && ctx.siteId && window.state?.monthly?.[mon]?.[ctx.siteId]);
+    }catch(e){ return false; }
+  }
+
+  function enforce(){
+    if(syncing || !contextSaved()) return;
+    syncing=true;
+    try{
+      const save=document.getElementById("btnSaveMonthly");
+      const print=document.getElementById("btnDirectInvoicePrint");
+      const box=document.querySelector(".month-actions.ms-final-actions");
+      if(save){
+        save.disabled=true;
+        save.setAttribute("aria-disabled","true");
+        save.textContent="保存済み";
+        save.title="この月の請求は登録済みです。";
+        if(save.style.display!=="none") save.style.display="none";
+      }
+      if(print){
+        print.disabled=false;
+        print.setAttribute("aria-disabled","false");
+        print.title="保存したこの工事の請求書を開きます";
+      }
+      if(box && !box.classList.contains("ms-saved-one-row")) box.classList.add("ms-saved-one-row");
+      const claim=document.getElementById("retClaimBtn");
+      if(claim && !claim.classList.contains("hide")) claim.classList.add("hide");
+    }finally{ syncing=false; }
+  }
+
+  function bind(){
+    const save=document.getElementById("btnSaveMonthly");
+    const print=document.getElementById("btnDirectInvoicePrint");
+    const box=document.querySelector(".month-actions.ms-final-actions");
+    const obs=new MutationObserver(function(){
+      if(contextSaved()) queueMicrotask(enforce);
+    });
+    if(save) obs.observe(save,{attributes:true,childList:true,subtree:true});
+    if(print) obs.observe(print,{attributes:true,childList:true,subtree:true});
+    if(box) obs.observe(box,{attributes:true,childList:true,subtree:true});
+
+    document.getElementById("m_month")?.addEventListener("change",()=>setTimeout(enforce,0),true);
+    document.getElementById("m_site")?.addEventListener("change",()=>setTimeout(enforce,0),true);
+    document.getElementById("btnSaveMonthly")?.addEventListener("click",()=>{
+      [30,100,250,600,1200,2000].forEach(ms=>setTimeout(enforce,ms));
+    },true);
+  }
+
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",bind,{once:true});
+  else bind();
+})();
+</script>
+
 <script id="ms-after-print-return-filter-fix-20260916">
 (function(){
   "use strict";
