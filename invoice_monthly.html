@@ -4883,7 +4883,12 @@ document.addEventListener("click",(e)=>{
     try{
       const sid=document.getElementById("m_site")?.value||"";
       const mon=document.getElementById("m_month")?.value||"";
-      return !!(sid && mon && state?.monthly?.[mon]?.[sid]);
+      if(sid && mon && state?.monthly?.[mon]?.[sid]) return true;
+      // 保存直後は候補一覧から済工事を外すため m_site が未選択になる。
+      // その場合だけ、保存した「月＋工事ID」の専用コンテキストで保存済み表示を維持する。
+      // 月変更・別工事選択・済表示切替ではこのコンテキストを破棄する。
+      const ctx=window.__msPostSavedContext;
+      return !!(ctx && mon && ctx.month===mon && ctx.siteId && state?.monthly?.[mon]?.[ctx.siteId]);
     }catch(e){ return false; }
   }
   function syncFinal(){
@@ -5403,6 +5408,7 @@ document.addEventListener("click",(e)=>{
         const after=!!window.state?.monthly?.[m]?.[sid];
         if(sid && !before && after){
           lastSavedSiteId=sid;
+          window.__msPostSavedContext={month:m,siteId:sid};
           setTimeout(applyPostSave,30);
           setTimeout(applyPostSave,180);
         }
@@ -5419,7 +5425,9 @@ document.addEventListener("click",(e)=>{
       if(!sid||!m) return;
       setTimeout(()=>{
         if(window.state?.monthly?.[m]?.[sid]){
-          lastSavedSiteId=sid; applyPostSave();
+          lastSavedSiteId=sid;
+          window.__msPostSavedContext={month:m,siteId:sid};
+          applyPostSave();
         }
       },80);
     },true);
@@ -5437,13 +5445,13 @@ document.addEventListener("click",(e)=>{
     }
 
     // 月変更・別工事選択では「直前保存」の特別状態を終了する。
-    $("m_month")?.addEventListener("change",()=>{ lastSavedSiteId=""; },true);
+    $("m_month")?.addEventListener("change",()=>{ lastSavedSiteId=""; window.__msPostSavedContext=null; },true);
     $("m_site")?.addEventListener("change",()=>{
       if(internal) return;
       const sid=$("m_site")?.value||"";
-      if(sid) lastSavedSiteId="";
+      if(sid){ lastSavedSiteId=""; window.__msPostSavedContext=null; }
     },true);
-    $("m_showSaved")?.addEventListener("change",()=>{ lastSavedSiteId=""; },true);
+    $("m_showSaved")?.addEventListener("change",()=>{ lastSavedSiteId=""; window.__msPostSavedContext=null; },true);
   }
 
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",()=>setTimeout(install,500),{once:true});
