@@ -1932,7 +1932,26 @@ function goToSiteEdit(){
       if(retentionWaiting(site)>0) return false;
 
       let finalOrder=0, billed=0;
-      try{ finalOrder=Math.max(0,Number(displayContract(site)||0)); }catch(e){}
+      try{
+        // 工事完了月に反映する増減を含めた「最終注文金額」で完了判定する。
+        // 例：当初30万－完了時減額5万＝最終25万、25万請求済なら翌月は完全完了。
+        let finalMonth="";
+        for(const m of monthKeys()){
+          if(month && m>month) break;
+          if(getRec(m,site.id)?.isFinal) finalMonth=m;
+        }
+        let calcSite=site;
+        if(finalMonth && typeof getSiteForCalc==="function"){
+          try{ calcSite=getSiteForCalc(site,true,finalMonth)||site; }catch(e){ calcSite=site; }
+        }
+        finalOrder=Math.max(0,
+          Number(calcSite?.contractNet||0) +
+          Number(calcSite?.increaseNet||0) -
+          Number(calcSite?.reductionNet||0)
+        );
+      }catch(e){
+        try{ finalOrder=Math.max(0,Number(displayContract(site)||0)); }catch(_e){}
+      }
       try{ billed=Math.max(0,Number(billedCum(site)||0)); }catch(e){}
       return Math.max(0,finalOrder-billed)<=0;
     }catch(e){
@@ -1970,7 +1989,24 @@ function goToSiteEdit(){
         // 工事完了を選んだ月があっても、通常請求上限へ達しておらず未請求額が残る場合は
         // 次月以降も通常請求を続けられるようにする。
         let finalOrder=0, billed=0;
-        try{ finalOrder=Math.max(0,Number(displayContract(site)||0)); }catch(e){}
+        try{
+          let finalMonth="";
+          for(const m of monthKeys()){
+            if(month && m>month) break;
+            if(getRec(m,site.id)?.isFinal) finalMonth=m;
+          }
+          let calcSite=site;
+          if(finalMonth && typeof getSiteForCalc==="function"){
+            try{ calcSite=getSiteForCalc(site,true,finalMonth)||site; }catch(e){ calcSite=site; }
+          }
+          finalOrder=Math.max(0,
+            Number(calcSite?.contractNet||0) +
+            Number(calcSite?.increaseNet||0) -
+            Number(calcSite?.reductionNet||0)
+          );
+        }catch(e){
+          try{ finalOrder=Math.max(0,Number(displayContract(site)||0)); }catch(_e){}
+        }
         try{ billed=Math.max(0,Number(billedCum(site)||0)); }catch(e){}
         const normalUnpaid=Math.max(0,finalOrder-billed);
         if(normalUnpaid>0){
@@ -4615,15 +4651,22 @@ document.addEventListener("click",(e)=>{
         if(wantedClient && clientNameOf(s)!==wantedClient) return false;
         if(word && !normalizeText(siteNameOf(s)).includes(word)) return false;
 
-        // 「済工事を表示」OFFなら、その月に保存済みの工事は必ず非表示。
-        // 現在選択中という理由で例外にはしない。
-        if(!showSaved && isSavedThisMonth(s.id)) return false;
+        // 「済工事を表示」OFFでは保存済み工事を候補から除外する。
+        // ただし、いま画面で選択中の工事だけは保存直後・印刷復帰の表示を維持する。
+        // 月変更時は別処理で選択を先に空欄へ戻すため、前月の工事が翌月へ残ることはない。
+        const currentSelected=String(site.value||"");
+        if(!showSaved && isSavedThisMonth(s.id) && String(s.id)!==currentSelected) return false;
 
-        // 対象月までに完全完了した工事は、済工事表示のON/OFFに関係なく
-        // 月次請求の工事選択候補から除外する。
+        // 完全完了した工事は通常候補から除外する。
+        // ただし「済工事を表示」がONで、その工事に【現在表示中の月】の保存済み月次がある場合だけ
+        // その月の確認・印刷用【済】工事として候補へ戻す。
+        // これにより、複数月にわたる工事は各月の保存済み月次だけがその月の【済】として表示され、
+        // 完了後の翌月以降へ【済】工事が持ち越されることはない。
         try{
           if(typeof window.__monthlyIsFullyCompletedForList==="function" &&
-             window.__monthlyIsFullyCompletedForList(s,currentMonth())) return false;
+             window.__monthlyIsFullyCompletedForList(s,currentMonth()) &&
+             !(showSaved && isSavedThisMonth(s.id)) &&
+             String(s.id)!==String(site.value||"")) return false;
         }catch(e){}
 
         return true;
@@ -5165,6 +5208,18 @@ document.addEventListener("click",(e)=>{
       // 共通初期化で候補が作られた後に、印刷前の工事を必ず復元する。
       try{ if(typeof ensureBlankSiteOption==="function") ensureBlankSiteOption(); }catch(e){}
       if(d.site && ![...site.options].some(o=>String(o.value)===String(d.site))){
+        // 印刷前の工事を一時的に「現在選択中」にしてから候補を再構築する。
+        // これにより保存済み工事でも、印刷から戻った時だけ同じ工事を保持できる。
+        try{
+          const src=window.state?.sites?.find(x=>String(x.id)===String(d.site));
+          if(src){
+            const opt=document.createElement("option");
+            opt.value=String(d.site);
+            opt.textContent=src.name||"工事";
+            site.appendChild(opt);
+            site.value=String(d.site);
+          }
+        }catch(e){}
         try{ if(typeof refreshSiteSelects==="function") refreshSiteSelects(); }catch(e){}
         try{ if(typeof ensureBlankSiteOption==="function") ensureBlankSiteOption(); }catch(e){}
       }
@@ -5331,224 +5386,8 @@ document.addEventListener("click",(e)=>{
 </script>
 
 
-<!-- 2026-09-16 月次工事選択：登録後状態を一元管理（元版への最小追加） -->
-<script id="ms-monthly-post-save-state-fix-20260916">
-(function(){
-  "use strict";
-  let lastSavedSiteId="";
-  let internal=false;
 
-  const $=id=>document.getElementById(id);
-  const month=()=>$("m_month")?.value||"";
-  const isSaved=(sid)=>!!(sid && month() && window.state?.monthly?.[month()]?.[sid]);
 
-  function withSite(sid,fn){
-    const sel=$("m_site"); if(!sel||!sid) return fn?.();
-    const old=sel.value;
-    let temp=null;
-    if(![...sel.options].some(o=>String(o.value)===String(sid))){
-      const s=window.state?.sites?.find(x=>String(x.id)===String(sid));
-      temp=document.createElement("option"); temp.value=sid; temp.textContent=s?.name||"工事"; temp.hidden=true;
-      sel.appendChild(temp);
-    }
-    sel.value=sid;
-    try{return fn?.();}finally{
-      sel.value=old;
-      if(temp) temp.remove();
-    }
-  }
-
-  function renderSavedHistory(){
-    if(!lastSavedSiteId) return;
-    withSite(lastSavedSiteId,()=>{
-      try{ if(typeof window.refreshSiteSummaryAndHistory==="function") window.refreshSiteSummaryAndHistory(); }catch(e){}
-    });
-  }
-
-  function forceSavedActions(){
-    if(!lastSavedSiteId || !isSaved(lastSavedSiteId)) return;
-    const save=$("btnSaveMonthly");
-    const print=$("btnDirectInvoicePrint");
-    if(save){ save.disabled=true; save.textContent="保存済み"; }
-    if(print) print.disabled=false;
-  }
-
-  function applyPostSave(){
-    if(!lastSavedSiteId || !isSaved(lastSavedSiteId)) return;
-    internal=true;
-    try{
-      // 候補一覧だけを現在月の保存状態から作り直す。
-      // 重要：再構築前に select の見かけ上の選択だけを外す。
-      // これにより候補フィルターが「現在選択中だから例外で残す」と判定しない。
-      // 請求データ・履歴・印刷用 lastSavedSiteId は変更しない。
-      const sel=$("m_site");
-      if(sel) sel.value="";
-      try{ if(typeof window.refreshSiteSelects==="function") window.refreshSiteSelects(); }catch(e){}
-      const show=!!$("m_showSaved")?.checked;
-      if(sel && !show){
-        [...sel.options].forEach(o=>{ if(o.value && isSaved(o.value)) o.remove(); });
-        let blank=[...sel.options].find(o=>o.value==="");
-        if(!blank){ blank=document.createElement("option"); blank.value=""; sel.insertBefore(blank,sel.firstChild); }
-        blank.textContent="工事を選択してください"; blank.disabled=false; sel.value="";
-      }
-      renderSavedHistory();
-      forceSavedActions();
-    }finally{ internal=false; }
-  }
-
-  function install(){
-    // 元の保存処理は変更せず、正常保存された「後」だけ表示状態を整える。
-    if(typeof window.saveMonthly==="function" && !window.saveMonthly.__postSaveStateFixed){
-      const old=window.saveMonthly;
-      const wrapped=function(){
-        const sid=$("m_site")?.value||"";
-        const m=month();
-        const before=!!window.state?.monthly?.[m]?.[sid];
-        const r=old.apply(this,arguments);
-        const after=!!window.state?.monthly?.[m]?.[sid];
-        if(sid && !before && after){
-          lastSavedSiteId=sid;
-          window.__msPostSavedContext={month:m,siteId:sid};
-          setTimeout(applyPostSave,30);
-          setTimeout(applyPostSave,180);
-        }
-        return r;
-      };
-      wrapped.__postSaveStateFixed=true;
-      window.saveMonthly=wrapped;
-    }
-
-    // safeSaveMonthly が元saveMonthlyへの参照を保持している版にも対応。
-    const saveBtn=$("btnSaveMonthly");
-    saveBtn?.addEventListener("click",()=>{
-      const sid=$("m_site")?.value||""; const m=month();
-      if(!sid||!m) return;
-      setTimeout(()=>{
-        if(window.state?.monthly?.[m]?.[sid]){
-          lastSavedSiteId=sid;
-          window.__msPostSavedContext={month:m,siteId:sid};
-          applyPostSave();
-        }
-      },80);
-    },true);
-
-    // 登録直後の印刷だけは、一覧から消した工事IDを一時的に使う。
-    if(typeof window.openCurrentInvoicePrint==="function" && !window.openCurrentInvoicePrint.__lastSavedFixed){
-      const oldPrint=window.openCurrentInvoicePrint;
-      const wrappedPrint=function(){
-        const sid=$("m_site")?.value||lastSavedSiteId;
-        if(!sid) return oldPrint.apply(this,arguments);
-        return withSite(sid,()=>oldPrint.apply(this,arguments));
-      };
-      wrappedPrint.__lastSavedFixed=true;
-      window.openCurrentInvoicePrint=wrappedPrint;
-    }
-
-    // 月変更・別工事選択では「直前保存」の特別状態を終了する。
-    $("m_month")?.addEventListener("change",()=>{ lastSavedSiteId=""; window.__msPostSavedContext=null; },true);
-    $("m_site")?.addEventListener("change",()=>{
-      if(internal) return;
-      const sid=$("m_site")?.value||"";
-      if(sid){ lastSavedSiteId=""; window.__msPostSavedContext=null; }
-    },true);
-    $("m_showSaved")?.addEventListener("change",()=>{ lastSavedSiteId=""; window.__msPostSavedContext=null; },true);
-  }
-
-  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",()=>setTimeout(install,500),{once:true});
-  else setTimeout(install,500);
-})();
-</script>
-
-<!-- 2026-09-17 保存直後の「月＋工事」状態をボタン表示の正本にする -->
-<script id="ms-post-save-actions-persistent-20260917">
-(function(){
-  "use strict";
-  let syncing=false;
-
-  function contextSaved(){
-    try{
-      const ctx=window.__msPostSavedContext;
-      const mon=document.getElementById("m_month")?.value||"";
-      return !!(ctx && ctx.month===mon && ctx.siteId && window.state?.monthly?.[mon]?.[ctx.siteId]);
-    }catch(e){ return false; }
-  }
-
-  function enforce(){
-    if(syncing || !contextSaved()) return;
-    syncing=true;
-    try{
-      const save=document.getElementById("btnSaveMonthly");
-      const print=document.getElementById("btnDirectInvoicePrint");
-      const box=document.querySelector(".month-actions.ms-final-actions");
-      if(save){
-        save.disabled=true;
-        save.setAttribute("aria-disabled","true");
-        save.textContent="保存済み";
-        save.title="この月の請求は登録済みです。";
-        if(save.style.display!=="none") save.style.display="none";
-      }
-      if(print){
-        print.disabled=false;
-        print.setAttribute("aria-disabled","false");
-        print.title="保存したこの工事の請求書を開きます";
-      }
-      if(box && !box.classList.contains("ms-saved-one-row")) box.classList.add("ms-saved-one-row");
-      const claim=document.getElementById("retClaimBtn");
-      if(claim && !claim.classList.contains("hide")) claim.classList.add("hide");
-    }finally{ syncing=false; }
-  }
-
-  function bind(){
-    const save=document.getElementById("btnSaveMonthly");
-    const print=document.getElementById("btnDirectInvoicePrint");
-    const box=document.querySelector(".month-actions.ms-final-actions");
-    const obs=new MutationObserver(function(){
-      if(contextSaved()) queueMicrotask(enforce);
-    });
-    if(save) obs.observe(save,{attributes:true,childList:true,subtree:true});
-    if(print) obs.observe(print,{attributes:true,childList:true,subtree:true});
-    if(box) obs.observe(box,{attributes:true,childList:true,subtree:true});
-
-    document.getElementById("m_month")?.addEventListener("change",()=>setTimeout(enforce,0),true);
-    document.getElementById("m_site")?.addEventListener("change",()=>setTimeout(enforce,0),true);
-    document.getElementById("btnSaveMonthly")?.addEventListener("click",()=>{
-      [30,100,250,600,1200,2000].forEach(ms=>setTimeout(enforce,ms));
-    },true);
-  }
-
-  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",bind,{once:true});
-  else bind();
-})();
-</script>
-
-<script id="ms-after-print-return-filter-fix-20260916">
-(function(){
-  "use strict";
-  function isBackForward(){
-    try{
-      const nav=performance.getEntriesByType && performance.getEntriesByType("navigation")[0];
-      return !!nav && nav.type==="back_forward";
-    }catch(e){ return false; }
-  }
-  function normalizeAfterPrintReturn(){
-    const site=document.getElementById("m_site");
-    const showSaved=document.getElementById("m_showSaved");
-    if(!site || !showSaved) return;
-    // 印刷から戻った時は「登録直後の工事を保持する例外」を終了する。
-    // 選択値だけ先に外してから既存の候補再構築を呼ぶことで、
-    // 「済工事を表示」OFFなら保存済み・完了済み工事を通常ルールで除外する。
-    site.value="";
-    try{ if(typeof window.refreshSiteSelects==="function") window.refreshSiteSelects(); }catch(e){}
-    site.value="";
-    try{ site.dispatchEvent(new Event("change",{bubbles:true})); }catch(e){}
-  }
-  window.addEventListener("pageshow",function(){
-    if(!isBackForward()) return;
-    // 既存の印刷復帰データ復元（約520ms～）が完了した後にだけ実行する。
-    [900,1250,1650].forEach(ms=>setTimeout(normalizeAfterPrintReturn,ms));
-  });
-})();
-</script>
 
 <script id="ms-month-change-stale-selection-fix-20260917-final">
 (function(){
