@@ -1548,5 +1548,36 @@ try{
 })();
 </script>
 
+
+<script id="fixed-client-retention-increase-default-20260917">
+/* 固定会社（鶴よし建設）の保留金設定：増額は「含めない」。他項目は変更しない。 */
+(function(){
+  function applyFixedClientIncreaseSetting(){
+    try{
+      if(typeof loadClients!=="function" || typeof storeClients!=="function" || typeof isFixedClient!=="function") return;
+      const list=loadClients();
+      let changed=false;
+      list.forEach(function(x){
+        if(isFixedClient(x) && x.retentionIncludeIncrease!==false){
+          x.retentionIncludeIncrease=false;
+          changed=true;
+        }
+      });
+      if(changed){
+        storeClients(list);
+        try{ if(typeof renderClients==="function") renderClients(); }catch(e){}
+      }
+    }catch(e){}
+  }
+  document.addEventListener("DOMContentLoaded",function(){setTimeout(applyFixedClientIncreaseSetting,0);});
+  window.addEventListener("msinvoice-storage-ready",function(){setTimeout(applyFixedClientIncreaseSetting,0);});
+  try{
+    if(window.MSInvoiceStorage && window.MSInvoiceStorage.ready){
+      window.MSInvoiceStorage.ready.then(function(){setTimeout(applyFixedClientIncreaseSetting,0);});
+    }
+  }catch(e){}
+})();
+</script>
+
 </body>
 </html>
