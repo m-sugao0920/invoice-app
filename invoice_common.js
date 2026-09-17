@@ -1851,7 +1851,7 @@ document.addEventListener("DOMContentLoaded",()=>{
         const selected=site.id===ms4SelectedSiteId;
         item.innerHTML=`
           <div>
-            <div class="ms4-site-name">${ms4ListMode==="done"?'<span style="color:#6f7f89;font-size:10px;margin-right:5px;">【完了】</span>':""}${escapeHtml(site.name||"")}${selected?' <span class="current-mark">選択中</span>':''}</div>
+            <div class="ms4-site-name">${ms4ListMode==="done"?'<span style="color:#6f7f89;font-size:10px;margin-right:5px;">【完了】</span>':""}${escapeHtml(site.name||"")}</div>
             <div class="ms4-site-meta">
               最終注文 ${yen(order)} 円　／　請求済 ${yen(received)} 円
               ${ms4ListMode==="pending"?(ms4RetentionWaiting(site)?`　／　<span class="ms4-site-amt">保留金待ち ${yen(balance)} 円</span>`:`　／　<span class="ms4-site-amt">残 ${yen(balance)} 円</span>`):""}
