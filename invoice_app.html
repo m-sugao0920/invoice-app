@@ -3227,16 +3227,25 @@ document.addEventListener("DOMContentLoaded",()=>setTimeout(()=>{
   function show(id,on){const el=document.getElementById(id);if(el)el.style.visibility=on?"visible":"hidden";}
   function apply(){
     const r=rec(); const isFinal=!!(r && r.isFinal);
-    ["pvRow2Label","pvRow3Label","pvRow4Label","pvIncreaseNet","pvReductionNet","pvFinalOrderNet"].forEach(id=>show(id,isFinal));
+    let showAdjustments=isFinal;
+    if(r && !isFinal){
+      try{
+        const siteId=document.getElementById("pr_site")?.value||new URLSearchParams(location.search).get("site")||"";
+        const site=(typeof state!=="undefined" && state.sites) ? state.sites.find(s=>String(s.id)===String(siteId)) : null;
+        const timing=site && typeof getEffectiveClientTerms==="function" ? (getEffectiveClientTerms(site)?.adjustmentTiming||"anytime") : (site?.adjustmentTiming||"anytime");
+        showAdjustments=timing!=="final" && (Number(r.increaseNet||0)!==0 || Number(r.reductionNet||0)!==0);
+      }catch(e){}
+    }
+    ["pvRow2Label","pvRow3Label","pvRow4Label","pvIncreaseNet","pvReductionNet","pvFinalOrderNet"].forEach(id=>show(id,showAdjustments));
     // 行内の補助文字も通常月は隠す（y位置で限定）
     const svg=document.getElementById("vectorInvoiceSheet");
     if(svg){
       [...svg.querySelectorAll("text")].forEach(el=>{
         const y=Number(el.getAttribute("y")||0);
-        if([139.3,143.3,151.5,155.5,163.7,167.7].some(v=>Math.abs(y-v)<0.05)) el.style.visibility=isFinal?"visible":"hidden";
+        if([139.3,143.3,151.5,155.5,163.7,167.7].some(v=>Math.abs(y-v)<0.05)) el.style.visibility=showAdjustments?"visible":"hidden";
       });
     }
-    if(isFinal){
+    if(showAdjustments){
       setMain("pvRow5Label","⑤　既受領額（税抜）"); setMain("pvRow6Label","⑥　当月出来高（税抜）");
       setMain("pvRow7Label","⑦　累計出来高"); setMain("pvCumFormula","⑤＋⑥"); setMain("pvRow8Label","⑧　当月合計金額");
     }else{
@@ -4008,51 +4017,51 @@ function makeSvg(id){
 function buildB(){
  const svg=makeSvg('invoiceDesignB');
  const client=txt('pvClient'),site=txt('pvSite'),date=txt('pvDate'),company=txt('pvMyName'),addr=txt('pvMyAddr'),tel=txt('pvMyTel'),reg=txt('pvRegistrationNo'),signer=txt('pvSigner');
- const gross=txt('pvTotalGross'),contract=txt('pvContractNet'),received=txt('pvReceivedNet'),current=txt('pvThisMonthNet'),cum=txt('pvCumNet'),bill=txt('pvBillNet'),tax=txt('pvTax'),retention=txt('pvRetentionAmount');
+ const gross=txt('pvTotalGross'),contract=txt('pvContractNet'),increase=txt('pvIncreaseNet'),reduction=txt('pvReductionNet'),finalOrder=txt('pvFinalOrderNet'),received=txt('pvReceivedNet'),current=txt('pvThisMonthNet'),cum=txt('pvCumNet'),bill=txt('pvBillNet'),tax=txt('pvTax'),retention=txt('pvRetentionAmount');
  const order=txt('pvOrderNo'),work=txt('pvWorkNo');
- function row(y,label,val){return `<line x1="25" y1="${y}" x2="185" y2="${y}" class="line"/><text x="29" y="${y+7}" class="b" font-size="3.5">${esc(label)}</text><text x="180" y="${y+7}" class="money" font-size="3.8">${esc(val)}</text>`;}
+ function row(y,label,val){return `<line x1="25" y1="${y}" x2="185" y2="${y}" class="line"/><text x="29" y="${y+7}" class="b" font-size="3.7">${esc(label)}</text><text x="180" y="${y+7}" class="b-money" style="font-size:3.12px;font-weight:700">${esc(val)}</text>`;}
  svg.innerHTML=`<rect width="210" height="297" fill="#fff"/>
- <style>.b{font-family:"Yu Gothic","Meiryo",sans-serif;fill:#111}.ser{font-family:"Yu Mincho","MS PMincho",serif;fill:#111}.navy{fill:#173a5e}.green{fill:#668c75}.muted{fill:#66717a}.white{fill:#fff!important}.line{stroke:#c8d0d6;stroke-width:.3}.money{font-family:"Yu Gothic","Meiryo",sans-serif;font-weight:700;fill:#111;text-anchor:end}</style>
+ <style>.b{font-family:"Yu Gothic","Meiryo",sans-serif;fill:#111}.ser{font-family:"Yu Mincho","MS PMincho",serif;fill:#111}.navy{fill:#173a5e}.green{fill:#668c75}.muted{fill:#66717a}.white{fill:#fff!important}.line{stroke:#c8d0d6;stroke-width:.3}.b-money{font-family:"Yu Gothic","Meiryo",sans-serif;font-weight:700;fill:#111;text-anchor:end}</style>
  <rect x="25" y="24" width="160" height="2.2" class="navy"/><text x="25" y="38" class="b" font-size="8.2" font-weight="700" letter-spacing="1.4">御 請 求 書</text><text x="75" y="38" class="b muted" font-size="3.6" font-weight="700">（現場別）</text>
  <text x="185" y="37" class="b muted" font-size="3.4" text-anchor="end">${esc(date)}</text>
  <text x="25" y="57" class="ser" font-size="5.4">${esc(client)}</text><line x1="25" y1="61" x2="112" y2="61" class="line"/>
  <text x="25" y="70" class="ser" font-size="3.7">下記のとおり御請求申し上げます。</text>
  <text x="122" y="64" class="b" font-size="4.0" font-weight="700">${esc(company)}</text><text x="122" y="69" class="b muted" font-size="2.8">${esc(addr)}</text><text x="122" y="74" class="b muted" font-size="2.8">電話番号　${esc(tel)}</text><text x="122" y="79" class="b muted" font-size="2.8">登録番号　${esc(reg)}</text><text x="122" y="84" class="b muted" font-size="2.8">代表者　${esc(signer)}</text>
- <rect x="25" y="91" width="160" height="17" rx="1.5" fill="#f3f6f8"/><rect x="25" y="91" width="3" height="17" class="green"/><text x="33" y="98" class="b muted" font-size="3.1">ご請求金額（税込）</text><text x="180" y="103" class="money" font-size="8">${esc(gross)}</text>
+ <rect x="25" y="91" width="160" height="17" rx="1.5" fill="#f3f6f8"/><rect x="25" y="91" width="3" height="17" class="green"/><text x="33" y="98" class="b muted" font-size="3.1">ご請求金額（税込）</text><text x="180" y="103.5" class="b-money" style="font-size:7.2px;font-weight:700">${esc(gross)}</text>
  <text x="25" y="121" class="b muted" font-size="3">工事名</text><text x="25" y="129" class="b" font-size="4.5" font-weight="700">${esc(site)}</text><line x1="25" y1="133" x2="185" y2="133" class="line"/>
  <text x="25" y="142" class="b muted" font-size="3">注文番号　${esc(order)}</text><text x="92" y="142" class="b muted" font-size="3">工事番号　${esc(work)}</text>
  <rect x="25" y="152" width="160" height="9" class="navy"/><text x="29" y="158" class="b white" font-size="3.4" font-weight="700">請求明細</text>
- ${row(161,'注文金額（税抜）',contract)}${row(172,'既受領額（税抜）',received)}${row(183,'当月出来高（税抜）',current)}${row(194,'累計出来高（税抜）',cum)}${row(205,'当月請求額（税抜）',bill)}${row(216,'消費税',tax)}
- <rect x="25" y="226" width="160" height="14" fill="#f3f6f8"/><text x="29" y="235" class="b" font-size="4" font-weight="700">今回ご請求額（税込）</text><text x="180" y="235" class="money" font-size="5.8">${esc(gross)}</text>
- <text x="25" y="252" class="b muted" font-size="3.1">保留金額　${esc(retention||'—')}</text>
- <line x1="25" y1="266" x2="185" y2="266" class="line"/><text x="25" y="274" class="b muted" font-size="2.8">※ 内容をご確認のうえ、お取り扱いくださいますようお願いいたします。</text>
- <rect x="25" y="282" width="160" height="1.2" class="green"/>`;
+ ${row(161,'注文金額（税抜）',contract)}${row(170,'追加工事（当月・税抜）',increase)}${row(179,'減額工事（当月・税抜）',reduction)}${row(188,'最終注文金額（税抜）',finalOrder)}${row(197,'既受領額（税抜）',received)}${row(206,'当月出来高（税抜）',current)}${row(215,'累計出来高（税抜）',cum)}${row(224,'当月請求額（税抜）',bill)}${row(236,'消費税',tax)}
+ <rect x="25" y="243" width="160" height="14" fill="#f3f6f8"/><text x="29" y="252" class="b" font-size="4" font-weight="700">今回ご請求額（税込）</text><text x="180" y="252.5" class="b-money" style="font-size:6.0px;font-weight:700">${esc(gross)}</text>
+ <text x="25" y="267" class="b muted" font-size="3.1">保留金額　${esc(retention||'—')}</text>
+ <line x1="25" y1="276" x2="185" y2="276" class="line"/><text x="25" y="283" class="b muted" font-size="2.8">※ 内容をご確認のうえ、お取り扱いくださいますようお願いいたします。</text>
+ <rect x="25" y="288" width="160" height="1.2" class="green"/>`;
  return svg;
 }
 function buildC(){
  const svg=makeSvg('invoiceDesignC');
  const companyMaster=loadJson(COMPANY_KEY,{})||{};
  const client=txt('pvClient'),site=txt('pvSite'),date=txt('pvDate'),company=txt('pvMyName'),addr=txt('pvMyAddr'),tel=txt('pvMyTel'),reg=txt('pvRegistrationNo');
- const gross=txt('pvTotalGross'),contract=txt('pvContractNet'),received=txt('pvReceivedNet'),current=txt('pvThisMonthNet'),cum=txt('pvCumNet'),bill=txt('pvBillNet'),tax=txt('pvTax'),retention=txt('pvRetentionAmount');
+ const gross=txt('pvTotalGross'),contract=txt('pvContractNet'),increase=txt('pvIncreaseNet'),reduction=txt('pvReductionNet'),finalOrder=txt('pvFinalOrderNet'),received=txt('pvReceivedNet'),current=txt('pvThisMonthNet'),cum=txt('pvCumNet'),bill=txt('pvBillNet'),tax=txt('pvTax'),retention=txt('pvRetentionAmount');
  const order=txt('pvOrderNo'),work=txt('pvWorkNo');
  const bank=[companyMaster.bank,companyMaster.branch].filter(Boolean).join('　')||'—';
  const account=[companyMaster.accountType,companyMaster.accountNo].filter(Boolean).join('　')||'—';
  const accountName=companyMaster.accountName||'—';
- function row(y,label,val,strong){return `<line x1="25" y1="${y}" x2="185" y2="${y}" class="${strong?'mid':'thin'}"/><text x="29" y="${y+7.4}" class="t ${strong?'bold':''}" font-size="3.45">${esc(label)}</text><text x="181" y="${y+7.4}" class="money ${strong?'bold':''}" font-size="${strong?'4.2':'3.55'}">${esc(val)}</text>`;}
+ function row(y,label,val,strong){return `<line x1="25" y1="${y}" x2="185" y2="${y}" class="${strong?'mid':'thin'}"/><text x="29" y="${y+7.4}" class="t ${strong?'bold':''}" font-size="3.7">${esc(label)}</text><text x="181" y="${y+7.4}" class="money" style="font-size:3.12px;font-weight:700">${esc(val)}</text>`;}
  svg.innerHTML=`<rect width="210" height="297" fill="#fff"/>
- <style>.t{font-family:"Yu Gothic","Meiryo",sans-serif;fill:#171717}.bold{font-weight:700}.muted{fill:#5f6368}.thin{stroke:#c9c9c9;stroke-width:.25}.mid{stroke:#555;stroke-width:.42}.thick{stroke:#111;stroke-width:.8}.money{font-family:"Yu Gothic","Meiryo",sans-serif;fill:#111;text-anchor:end}.small{font-family:"Yu Gothic","Meiryo",sans-serif;fill:#444}</style>
+ <style>.t{font-family:"Yu Gothic","Meiryo",sans-serif;fill:#171717}.bold{font-weight:700}.muted{fill:#5f6368}.thin{stroke:#c9c9c9;stroke-width:.25}.mid{stroke:#555;stroke-width:.42}.thick{stroke:#111;stroke-width:.8}.money{font-family:"Yu Gothic","Meiryo",sans-serif;fill:#111;text-anchor:end}.c-main-amount{font-family:"Yu Gothic","Meiryo",sans-serif;font-size:9.0px;font-weight:700;fill:#111;text-anchor:end}.small{font-family:"Yu Gothic","Meiryo",sans-serif;fill:#444}</style>
  <text x="25" y="37" class="t bold" font-size="8.2" letter-spacing="1.35">請 求 書</text><text x="72" y="37" class="t bold" font-size="4.1">（工事別）</text>
  <text x="185" y="33" class="small" font-size="2.9" text-anchor="end">発行日　${esc(date)}</text><line x1="25" y1="43" x2="112" y2="43" class="mid"/>
- <text x="25" y="59" class="t bold" font-size="4.8">${esc(client)}</text>
+ <text x="25" y="59" class="t bold" font-size="5.2">${esc(client)}</text>
  <text x="25" y="67" class="small" font-size="2.9">下記のとおりご請求申し上げます。</text>
  <text x="123" y="59" class="t bold" font-size="4.0">${esc(company)}</text><text x="123" y="65" class="small" font-size="2.65">${esc(addr)}</text><text x="123" y="70" class="small" font-size="2.65">TEL　${esc(tel)}</text><text x="123" y="75" class="small" font-size="2.65">登録番号　${esc(reg)}</text>
- <text x="25" y="88" class="small" font-size="3">工 事 名</text><text x="55" y="88" class="t" font-size="3.5">${esc(site)}</text>
- <text x="25" y="96" class="small" font-size="3">工事番号</text><text x="55" y="96" class="t" font-size="3.35">${esc(work)}</text><text x="105" y="96" class="small" font-size="3">注文番号</text><text x="130" y="96" class="t" font-size="3.35">${esc(order)}</text>
- <line x1="25" y1="108" x2="185" y2="108" class="thick"/><text x="29" y="119" class="t bold" font-size="5.2">ご請求金額（税込）</text><text x="181" y="120" class="money bold" font-size="7.2">${esc(gross)}</text><line x1="25" y1="126" x2="185" y2="126" class="thick"/>
- ${row(134,'注文金額（税抜）',contract)}${row(145,'既受領額（税抜）',received)}${row(156,'当月出来高（税抜）',current)}${row(167,'累計出来高（税抜）',cum)}${row(178,'当月請求額（税抜）',bill)}${row(189,'消費税',tax)}${row(200,'今回ご請求金額（税込）',gross,true)}
- <text x="25" y="220" class="t bold" font-size="3.4">お振込先</text><line x1="25" y1="223" x2="95" y2="223" class="mid"/><text x="27" y="230" class="small" font-size="2.8">銀行名　${esc(bank)}</text><text x="27" y="236" class="small" font-size="2.8">口座　　${esc(account)}</text><text x="27" y="242" class="small" font-size="2.8">名義　　${esc(accountName)}</text>
- <text x="105" y="220" class="t bold" font-size="3.4">備考</text><line x1="105" y1="223" x2="185" y2="223" class="mid"/><text x="112" y="230" class="small" font-size="2.8">保留金額　${esc(retention||'—')}</text><text x="112" y="237" class="small" font-size="2.65">※ 内容をご確認のうえ、お取り扱いくださいますよう</text><text x="112" y="242" class="small" font-size="2.65">　お願いいたします。</text>
- <line x1="25" y1="272" x2="185" y2="272" class="mid"/>`;
+ <text x="25" y="88" class="small" font-size="3">工 事 名</text><text x="55" y="88" class="t" font-size="3.9">${esc(site)}</text>
+ <text x="25" y="96" class="small" font-size="3">工事番号</text><text x="55" y="96" class="t" font-size="3.7">${esc(work)}</text><text x="105" y="96" class="small" font-size="3">注文番号</text><text x="130" y="96" class="t" font-size="3.7">${esc(order)}</text>
+ <line x1="25" y1="108" x2="185" y2="108" class="thick"/><text x="29" y="116" class="t bold" font-size="4.6">ご請求金額（税込）</text><text x="181" y="125" class="c-main-amount" style="font-size:9.0px;font-weight:700">${esc(gross)}</text><line x1="25" y1="132" x2="185" y2="132" class="thick"/>
+ ${row(137,'注文金額（税抜）',contract)}${row(148,'追加工事（当月・税抜）',increase)}${row(159,'減額工事（当月・税抜）',reduction)}${row(170,'最終注文金額（税抜）',finalOrder)}${row(181,'既受領額（税抜）',received)}${row(192,'当月出来高（税抜）',current)}${row(203,'累計出来高（税抜）',cum)}${row(214,'当月請求額（税抜）',bill)}${row(225,'消費税',tax)}${row(233,'今回ご請求金額（税込）',gross,true)}
+ <text x="25" y="255" class="t bold" font-size="3.4">お振込先</text><line x1="25" y1="258" x2="95" y2="258" class="mid"/><text x="27" y="265" class="small" font-size="2.8">銀行名　${esc(bank)}</text><text x="27" y="271" class="small" font-size="2.8">口座　　${esc(account)}</text><text x="27" y="277" class="small" font-size="2.8">名義　　${esc(accountName)}</text>
+ <text x="105" y="255" class="t bold" font-size="3.4">備考</text><line x1="105" y1="258" x2="185" y2="258" class="mid"/><text x="112" y="265" class="small" font-size="2.8">保留金額　${esc(retention||'—')}</text><text x="112" y="272" class="small" font-size="2.65">※ 内容をご確認のうえ、お取り扱いくださいますよう</text><text x="112" y="277" class="small" font-size="2.65">　お願いいたします。</text>
+ <line x1="25" y1="287" x2="185" y2="287" class="mid"/>`;
  return svg;
 }
 
@@ -4060,7 +4069,7 @@ function buildD(){
  const svg=makeSvg('invoiceDesignD');
  const companyMaster=loadJson(COMPANY_KEY,{})||{};
  const client=txt('pvClient'),site=txt('pvSite'),date=txt('pvDate'),company=txt('pvMyName'),addr=txt('pvMyAddr'),tel=txt('pvMyTel'),reg=txt('pvRegistrationNo'),signer=txt('pvSigner');
- const gross=txt('pvTotalGross'),contract=txt('pvContractNet'),received=txt('pvReceivedNet'),current=txt('pvThisMonthNet'),cum=txt('pvCumNet'),bill=txt('pvBillNet'),tax=txt('pvTax'),retention=txt('pvRetentionAmount');
+ const gross=txt('pvTotalGross'),contract=txt('pvContractNet'),increase=txt('pvIncreaseNet'),reduction=txt('pvReductionNet'),finalOrder=txt('pvFinalOrderNet'),received=txt('pvReceivedNet'),current=txt('pvThisMonthNet'),cum=txt('pvCumNet'),bill=txt('pvBillNet'),tax=txt('pvTax'),retention=txt('pvRetentionAmount');
  const order=txt('pvOrderNo'),work=txt('pvWorkNo');
  const bank=[companyMaster.bank,companyMaster.branch].filter(Boolean).join('　')||'—';
  const account=[companyMaster.accountType,companyMaster.accountNo].filter(Boolean).join('　')||'—';
@@ -4076,12 +4085,12 @@ function buildD(){
  <text x="116" y="61" class="t bold" font-size="3.7">${esc(company)}</text><text x="116" y="67" class="small">${esc(addr)}</text><text x="116" y="72" class="small">TEL　${esc(tel)}</text><text x="116" y="77" class="small">${reg?esc('登録番号 '+reg):''}</text><text x="116" y="82" class="small">${signer?esc('代表者　'+signer):''}</text>
  <rect x="25" y="91" width="36" height="20" class="navy"/><rect x="66" y="91" width="78" height="20" class="pale"/><text x="48" y="103" class="t white bold" font-size="4.0" text-anchor="middle">ご請求金額</text><text x="137" y="103" class="t bold" font-size="7.0" text-anchor="end">${esc(gross)}</text><text x="104" y="109" class="small" text-anchor="middle">（消費税 10％ 含む）</text>
  <text x="25" y="124" class="t bold" font-size="3.8">請求内訳</text><rect x="25" y="127" width="160" height="9" class="navy"/><text x="35" y="133" class="t white bold" font-size="2.9">項目</text><text x="181" y="133" class="t white bold" font-size="2.9" text-anchor="end">金額</text>
- ${row(136,'工事名　'+site,'')}${row(146,'注文番号　'+order+'　　工事番号　'+work,'')}${row(156,'注文金額（税抜）',contract)}${row(166,'既受領額（税抜）',received)}${row(176,'当月出来高（税抜）',current)}${row(186,'累計出来高（税抜）',cum)}${row(196,'当月請求額（税抜）',bill)}${row(206,'消費税',tax)}
- <rect x="108" y="219" width="77" height="10" class="pale"/><text x="111" y="225.5" class="body">小計（税抜）</text><text x="181" y="225.5" class="money">${esc(bill)}</text>
- <rect x="108" y="229" width="77" height="10" class="pale"/><text x="111" y="235.5" class="body">消費税</text><text x="181" y="235.5" class="money">${esc(tax)}</text>
- <rect x="108" y="239" width="77" height="12" class="navy"/><text x="111" y="247" class="t white bold" font-size="3.4">合計金額</text><text x="181" y="247" class="t white bold" font-size="4.4" text-anchor="end">${esc(gross)}</text>
- <text x="25" y="243" class="t bold" font-size="3.5">備考</text><line x1="25" y1="246" x2="92" y2="246" stroke="#0b3e73" stroke-width=".35"/><text x="27" y="252" class="small">保留金額　${esc(retention||'—')}</text><text x="27" y="258" class="small">ご査収のほど、よろしくお願い申し上げます。</text>
- <rect x="112" y="253" width="73" height="28" fill="none" stroke="#0b3e73" stroke-width=".35"/><text x="116" y="259" class="t bold" font-size="3.1">お振込先</text><line x1="116" y1="262" x2="181" y2="262" class="grid"/><text x="116" y="268" class="small">${esc(bank)}</text><text x="116" y="274" class="small">${esc(account)}</text><text x="116" y="279" class="small">名義　${esc(accountName)}</text>
+ ${row(136,'工事名　'+site,'')}${row(146,'注文番号　'+order+'　　工事番号　'+work,'')}${row(156,'注文金額（税抜）',contract)}${row(164,'追加工事（当月・税抜）',increase)}${row(172,'減額工事（当月・税抜）',reduction)}${row(180,'最終注文金額（税抜）',finalOrder)}${row(188,'既受領額（税抜）',received)}${row(196,'当月出来高（税抜）',current)}${row(204,'累計出来高（税抜）',cum)}${row(212,'当月請求額（税抜）',bill)}${row(220,'消費税',tax)}
+ <rect x="108" y="231" width="77" height="9" class="pale"/><text x="111" y="237" class="body">小計（税抜）</text><text x="181" y="237" class="money">${esc(bill)}</text>
+ <rect x="108" y="240" width="77" height="9" class="pale"/><text x="111" y="246" class="body">消費税</text><text x="181" y="246" class="money">${esc(tax)}</text>
+ <rect x="108" y="249" width="77" height="11" class="navy"/><text x="111" y="256" class="t white bold" font-size="3.4">合計金額</text><text x="181" y="256" class="t white bold" font-size="4.4" text-anchor="end">${esc(gross)}</text>
+ <text x="25" y="250" class="t bold" font-size="3.5">備考</text><line x1="25" y1="253" x2="92" y2="253" stroke="#0b3e73" stroke-width=".35"/><text x="27" y="259" class="small">保留金額　${esc(retention||'—')}</text><text x="27" y="265" class="small">ご査収のほど、よろしくお願い申し上げます。</text>
+ <rect x="112" y="263" width="73" height="22" fill="none" stroke="#0b3e73" stroke-width=".35"/><text x="116" y="269" class="t bold" font-size="3.1">お振込先</text><line x1="116" y1="272" x2="181" y2="272" class="grid"/><text x="116" y="277" class="small">${esc(bank)}</text><text x="116" y="281" class="small">${esc(account)}</text><text x="116" y="284" class="small">名義　${esc(accountName)}</text>
  <line x1="25" y1="287" x2="185" y2="287" stroke="#0b3e73" stroke-width=".35"/>`;
  return svg;
 }

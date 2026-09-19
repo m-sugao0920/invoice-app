@@ -3350,13 +3350,19 @@ document.addEventListener("click",(e)=>{
         directInputLimitContract=inputLimitContract;
       }
     }else{
-      // 「随時」反映など従来ケースは、これまでどおり今月入力中の増減を含める。
-      directInputLimitContract =
-        Number(s?.contractNet||0) +
-        Number(s?.increaseNet||0) -
-        Number(s?.reductionNet||0) +
-        Number(inc||0) -
-        Number(red||0);
+      // 「随時」反映は、前月までに月次登録した増減も含めた共通計算を使う。
+      // 当月入力中の増減も draft として渡し、過去月＋当月を1回だけ集計する。
+      try{
+        const monthKey=document.getElementById("m_month")?.value||"";
+        const cs=(typeof getSiteForCalc==="function")
+          ? (getSiteForCalc(s,isFinal,monthKey,inc,red)||s) : s;
+        directInputLimitContract =
+          Number(cs?.contractNet||0) +
+          Number(cs?.increaseNet||0) -
+          Number(cs?.reductionNet||0);
+      }catch(_){
+        directInputLimitContract=inputLimitContract;
+      }
     }
     if(Number.isFinite(directInputLimitContract)){
       inputLimitContract=Math.max(0,directInputLimitContract);
@@ -3602,12 +3608,26 @@ document.addEventListener("click",(e)=>{
 
     /* ===== 入力ミス防止：今月入力した増減を含め、最終注文金額がマイナスなら保存しない =====
        請求額・保留金・増減反映の計算式は変更しない。保存直前の安全確認だけを追加する。 */
-    const directFinalContract =
-      Number(f.site?.contractNet||0) +
-      Number(f.site?.increaseNet||0) -
-      Number(f.site?.reductionNet||0) +
-      Number(f.inc||0) -
-      Number(f.red||0);
+    /* 随時増減では、前月までの月次増減も含めた「その月時点の最終注文金額」で判定する。
+       例：100万 → 前月+10万 → 当月-5万 なら 105万。
+       共通計算 getSiteForCalc() に一本化し、前月増額の取りこぼしを防ぐ。 */
+    let directFinalContract = 0;
+    try{
+      const monthKey=document.getElementById("m_month")?.value||"";
+      const isFinalNow=document.getElementById("m_isFinal")?.value==="1";
+      const calcSiteForSafety=(typeof getSiteForCalc==="function")
+        ? (getSiteForCalc(f.site,isFinalNow,monthKey,rawInc,rawRed)||f.site)
+        : f.site;
+      directFinalContract =
+        Number(calcSiteForSafety?.contractNet||0) +
+        Number(calcSiteForSafety?.increaseNet||0) -
+        Number(calcSiteForSafety?.reductionNet||0);
+    }catch(_){
+      directFinalContract =
+        Number(f.site?.contractNet||0) +
+        Number(f.site?.increaseNet||0) -
+        Number(f.site?.reductionNet||0) + rawInc - rawRed;
+    }
     if(directFinalContract < 0){
       alert("保存できません。\n\n減額金額が注文金額と増額金額の合計を超えています。\n最終注文金額がマイナスになるため保存できません。\n\n減額金額を確認してください。");
       try{document.getElementById("m_reductionNet")?.focus();}catch(_){}
@@ -5427,5 +5447,52 @@ document.addEventListener("click",(e)=>{
   }
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",setup,{once:true});
   else setup();
+})();
+</script>
+
+
+<!-- ===== 済判定安定化：表示中の「月＋工事ID」だけを正本にする 2026-09-19 ===== -->
+<script id="ms-saved-label-authoritative-month-site-20260919">
+(function(){
+  "use strict";
+
+  function stripSavedPrefix(text){
+    return String(text||"").replace(/^【済】\s*/,"");
+  }
+
+  function syncSavedLabelsFromExactMonth(){
+    try{
+      const month=document.getElementById("m_month")?.value||"";
+      const site=document.getElementById("m_site");
+      if(!month || !site || typeof state==="undefined") return;
+
+      [...site.options].forEach(opt=>{
+        if(!opt.value) return;
+        const siteId=String(opt.value);
+        const saved=!!state?.monthly?.[month]?.[siteId];
+        const base=stripSavedPrefix(opt.textContent);
+        opt.textContent=saved ? `【済】${base}` : base;
+      });
+    }catch(e){}
+  }
+
+  // 通常の月変更時にも、必ず「現在表示中の月」を正本にして済表示を合わせる。
+  document.addEventListener("change",function(e){
+    if(e.target?.id==="m_month" || e.target?.id==="m_site"){
+      [40,160,420].forEach(ms=>setTimeout(syncSavedLabelsFromExactMonth,ms));
+    }
+  },true);
+
+  // 印刷画面から戻った時は、印刷前の月の復元処理が約520ms後から走る。
+  // その完了後に再判定し、復元前の月（例：9月）の【済】表示を10月へ持ち越さない。
+  window.addEventListener("pageshow",function(){
+    [750,950,1250,1600].forEach(ms=>setTimeout(syncSavedLabelsFromExactMonth,ms));
+  });
+
+  document.addEventListener("DOMContentLoaded",function(){
+    [500,900,1400].forEach(ms=>setTimeout(syncSavedLabelsFromExactMonth,ms));
+  });
+
+  window.__msSyncSavedLabelsExactMonth=syncSavedLabelsFromExactMonth;
 })();
 </script>

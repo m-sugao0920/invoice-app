@@ -1183,12 +1183,17 @@ const taxRate = Number(state.settings.taxRate || 10);
 
     setText("pvContractNet",   `${yen(contractNet0)} 円`);
 
-    // ★要望：最終月以外（通常月）は ②追加工事・③減額工事 を印字しない（表の形は維持して空欄）
-    if(isFinalWork){
+    // 「随時反映」は、増減を登録した通常月にも当月分だけを印字する。
+    // 翌月以降は同じ増減を再掲せず、最終注文金額だけ累計結果を引き継ぐ。
+    const timing=(getEffectiveClientTerms(site)?.adjustmentTiming||site?.adjustmentTiming||"anytime");
+    const monthInc=Number(rec.increaseNet||0);
+    const monthRed=Number(rec.reductionNet||0);
+    const showMonthlyAdjustment=!isFinalWork && timing!=="final" && (monthInc!==0 || monthRed!==0);
+    if(isFinalWork || showMonthlyAdjustment){
       setText("pvLblIncrease",  "② 追加工事（税抜）");
       setText("pvLblReduction", "③ 減額工事（税抜）");
-      setText("pvIncreaseNet",  `${yen(increaseNet0)} 円`);
-      setText("pvReductionNet", `${yen(reductionNet0)} 円`);
+      setText("pvIncreaseNet",  `${yen(isFinalWork?increaseNet0:monthInc)} 円`);
+      setText("pvReductionNet", `${yen(isFinalWork?reductionNet0:monthRed)} 円`);
     }else{
       setText("pvLblIncrease",  "　");
       setText("pvLblReduction", "　");
