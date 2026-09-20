@@ -5625,6 +5625,54 @@ document.addEventListener("click",(e)=>{
 })();
 </script>
 
+
+
+<!-- ===== 工事を選び直す：直前に手動選択した工事を正本にする 2026-09-20 ===== -->
+<script id="ms-reselect-last-user-site-final-20260920">
+(function(){
+  "use strict";
+  let lastUserSite="";
+
+  // 利用者が実際に選んだ工事だけを記憶する。
+  // 保存後の候補再構築など、プログラム側の選択変更では上書きしない。
+  document.addEventListener("change",function(e){
+    if(e.target?.id!=="m_site" || !e.isTrusted) return;
+    const v=String(e.target.value||"");
+    if(v) lastUserSite=v;
+  },true);
+
+  // 既存の「工事を選び直す」処理が走る直前に、
+  // 直前に利用者が選んだ工事を現在選択中へ戻す。
+  // 既存処理は「現在選択中の保存済み工事だけ残す」仕様なので、
+  // A→B→C と登録した時に、直前の済工事だけが残る。
+  document.addEventListener("click",function(e){
+    const btn=e.target?.closest?.("#msReselectSiteBtn");
+    if(!btn || !lastUserSite) return;
+
+    const month=document.getElementById("m_month")?.value||"";
+    const site=document.getElementById("m_site");
+    if(!month || !site) return;
+
+    try{
+      // 今月に実際に保存済みの工事だけを対象にする。
+      if(!state?.monthly?.[month]?.[lastUserSite]) return;
+
+      if(![...site.options].some(o=>String(o.value)===lastUserSite)){
+        const src=state?.sites?.find(s=>String(s.id)===lastUserSite);
+        if(src){
+          const opt=document.createElement("option");
+          opt.value=lastUserSite;
+          opt.textContent=src.name||"工事";
+          site.appendChild(opt);
+        }
+      }
+      if([...site.options].some(o=>String(o.value)===lastUserSite)){
+        site.value=lastUserSite;
+      }
+    }catch(_e){}
+  },true);
+})();
+</script>
 </body>
 </html>
 <script id="ms-monthly-print-state-preserve-v2">
