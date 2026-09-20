@@ -5272,9 +5272,25 @@ document.addEventListener("click",(e)=>{
     bar.querySelector('#msReselectSiteBtn')?.addEventListener('click',function(){
       manuallyExpanded=true;
       grid.classList.remove('ms-target-collapsed');
+
+      // 「工事を選び直す」は、印刷から戻った時と同じく
+      // 現在の月次保存データを正本に候補一覧をその場で再構築する。
+      // 現在選択中（＝直前に登録・確認していた）工事だけは残し、
+      // それ以前に今月登録済みの工事は通常候補から外す。
+      try{
+        if(typeof window.refreshSiteSelects==='function') window.refreshSiteSelects();
+      }catch(e){}
+      try{
+        if(typeof window.__msSyncSavedLabelsExactMonth==='function') window.__msSyncSavedLabelsExactMonth();
+      }catch(e){}
+
       setTimeout(()=>{
         const search=document.getElementById('m_siteSearch');
         const site=document.getElementById(SITE_ID);
+        try{
+          if(typeof window.refreshSiteSelects==='function') window.refreshSiteSelects();
+          if(typeof window.__msSyncSavedLabelsExactMonth==='function') window.__msSyncSavedLabelsExactMonth();
+        }catch(e){}
         try{ (search||site)?.focus(); }catch(e){}
       },20);
     });
