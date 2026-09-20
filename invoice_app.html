@@ -3302,9 +3302,32 @@ document.addEventListener("DOMContentLoaded",()=>setTimeout(()=>{
       if(!site || !month) return 0;
       if(typeof triggerLine!=="function" || typeof retentionCap!=="function" || typeof displayContract!=="function") return 0;
 
-      const trigger=Number(triggerLine(site));
-      const cap=Math.max(0,Number(retentionCap(site)||0));
-      if(!Number.isFinite(trigger) || cap<=0) return 0;
+      // 印刷時の保留金上限は、対象月までの増減を反映した保留金判定額から再計算する。
+      // 旧処理の retentionCap(site) は工事マスター側だけを見るため、最終月に入力した
+      // 増額・減額が未反映となり、画面25,000円／印刷20,000円の差が出ることがあった。
+      const terms=(typeof getEffectiveClientTerms==="function" ? (getEffectiveClientTerms(site)||{}) : (site.clientTerms||{}));
+      const rateText=String(terms.retention ?? site.retention ?? "");
+      const rateMatch=rateText.match(/([0-9]+(?:\.[0-9]+)?)/);
+      const rate=rateMatch ? Math.max(0,Number(rateMatch[1])||0)/100 : 0;
+
+      let monthInc=0, monthRed=0;
+      monthKeysUntil(month).forEach(m=>{
+        const r=rec(m,site.id);
+        if(!r) return;
+        monthInc+=Math.max(0,Number(r.increaseNet||0));
+        monthRed+=Math.max(0,Number(r.reductionNet||0));
+      });
+      const baseContract=Math.max(0,Number(site.contractNet||0));
+      // 月次増減が存在する場合はそれを正本とする。無い旧データでは工事マスター値へフォールバック。
+      const incTotal=(monthInc>0 || monthRed>0) ? monthInc : Math.max(0,Number(site.increaseNet||0));
+      const redTotal=(monthInc>0 || monthRed>0) ? monthRed : Math.max(0,Number(site.reductionNet||0));
+      const includeInc=terms.retentionIncludeIncrease!==false;
+      const includeRed=terms.retentionIncludeReduction!==false;
+      const effectiveBase=Math.max(0,baseContract+(includeInc?incTotal:0)-(includeRed?redTotal:0));
+      const minAmount=Math.max(0,Number(terms.retentionMinAmount ?? site.retentionMinAmount ?? 0)||0);
+      const cap=(rate>0 && (minAmount<=0 || effectiveBase>=minAmount)) ? effectiveBase*rate : 0;
+      const trigger=cap>0 ? Math.max(0,effectiveBase-cap) : Number.POSITIVE_INFINITY;
+      if(!Number.isFinite(cap) || cap<=0) return 0;
 
       const reached=workCumUntil(site.id,month)>=trigger;
       const completed=completedByMonth(site.id,month);
