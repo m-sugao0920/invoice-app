@@ -1409,6 +1409,34 @@ html.ms-password-locked body{visibility:hidden!important;}
   .month-project-info > div:nth-child(2) b{white-space:normal;}
 }
 </style>
+
+<style id="ms-saved-toggle-inline-20260920">
+/* 済工事表示を「工事を選択」の直下へ移動し、検索欄下の案内と高さをそろえる */
+#invoiceMonthlyTargetGrid .ms-show-saved-toggle{
+  display:flex;align-items:center;gap:6px;margin:3px 0 0;padding:0;
+  border:0;border-radius:0;background:transparent;color:#536f81;
+  min-height:18px;font-size:10.5px;font-weight:800;line-height:1.35;
+}
+#invoiceMonthlyTargetGrid .ms-show-saved-toggle input{width:14px;height:14px;margin:0;flex:0 0 auto;}
+#invoiceMonthlyTargetGrid .ms-show-saved-label{color:#536f81;font-size:10.5px;font-weight:800;white-space:nowrap;cursor:pointer;}
+#invoiceMonthlyTargetGrid .ms-show-saved-toggle .note{margin-left:2px;color:#84939d;font-size:9.5px;font-weight:700;}
+#invoiceMonthlyTargetGrid .ms-show-saved-toggle:focus-within{border:0;box-shadow:none;background:transparent;}
+</style>
+
+<style id="ms-saved-filter-cell-fix-20260920">
+/* 工事選択の右側の空白を利用して、済工事表示設定を同じ行に配置 */
+#invoiceMonthlyTargetGrid .ms-saved-filter-cell{
+  display:flex;align-items:flex-end;min-width:0;padding-bottom:1px;
+}
+#invoiceMonthlyTargetGrid .ms-saved-filter-cell .ms-show-saved-toggle{
+  width:auto;min-height:26px;box-sizing:border-box;
+  display:inline-flex;align-items:center;gap:5px;margin:0;padding:3px 7px;
+  border:1px solid #d6e3ec;border-radius:7px;background:#f7fafc;
+}
+@media(max-width:760px){
+  #invoiceMonthlyTargetGrid .ms-saved-filter-cell{padding-bottom:0;}
+}
+</style>
 </head>
 <body class="ms-invoice-page">
 <header class="invoice-monthly-header">
@@ -1430,10 +1458,9 @@ html.ms-password-locked body{visibility:hidden!important;}
 <div class="month-form-grid" id="invoiceMonthlyTargetGrid">
 <label>対象月<input id="m_month" type="month"/></label>
 <label>発注先で絞る<select id="m_clientFilter"><option value="">すべての発注先</option></select></label>
-<label>工事名で検索<input id="m_siteSearch" type="search" placeholder="工事名の一部を入力" autocomplete="off"/><small id="msSiteSearchStatus">文字を入力すると、その場で工事を絞り込みます。</small></label>
-<label>工事を選択<select id="m_site"></select></label>
+<label>工事名で検索<input id="m_siteSearch" type="search" placeholder="工事名の一部を入力" autocomplete="off"/><small id="msSiteSearchStatus" style="display:none"></small></label>
+<label>工事を選択<select id="m_site"></select></label><div class="ms-saved-filter-cell" aria-label="済工事表示設定"><span class="ms-show-saved-toggle"><input id="m_showSaved" type="checkbox"/><span class="ms-show-saved-label">済工事を表示</span><span class="note">通常は未登録・未完了のみ</span></span></div>
 </div>
-<div class="ms-show-saved-toggle"><input id="m_showSaved" type="checkbox"/><label for="m_showSaved">済工事を表示</label><span class="note">通常は未登録・未完了の工事だけを表示します。</span></div>
 <div class="month-project-info">
 <div><span>工事名</span><b id="msm_siteName">—</b></div>
 <div><span>請求先</span><b id="msm_client">—</b></div>
@@ -3488,7 +3515,7 @@ document.addEventListener("click",(e)=>{
       </div>
       <div class="ms-completion-actions">
         <button type="button" class="ms-completion-normal" id="msReturnInput">入力に戻る</button>
-        <button type="button" class="ms-completion-final" id="msSaveFinalShort">この金額で工事完了</button>
+        <button type="button" class="ms-completion-final" id="msSaveFinalShort">登録キャンセル</button>
       </div>
     </div>`;
     document.body.appendChild(ov);
@@ -3500,14 +3527,13 @@ document.addEventListener("click",(e)=>{
     ov.querySelector("#msSaveFinalShort").onclick=()=>{
       ov.remove();
       const sel=document.getElementById("m_isFinal");
-      if(sel) sel.dataset.skipNextFinalShortfallCheck="1";
-      try{
-        if(typeof safeSaveMonthly==="function") safeSaveMonthly();
-        else saveMonthly();
-      }catch(e){
-        console.error(e);
-        alert("保存処理を開始できませんでした。");
+      if(sel){
+        delete sel.dataset.skipNextFinalShortfallCheck;
+        delete sel.dataset.allowFinalShortfallSaveOnce;
+        delete sel.dataset.msAllowShortFinalOnce;
       }
+      const input=document.getElementById("m_thisMonthNet");
+      if(input){input.focus();try{input.select()}catch(_){}}
     };
     ov.addEventListener("click",e=>{if(e.target===ov)ov.remove()});
   }
@@ -3564,6 +3590,86 @@ document.addEventListener("click",(e)=>{
       }
     };
     ov.addEventListener("click",e=>{if(e.target===ov)ov.remove()});
+  }
+
+  function showOverrunChoice(f){
+    document.getElementById("msCompletionOverlay")?.remove();
+    const ov=document.createElement("div");
+    ov.id="msCompletionOverlay";
+    ov.className="ms-completion-overlay";
+    ov.innerHTML=`<div class="ms-completion-dialog" role="dialog" aria-modal="true" aria-labelledby="msCompletionTitle">
+      <div class="ms-completion-head" id="msCompletionTitle">登録内容を確認してください</div>
+      <div class="ms-completion-body">
+        出来高累計が最終注文金額を <b>${fmt(f.overrunAmount)}</b> 超えています。<br>
+        増額工事がある場合は、先に増額を入力してください。
+        <div style="margin-top:10px;padding:10px 11px;border:1px solid #dbe5ec;border-radius:8px;background:#f8fbfd;line-height:1.8">
+          最終注文金額：<b>${fmt(f.inputLimitContract)}</b><br>
+          今回入力後の出来高累計：<b>${fmt(f.projectedWork)}</b><br>
+          超過額：<b>${fmt(f.overrunAmount)}</b>
+        </div>
+      </div>
+      <div class="ms-completion-actions">
+        <button type="button" class="ms-completion-normal" id="msReturnOverrunInput">入力に戻る</button>
+        <button type="button" class="ms-completion-final" id="msCancelOverrunRegistration">登録キャンセル</button>
+      </div>
+    </div>`;
+    document.body.appendChild(ov);
+    const back=ov.querySelector("#msReturnOverrunInput");
+    const cancel=ov.querySelector("#msCancelOverrunRegistration");
+
+    // 入力に戻る：入力値は残したまま、出来高欄へ戻して修正できるようにする。
+    back.onclick=()=>{
+      ov.remove();
+      const input=document.getElementById("m_thisMonthNet");
+      if(input){
+        input.focus();
+        try{input.select()}catch(_){}
+      }
+    };
+
+    // 登録キャンセル：保存は一切せず、今回の未保存入力だけを初期状態へ戻す。
+    cancel.onclick=()=>{
+      ov.remove();
+
+      const setMoneyZero=(id)=>{
+        const el=document.getElementById(id);
+        if(!el) return;
+        el.value="0";
+        try{
+          if(typeof formatCommaInput==="function") formatCommaInput(el);
+        }catch(_){}
+        try{el.dispatchEvent(new Event("input",{bubbles:true}))}catch(_){}
+      };
+
+      setMoneyZero("m_increaseNet");
+      setMoneyZero("m_reductionNet");
+      setMoneyZero("m_thisMonthNet");
+
+      const finalSel=document.getElementById("m_isFinal");
+      if(finalSel){
+        finalSel.value="0";
+        delete finalSel.dataset.skipNextCompletionCheck;
+        delete finalSel.dataset.skipNextFinalShortfallCheck;
+        delete finalSel.dataset.skipNextAdjustmentCheck;
+        delete finalSel.dataset.skipNextOverrunCheck;
+        delete finalSel.dataset.retentionOnlyClaim;
+        try{finalSel.dispatchEvent(new Event("change",{bubbles:true}))}catch(_){}
+      }
+
+      try{
+        if(typeof refreshSiteSummaryAndHistory==="function") refreshSiteSummaryAndHistory();
+        if(typeof refreshSafety==="function") refreshSafety();
+        if(typeof window.__updateFinalContractNote==="function") window.__updateFinalContractNote();
+      }catch(_){}
+
+      const input=document.getElementById("m_thisMonthNet");
+      if(input){
+        input.focus();
+        try{input.select()}catch(_){}
+      }
+    };
+
+    setTimeout(()=>{try{back.focus()}catch(_){}},0);
   }
 
   window.safeSaveMonthly=function(){
@@ -3673,14 +3779,56 @@ document.addEventListener("click",(e)=>{
     if(f.completionCheck && !skipCompletionOnce){showCompletionChoice(f);return false}
 
     if(f.overrunCheck){
-      alert("保存できません。\n\n出来高累計が最終注文金額を "+fmt(f.overrunAmount)+" 超えています。\n増額工事がある場合は、先に増額を入力してください。\n\n入力金額を確認してください。");
-      try{document.getElementById("m_thisMonthNet")?.focus();}catch(_){}
+      showOverrunChoice(f);
       return false;
     }
 
+    /* ===== 工事完了時の出来高不足を保存直前に再確認 =====
+       getFlags() 側の判定だけに依存せず、現在画面の「工事完了」と
+       最終注文金額・累計出来高を使って必ず再判定する。
+       保留金のみ請求は従来どおり対象外。 */
     const skipFinalShortfallOnce=finalSel?.dataset?.skipNextFinalShortfallCheck==="1";
     if(skipFinalShortfallOnce) delete finalSel.dataset.skipNextFinalShortfallCheck;
-    if(f.finalShortfallCheck && !skipFinalShortfallOnce){showFinalShortfallChoice(f);return false}
+
+    const isFinalNow=finalSel?.value==="1";
+    const retentionOnlyNow=finalSel?.dataset?.retentionOnlyClaim==="1";
+    let finalContractNow=Number(f.finalContract||0);
+    let projectedWorkNow=Number(f.projectedWork||0);
+
+    try{
+      const monthKey=document.getElementById("m_month")?.value||"";
+      const calcSiteNow=(typeof getSiteForCalc==="function")
+        ? (getSiteForCalc(f.site,true,monthKey,rawInc,rawRed)||f.site)
+        : f.site;
+      finalContractNow=Math.max(0,
+        Number(calcSiteNow?.contractNet||0)+
+        Number(calcSiteNow?.increaseNet||0)-
+        Number(calcSiteNow?.reductionNet||0)
+      );
+    }catch(_){}
+
+    /* projectedWork は getFlags() の累計値を基本とし、
+       今月入力値が反映されていない場合に備えて最低限の補正を行う。 */
+    if(!Number.isFinite(projectedWorkNow)) projectedWorkNow=0;
+
+    const finalShortfallNow=Math.max(0,finalContractNow-projectedWorkNow);
+    const finalShortfallCheckNow=
+      !f.savedThisMonth &&
+      isFinalNow &&
+      !retentionOnlyNow &&
+      finalContractNow>0 &&
+      projectedWorkNow<finalContractNow;
+
+    if(finalShortfallCheckNow && !skipFinalShortfallOnce){
+      showFinalShortfallChoice({
+        ...f,
+        finalContract:finalContractNow,
+        projectedWork:projectedWorkNow,
+        finalShortfall:finalShortfallNow,
+        finalShortfallCheck:true
+      });
+      return false;
+    }
 
     const skipAdjustmentOnce=finalSel?.dataset?.skipNextAdjustmentCheck==="1";
     if(skipAdjustmentOnce){
@@ -3704,6 +3852,12 @@ document.addEventListener("click",(e)=>{
       try{sel.dispatchEvent(new Event("change",{bubbles:true}))}catch(_){}
     }
   }
+  document.addEventListener("change",e=>{
+    if(e.target?.id==="m_isFinal"){
+      // ユーザーが請求区分を変更したら、以前の確認用一時フラグを持ち越さない。
+      delete e.target.dataset.skipNextFinalShortfallCheck;
+    }
+  },true);
   document.addEventListener("DOMContentLoaded",()=>{setTimeout(()=>{autoSuggestFinal();refreshSafety()},500)});
   document.addEventListener("change",e=>{if(["m_site","m_month","m_isFinal"].includes(e.target?.id))setTimeout(()=>{autoSuggestFinal();refreshSafety()},80)});
   document.addEventListener("input",e=>{if(["m_increaseNet","m_reductionNet","m_thisMonthNet"].includes(e.target?.id))refreshSafety()});
@@ -5078,7 +5232,7 @@ document.addEventListener("click",(e)=>{
 #invoiceMonthlyTargetGrid.ms-target-collapsed > label:has(#m_siteSearch),
 #invoiceMonthlyTargetGrid.ms-target-collapsed > label:has(#m_site){display:none !important;}
 #invoiceMonthlyTargetGrid.ms-target-collapsed #msSelectedSiteCompact{display:flex;}
-#invoiceMonthlyTargetGrid.ms-target-collapsed + .ms-show-saved-toggle{display:none !important;}
+#invoiceMonthlyTargetGrid.ms-target-collapsed .ms-show-saved-toggle{display:none !important;}
 
 @media(max-width:760px){
   #invoiceMonthlyTargetGrid.ms-target-collapsed #msSelectedSiteCompact{grid-column:1 / -1;}
@@ -5171,6 +5325,290 @@ document.addEventListener("click",(e)=>{
   else setup();
 })();
 </script>
+
+<!-- ===== 対象月固定表示：メイン画面で決定 2026-09-20 ===== -->
+<style id="ms-monthly-fixed-target-month-style-20260920">
+#invoiceMonthlyTargetGrid > label:has(#m_month){grid-column:1/-1;}
+#invoiceMonthlyTargetGrid > label:has(#m_month){font-size:11px;color:#6b5a16;}
+#m_month{font-size:20px!important;font-weight:900!important;text-align:center!important;color:#173f5f!important;background:#fff7cf!important;border:2px solid #d9aa27!important;height:46px!important;pointer-events:none;cursor:default;}
+#msFixedMonthNotice{grid-column:1/-1;margin:-2px 0 2px;padding:8px 12px;border-radius:8px;background:#eef7fd;border:1px solid #b9d9ec;color:#315c76;font-size:11px;font-weight:800;text-align:center;}
+#msFixedMonthNotice.off-current{background:#fff1d6;border-color:#e3ad43;color:#7b5310;}
+</style>
+<script id="ms-monthly-fixed-target-month-script-20260920">
+(function(){
+  'use strict';
+  const KEY='ms_invoice_billing_month_direct_v1';
+  function pcMonth(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');}
+  function valid(v){return /^\d{4}-\d{2}$/.test(v||'');}
+  function requestedMonth(){
+    try{const q=new URLSearchParams(location.search||'');const m=q.get('month')||'';if(valid(m)) return m;}catch(e){}
+    try{const m=localStorage.getItem(KEY)||'';if(valid(m)) return m;}catch(e){}
+    return pcMonth();
+  }
+  function formatMonth(v){const a=String(v||'').split('-');return a.length===2 ? a[0]+'年'+Number(a[1])+'月' : v;}
+  function apply(){
+    const month=document.getElementById('m_month');
+    const grid=document.getElementById('invoiceMonthlyTargetGrid');
+    if(!month||!grid) return;
+    const target=requestedMonth();
+    if(month.value!==target){month.value=target;try{month.dispatchEvent(new Event('change',{bubbles:true}));}catch(e){}}
+    month.readOnly=true; month.tabIndex=-1; month.setAttribute('aria-readonly','true'); month.title='対象月はメイン画面で変更してください';
+    let note=document.getElementById('msFixedMonthNotice');
+    if(!note){note=document.createElement('div');note.id='msFixedMonthNotice';const lab=month.closest('label');lab?.insertAdjacentElement('afterend',note);}
+    const off=target!==pcMonth();
+    note.classList.toggle('off-current',off);
+    note.textContent=off ? '請求対象月：'+formatMonth(target)+'（現在月ではありません）　※対象月の変更はメイン画面で行います。' : '請求対象月：'+formatMonth(target)+'　※対象月の変更はメイン画面で行います。';
+  }
+  function clearSiteAfterPrintReturn(){
+    const site=document.getElementById('m_site');
+    if(!site) return;
+    site.value='';
+    try{site.dispatchEvent(new Event('change',{bubbles:true}));}catch(e){}
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',()=>{apply();[120,450,900].forEach(ms=>setTimeout(apply,ms));},{once:true});
+  else {apply();[120,450,900].forEach(ms=>setTimeout(apply,ms));}
+  window.addEventListener('pageshow',function(){
+    [50,650,1100,1700].forEach(ms=>setTimeout(apply,ms));
+    let back=false;try{const n=performance.getEntriesByType('navigation')[0];back=!!n&&n.type==='back_forward';}catch(e){}
+    if(back) setTimeout(clearSiteAfterPrintReturn,1850);
+  });
+})();
+</script>
+
+
+<script id="ms-final-shortfall-save-core-guard-20260920">
+(function(){
+  "use strict";
+
+  const num=v=>Number(String(v??"").replace(/[^0-9.-]/g,""))||0;
+
+  function displayed(id){
+    return num(document.getElementById(id)?.textContent||"0");
+  }
+
+  function currentSite(){
+    const sid=String(document.getElementById("m_site")?.value||"");
+    try{return (state?.sites||[]).find(s=>String(s.id)===sid)||null}catch(_){return null}
+  }
+
+  function finalContractNow(site){
+    const month=document.getElementById("m_month")?.value||"";
+    const inc=num(document.getElementById("m_increaseNet")?.value);
+    const red=num(document.getElementById("m_reductionNet")?.value);
+    try{
+      if(typeof getSiteForCalc==="function"){
+        const cs=getSiteForCalc(site,true,month,inc,red)||site;
+        const v=Number(cs?.contractNet||0)+Number(cs?.increaseNet||0)-Number(cs?.reductionNet||0);
+        if(Number.isFinite(v) && v>0) return v;
+      }
+    }catch(_){}
+    const shown=displayed("sum_displayContract");
+    if(shown>0) return shown;
+    return Math.max(0,Number(site?.contractNet||0)+inc-red);
+  }
+
+  function projectedWorkNow(){
+    const prev=displayed("sum_prevCum");
+    const work=num(document.getElementById("m_thisMonthNet")?.value);
+    return Math.max(0,prev+work);
+  }
+
+  function needsFinalShortfallGuard(){
+    const fin=document.getElementById("m_isFinal");
+    if(fin?.value!=="1") return null;
+    if(fin?.dataset?.retentionOnlyClaim==="1") return null;
+
+    // 「この金額で工事完了」を利用者が明示的に選んだ直後の1回だけ許可。
+    if(fin?.dataset?.allowFinalShortfallSaveOnce==="1"){
+      delete fin.dataset.allowFinalShortfallSaveOnce;
+      return null;
+    }
+
+    const site=currentSite();
+    if(!site) return null;
+
+    const finalContract=finalContractNow(site);
+    const projectedWork=projectedWorkNow();
+    if(finalContract>0 && projectedWork<finalContract){
+      return {
+        site,
+        finalContract,
+        projectedWork,
+        finalShortfall:Math.max(0,finalContract-projectedWork),
+        adjustmentCheck:false,
+        inc:num(document.getElementById("m_increaseNet")?.value),
+        red:num(document.getElementById("m_reductionNet")?.value),
+        terms:(typeof getEffectiveClientTerms==="function" ? (getEffectiveClientTerms(site)||{}) : (site.clientTerms||{}))
+      };
+    }
+    return null;
+  }
+
+  function install(){
+    if(typeof window.saveMonthly!=="function") return false;
+    if(window.saveMonthly.__msFinalShortfallGuarded) return true;
+
+    const original=window.saveMonthly;
+    function guardedSaveMonthly(){
+      const f=needsFinalShortfallGuard();
+      if(f){
+        try{
+          if(typeof showFinalShortfallChoice==="function"){
+            showFinalShortfallChoice(f);
+          }else{
+            alert(
+              "工事完了ですが、金額を確認してください。\n\n"+
+              "最終注文金額："+Math.round(f.finalContract).toLocaleString("ja-JP")+"円\n"+
+              "累計出来高："+Math.round(f.projectedWork).toLocaleString("ja-JP")+"円\n"+
+              "差額："+Math.round(f.finalShortfall).toLocaleString("ja-JP")+"円"
+            );
+          }
+        }catch(e){console.error(e);}
+        return false;
+      }
+      return original.apply(this,arguments);
+    }
+    guardedSaveMonthly.__msFinalShortfallGuarded=true;
+    guardedSaveMonthly.__msOriginal=original;
+    window.saveMonthly=guardedSaveMonthly;
+    return true;
+  }
+
+  // 外部 invoice_common.js 読込後の関数を確実にラップする。
+  document.addEventListener("DOMContentLoaded",()=>{
+    [0,50,150,400,900].forEach(ms=>setTimeout(install,ms));
+  });
+  [0,100,300].forEach(ms=>setTimeout(install,ms));
+})();
+</script>
+
+
+<script id="ms-final-shortfall-entry-guard-20260920">
+(function(){
+  "use strict";
+
+  const n=v=>Number(String(v??"").replace(/[^0-9.-]/g,""))||0;
+  const yen=v=>Math.round(Number(v)||0).toLocaleString("ja-JP");
+
+  function shown(id){
+    return n(document.getElementById(id)?.textContent||"0");
+  }
+
+  function getValues(){
+    const sel=document.getElementById("m_isFinal");
+    if(!sel || sel.value!=="1") return null;
+    if(sel.dataset.retentionOnlyClaim==="1") return null;
+
+    // 画面に表示されている最終注文金額を最優先にする。
+    let finalOrder=shown("sum_displayContract");
+
+    // 表示値が取れない場合だけ、工事データから補完する。
+    if(finalOrder<=0){
+      try{
+        const sid=document.getElementById("m_site")?.value||"";
+        const site=(state?.sites||[]).find(s=>String(s.id)===String(sid));
+        if(site){
+          const month=document.getElementById("m_month")?.value||"";
+          const inc=n(document.getElementById("m_increaseNet")?.value);
+          const red=n(document.getElementById("m_reductionNet")?.value);
+          const cs=(typeof getSiteForCalc==="function")
+            ? (getSiteForCalc(site,true,month,inc,red)||site) : site;
+          finalOrder=Math.max(0,
+            Number(cs?.contractNet||0)+
+            Number(cs?.increaseNet||0)-
+            Number(cs?.reductionNet||0)
+          );
+        }
+      }catch(_){}
+    }
+
+    // 前月までの累計＋今月入力額。
+    const prev=shown("sum_prevCum");
+    const thisMonth=n(document.getElementById("m_thisMonthNet")?.value);
+    const projected=Math.max(0,prev+thisMonth);
+
+    if(finalOrder>0 && projected<finalOrder){
+      return {
+        finalOrder,
+        projected,
+        shortfall:finalOrder-projected
+      };
+    }
+    return null;
+  }
+
+  function show(v, proceed){
+    document.getElementById("msEntryShortfallOverlay")?.remove();
+    const ov=document.createElement("div");
+    ov.id="msEntryShortfallOverlay";
+    ov.className="ms-completion-overlay";
+    ov.innerHTML=`<div class="ms-completion-dialog" role="dialog" aria-modal="true">
+      <div class="ms-completion-head">工事完了ですが、金額を確認してください</div>
+      <div class="ms-completion-body">
+        請求区分は <b>「工事完了（最終請求）」</b> ですが、累計出来高が最終注文金額まで達していません。<br>
+        減額工事や出来高の入力漏れがないか確認してください。
+        <div style="margin-top:10px;padding:10px 11px;border:1px solid #dbe5ec;border-radius:8px;background:#f8fbfd;line-height:1.8">
+          最終注文金額：<b>${yen(v.finalOrder)}円</b><br>
+          累計出来高：<b>${yen(v.projected)}円</b><br>
+          差額：<b>${yen(v.shortfall)}円</b>
+        </div>
+      </div>
+      <div class="ms-completion-actions">
+        <button type="button" class="ms-completion-normal" id="msEntryBack">入力に戻る</button>
+        <button type="button" class="ms-completion-final" id="msEntryProceed">登録キャンセル</button>
+      </div>
+    </div>`;
+    document.body.appendChild(ov);
+
+    ov.querySelector("#msEntryBack").onclick=()=>{
+      ov.remove();
+      const input=document.getElementById("m_thisMonthNet");
+      if(input){ input.focus(); try{input.select()}catch(_){} }
+    };
+
+    ov.querySelector("#msEntryProceed").onclick=()=>{
+      ov.remove();
+      // 不足額が残る状態では工事完了登録を許可しない。
+      // 入力値は残し、利用者が減額または出来高を修正できる状態へ戻す。
+      const sel=document.getElementById("m_isFinal");
+      if(sel){
+        delete sel.dataset.msAllowShortFinalOnce;
+        delete sel.dataset.skipNextFinalShortfallCheck;
+        delete sel.dataset.allowFinalShortfallSaveOnce;
+      }
+      const input=document.getElementById("m_thisMonthNet");
+      if(input){ input.focus(); try{input.select()}catch(_){} }
+    };
+
+    setTimeout(()=>{try{ov.querySelector("#msEntryBack").focus()}catch(_){}},0);
+  }
+
+  function install(){
+    if(typeof window.safeSaveMonthly!=="function") return false;
+    if(window.safeSaveMonthly.__msEntryGuarded) return true;
+
+    const original=window.safeSaveMonthly;
+    const wrapped=function(){
+      const v=getValues();
+      if(v){
+        show(v,()=>wrapped());
+        return false;
+      }
+      return original.apply(this,arguments);
+    };
+    wrapped.__msEntryGuarded=true;
+    wrapped.__msOriginal=original;
+    window.safeSaveMonthly=wrapped;
+    return true;
+  }
+
+  document.addEventListener("DOMContentLoaded",()=>{
+    [0,50,150,400,800].forEach(ms=>setTimeout(install,ms));
+  });
+  [0,100,300,700].forEach(ms=>setTimeout(install,ms));
+})();
+</script>
+
 </body>
 </html>
 <script id="ms-monthly-print-state-preserve-v2">
@@ -5496,3 +5934,9 @@ document.addEventListener("click",(e)=>{
   window.__msSyncSavedLabelsExactMonth=syncSavedLabelsFromExactMonth;
 })();
 </script>
+<style id="ms-monthly-fixed-target-month-refined-20260920">
+#invoiceMonthlyTargetGrid > label:has(#m_month){font-size:10.5px!important;color:#607582!important;}
+#m_month{font-size:16px!important;font-weight:700!important;text-align:center!important;color:#294b60!important;background:#f6f8fa!important;border:1px solid #c5d1d8!important;height:39px!important;box-shadow:none!important;}
+#msFixedMonthNotice{margin:-2px 0 2px!important;padding:6px 10px!important;border-radius:7px!important;background:#f3f7f9!important;border:1px solid #d3dfe5!important;color:#607582!important;font-size:10px!important;font-weight:600!important;text-align:left!important;}
+#msFixedMonthNotice.off-current{background:#f8f3f1!important;border-color:#ddcfca!important;color:#805f57!important;}
+</style>

@@ -337,14 +337,7 @@
 }
 </style>
 <style id="invoice-header-position-final">
-/* =========================================================
-   上部ブルー帯：位置調整はここだけ変更してください
-   ========================================================= */
-#view-sites{
-  --invoice-header-left: 830px;   /* ← MS請求書システムを右へ: 数字を大きく / 左へ: 小さく */
-  --invoice-header-right: 830px;  /* ← 戻るボタンを左へ: 数字を大きく / 右へ: 小さく */
-}
-
+/* 工事情報：上部ブルー帯を下の1400pxグリッド左右端に揃える */
 #view-sites .invoice-lwall-header{
   width:100vw !important;
   margin-left:calc(50% - 50vw) !important;
@@ -353,13 +346,11 @@
   box-sizing:border-box !important;
   background:linear-gradient(135deg,#0070C0,#2b8ae2) !important;
 }
-
 #view-sites .invoice-lwall-wrap{
-  width:100% !important;
-  max-width:none !important;
-  margin:0 !important;
-  padding-left:var(--invoice-header-left) !important;
-  padding-right:var(--invoice-header-right) !important;
+  width:calc(100% - 32px) !important;
+  max-width:1400px !important;
+  margin:0 auto !important;
+  padding:0 !important;
   box-sizing:border-box !important;
   display:flex !important;
   align-items:center !important;
@@ -367,25 +358,12 @@
   gap:12px !important;
   flex-wrap:nowrap !important;
 }
-
-#view-sites .invoice-lwall-wrap > div:first-child{
-  margin:0 !important;
-  min-width:0 !important;
-}
-
-#view-sites .invoice-home-link{
-  margin:0 !important;
-  flex:0 0 auto !important;
-}
-
+#view-sites .invoice-lwall-wrap > div:first-child{margin:0 !important;min-width:0 !important;}
+#view-sites .invoice-lwall-header h1{white-space:nowrap !important;word-break:keep-all !important;writing-mode:horizontal-tb !important;}
+#view-sites .invoice-lwall-header .sub{white-space:nowrap !important;word-break:keep-all !important;writing-mode:horizontal-tb !important;}
+#view-sites .invoice-home-link{margin:0 !important;flex:0 0 auto !important;white-space:nowrap !important;}
 @media(max-width:700px){
-  #view-sites{
-    --invoice-header-left: 16px;
-    --invoice-header-right: 16px;
-  }
-  #view-sites .invoice-lwall-wrap{
-    flex-wrap:wrap !important;
-  }
+  #view-sites .invoice-lwall-wrap{width:calc(100% - 32px) !important;flex-wrap:wrap !important;}
 }
 </style>
 <style id="client-master-link-style">
@@ -934,6 +912,17 @@ html.ms-password-locked body{visibility:hidden!important;}
 }
 </style>
 
+
+<style id="invoice-header-align-with-monthly-20260920">
+/* 工事情報ヘッダーを月次処理・マスター管理と同じ横位置へ統一 */
+#view-sites .invoice-lwall-wrap{
+  width:calc(100% - 32px) !important;
+  max-width:992px !important;
+  margin:0 auto !important;
+  padding:0 !important;
+  box-sizing:border-box !important;
+}
+</style>
 </head>
 <body class="ms-invoice-page">
 <div id="appRoot">
@@ -4031,11 +4020,11 @@ function buildB(){
  <text x="25" y="121" class="b muted" font-size="3">工事名</text><text x="25" y="129" class="b" font-size="4.5" font-weight="700">${esc(site)}</text><line x1="25" y1="133" x2="185" y2="133" class="line"/>
  <text x="25" y="142" class="b muted" font-size="3">注文番号　${esc(order)}</text><text x="92" y="142" class="b muted" font-size="3">工事番号　${esc(work)}</text>
  <rect x="25" y="152" width="160" height="9" class="navy"/><text x="29" y="158" class="b white" font-size="3.4" font-weight="700">請求明細</text>
- ${row(161,'注文金額（税抜）',contract)}${row(170,'追加工事（当月・税抜）',increase)}${row(179,'減額工事（当月・税抜）',reduction)}${row(188,'最終注文金額（税抜）',finalOrder)}${row(197,'既受領額（税抜）',received)}${row(206,'当月出来高（税抜）',current)}${row(215,'累計出来高（税抜）',cum)}${row(224,'当月請求額（税抜）',bill)}${row(236,'消費税',tax)}
- <rect x="25" y="243" width="160" height="14" fill="#f3f6f8"/><text x="29" y="252" class="b" font-size="4" font-weight="700">今回ご請求額（税込）</text><text x="180" y="252.5" class="b-money" style="font-size:6.0px;font-weight:700">${esc(gross)}</text>
- <text x="25" y="267" class="b muted" font-size="3.1">保留金額　${esc(retention||'—')}</text>
- <line x1="25" y1="276" x2="185" y2="276" class="line"/><text x="25" y="283" class="b muted" font-size="2.8">※ 内容をご確認のうえ、お取り扱いくださいますようお願いいたします。</text>
- <rect x="25" y="288" width="160" height="1.2" class="green"/>`;
+ ${row(161,'注文金額（税抜）',contract)}${row(170,'追加工事（当月・税抜）',increase)}${row(179,'減額工事（当月・税抜）',reduction)}${row(188,'最終注文金額（税抜）',finalOrder)}${row(197,'既受領額（税抜）',received)}${row(206,'当月出来高（税抜）',current)}${row(215,'累計出来高（税抜）',cum)}<line x1="25" y1="226" x2="185" y2="226" class="line"/><text x="29" y="234" class="b" font-size="3.7">当月請求額（税抜）</text><text x="180" y="234" class="b-money" style="font-size:3.12px;font-weight:700">${esc(bill)}</text>${row(241,'消費税',tax)}
+ <rect x="25" y="252" width="160" height="14" fill="#f3f6f8"/><text x="29" y="261" class="b" font-size="4" font-weight="700">今回ご請求額（税込）</text><text x="180" y="261.5" class="b-money" style="font-size:6.0px;font-weight:700">${esc(gross)}</text>
+ <text x="25" y="274" class="b muted" font-size="3.1">保留金額　${esc(retention||'—')}</text>
+ <line x1="25" y1="282" x2="185" y2="282" class="line"/><text x="25" y="288" class="b muted" font-size="2.8">※ 内容をご確認のうえ、お取り扱いくださいますようお願いいたします。</text>
+ <rect x="25" y="291" width="160" height="1.2" class="green"/>`;
  return svg;
 }
 function buildC(){

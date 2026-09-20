@@ -953,4 +953,28 @@ function MSInvoiceOpenGuide(){
   }
 }
 </script>
-</body></html>
+
+<style id="ms-main-target-month-emphasis-20260920">
+.ms4-billing-month-bar{background:#fff7cf!important;border:2px solid #d9aa27!important;border-radius:12px!important;padding:12px 14px!important;}
+.ms4-billing-month-bar label{font-size:14px!important;font-weight:900!important;color:#654d08!important;}
+#ms4BillingMonth{font-size:20px!important;font-weight:900!important;min-height:44px!important;border:2px solid #c99a1f!important;background:#fff!important;}
+#msMainMonthWarning{width:100%;font-size:11px;font-weight:900;color:#7b5310;text-align:center;margin-top:3px;}
+#msMainMonthWarning.current{color:#315c76;}
+</style>
+<script id="ms-main-target-month-emphasis-script-20260920">
+(function(){
+ function pcMonth(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');}
+ function fmt(v){const a=String(v||'').split('-');return a.length===2?a[0]+'年'+Number(a[1])+'月':v;}
+ function sync(){const el=document.getElementById('ms4BillingMonth');const bar=el?.closest('.ms4-billing-month-bar');if(!el||!bar)return;let w=document.getElementById('msMainMonthWarning');if(!w){w=document.createElement('div');w.id='msMainMonthWarning';bar.appendChild(w);}const cur=el.value===pcMonth();w.classList.toggle('current',cur);w.textContent=cur?'請求対象月：'+fmt(el.value):'⚠ 請求対象月：'+fmt(el.value)+'（現在月ではありません）';}
+ function init(){const el=document.getElementById('ms4BillingMonth');if(!el)return;el.addEventListener('change',()=>setTimeout(sync,0));document.getElementById('ms4BillingMonthToday')?.addEventListener('click',()=>setTimeout(sync,0));[0,100,400].forEach(ms=>setTimeout(sync,ms));}
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
+})();
+</script>
+
+</body></html><style id="ms-main-target-month-refined-20260920">
+.ms4-billing-month-bar{background:#f4f7f9!important;border:1px solid #cfd9df!important;border-radius:9px!important;padding:9px 12px!important;box-shadow:none!important;}
+.ms4-billing-month-bar label{font-size:12px!important;font-weight:700!important;color:#536b79!important;}
+#ms4BillingMonth{font-size:16px!important;font-weight:700!important;min-height:38px!important;border:1px solid #b9c8d1!important;background:#fff!important;color:#294b60!important;box-shadow:none!important;}
+#msMainMonthWarning{width:100%;font-size:10px!important;font-weight:600!important;color:#667b88!important;text-align:left!important;margin-top:2px!important;}
+#msMainMonthWarning.current{color:#667b88!important;}
+</style>
