@@ -10,7 +10,8 @@
   const SHARED_KEYS = [
     'invoice_app_v3',
     'ms_invoice_client_master_v1',
-    'ms_invoice_company_master_v1'
+    'ms_invoice_company_master_v1',
+    'ms_invoice_personal_v1'
   ];
 
   function openDB(){

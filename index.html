@@ -508,6 +508,144 @@ html.ms-password-locked #msPasswordGate{display:flex;}
 }
 </style>
 
+
+<style id="ms-personal-menu-style-20260920">
+.ms4-personal h3{color:#8b4d16}
+.ms4-personal .ms4-menu-badge,.ms4-personal .start{background:linear-gradient(180deg,#b87532,#8f531c);color:#fff}
+</style>
+
+<style id="ms-personal-dashboard-fusion-style-20260921">
+.ms4-month-dashboard .ms4-current-grid{
+  grid-template-columns:repeat(4,minmax(0,1fr)) !important;
+}
+.ms4-fusion-breakdown{
+  margin-top:3px;
+  font-size:10px;
+  font-weight:800;
+  color:#6a7d89;
+  white-space:nowrap;
+}
+#ms4PersonalTab.active{
+  background:#9a5d24 !important;
+  color:#fff !important;
+  border-color:#9a5d24 !important;
+}
+.ms4-personal-row{
+  display:grid;
+  grid-template-columns:minmax(0,1.25fr) minmax(0,1.35fr) auto auto auto auto;
+  gap:12px;
+  align-items:center;
+  padding:8px 10px;
+  margin:0 0 4px;
+  border:1px solid #ead9c8;
+  border-radius:7px;
+  background:#fffdf9;
+  font-size:12px;
+}
+.ms4-personal-row .customer{font-size:14px;font-weight:800;color:#5d3a19;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ms4-personal-row .project{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ms4-personal-row .amt{font-family:var(--fontNum);font-weight:800;white-space:nowrap}
+.ms4-personal-row .status{font-weight:900;color:#8b4d16;white-space:nowrap}
+.ms4-personal-empty{padding:24px 10px;text-align:center;color:#71808a;font-size:12px}
+@media(max-width:850px){
+  .ms4-month-dashboard .ms4-current-grid{grid-template-columns:repeat(2,minmax(0,1fr)) !important}
+  .ms4-personal-row{grid-template-columns:1fr 1fr}
+}
+</style>
+
+
+<style id="ms-personal-dashboard-fusion-v2-style-20260921">
+.ms4-total-card{background:#f4f9fd!important}
+.ms4-corp-card{background:#f7fbff!important}
+.ms4-person-card{background:#fff9f2!important}
+.ms4-person-card .ms4-label,.ms4-person-card .ms4-value{color:#8b4d16!important}
+.ms4-status-card{background:#fbfcfd!important}
+.ms4-status-lines{
+  display:flex;flex-direction:column;gap:2px;margin-top:4px;
+  font-size:10.5px;color:#536a78;font-weight:700;line-height:1.35;
+}
+.ms4-status-lines b{font-size:12px;color:#263f50;margin-left:4px}
+#ms4PersonalDoneTab.active{
+  background:#6f553e!important;color:#fff!important;border-color:#6f553e!important;
+}
+#ms4PersonalDoneSearchPanel input[type="search"],
+#ms4PersonalDoneSearchPanel select{min-height:32px}
+@media(max-width:850px){
+  .ms4-month-dashboard .ms4-current-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
+</style>
+
+<style id="ms-personal-reference-button-style-20260921">
+.ms4-personal-ref{min-width:58px;height:30px;padding:0 10px;border:1px solid #9f7a55;border-radius:6px;background:#fff;color:#7a4c20;font-size:12px;font-weight:900;cursor:pointer;white-space:nowrap}
+.ms4-personal-ref:hover{background:#fff5e9}
+</style>
+
+<style id="ms4-dashboard-color-final-20260921">
+/* 請求月実請求額：合計→内訳が一目で分かる配色 */
+.ms4-month-dashboard .ms4-total-card{
+  background:#e7f2fb !important;
+  border-color:#9fc7e2 !important;
+  box-shadow:inset 0 3px 0 #176fa8;
+}
+.ms4-month-dashboard .ms4-total-card .ms4-label{
+  color:#245b80 !important;
+  font-weight:900 !important;
+}
+.ms4-month-dashboard .ms4-total-card .ms4-value{
+  color:#124f78 !important;
+  font-weight:950 !important;
+}
+
+.ms4-month-dashboard .ms4-corp-card{
+  background:#edf8f6 !important;
+  border-color:#a7d4cb !important;
+  box-shadow:inset 0 3px 0 #348c7d;
+}
+.ms4-month-dashboard .ms4-corp-card .ms4-label{
+  color:#286e63 !important;
+  font-weight:900 !important;
+}
+.ms4-month-dashboard .ms4-corp-card .ms4-value{
+  color:#205f56 !important;
+  font-weight:950 !important;
+}
+
+/* 個人は現在の暖色系を維持し、法人との違いを明確にする */
+.ms4-month-dashboard .ms4-person-card{
+  background:#fff4e8 !important;
+  border-color:#dfbd98 !important;
+  box-shadow:inset 0 3px 0 #a96528;
+}
+.ms4-month-dashboard .ms4-person-card .ms4-label,
+.ms4-month-dashboard .ms4-person-card .ms4-value{
+  color:#824917 !important;
+}
+
+/* 状況は金額カードより控えめ */
+.ms4-month-dashboard .ms4-status-card{
+  background:#f7f9fa !important;
+  border-color:#d7e0e5 !important;
+  box-shadow:inset 0 3px 0 #8999a3;
+}
+</style>
+
+
+<style id="ms4-dashboard-border-final-20260921">
+/* 最終調整：上の色アクセントは維持し、外枠だけ少し明確にする */
+.ms4-month-dashboard .ms4-total-card{
+  border:1.5px solid #82b7d9 !important;
+}
+.ms4-month-dashboard .ms4-corp-card{
+  border:1.5px solid #83c2b6 !important;
+}
+.ms4-month-dashboard .ms4-person-card{
+  border:1.5px solid #d3a675 !important;
+}
+.ms4-month-dashboard .ms4-status-card{
+  border:1.5px solid #c2cdd3 !important;
+}
+</style>
+
 </head>
 <body class="ms-index-page">
 <section id="view-home">
@@ -546,17 +684,25 @@ html.ms-password-locked #msPasswordGate{display:flex;}
         <span>工事一覧の「請求」から、この月の月次請求へ進みます。</span>
       </div>
       <div class="ms4-current-grid">
-        <div>
-          <div class="ms4-label">請求月実請求額（税抜）</div>
+        <div class="ms4-total-card">
+          <div class="ms4-label">請求月実請求額 合計</div>
           <div class="ms4-value money" id="ms4MonthActual">0 円</div>
         </div>
-        <div>
-          <div class="ms4-label">未請求工事</div>
-          <div class="ms4-value" id="ms4MonthPending">0件</div>
+        <div class="ms4-corp-card">
+          <div class="ms4-label">法人 実請求額</div>
+          <div class="ms4-value money" id="ms4MonthCorporateActual">0 円</div>
         </div>
-        <div>
-          <div class="ms4-label">保留金待ち</div>
-          <div class="ms4-value" id="ms4MonthRetention">0件</div>
+        <div class="ms4-person-card">
+          <div class="ms4-label">個人 実請求額</div>
+          <div class="ms4-value money" id="ms4MonthPersonalActual">0 円</div>
+        </div>
+        <div class="ms4-status-card">
+          <div class="ms4-label">請求状況</div>
+          <div class="ms4-status-lines">
+            <span>未請求 <b id="ms4MonthPending">0件</b></span>
+            <span>保留金待ち <b id="ms4MonthRetention">0件</b></span>
+            <span>個人請求中 <b id="ms4MonthPersonalOpen">0件</b></span>
+          </div>
         </div>
       </div>
 
@@ -578,6 +724,8 @@ html.ms-password-locked #msPasswordGate{display:flex;}
           <div class="ms4-list-tabs">
             <button id="ms4PendingTab" class="active" onclick="ms4ShowList('pending')">未請求工事</button>
             <button id="ms4DoneTab" class="plain" onclick="ms4ShowList('done')">完了工事</button>
+            <button id="ms4PersonalTab" class="plain" type="button">個人請求</button>
+            <button id="ms4PersonalDoneTab" class="plain" type="button">個人完了</button>
           </div>
 
           <div id="ms4DoneSearchPanel" class="ms4-done-search-panel" style="display:none;">
@@ -599,6 +747,23 @@ html.ms-password-locked #msPasswordGate{display:flex;}
             </label>
             <button id="ms4DoneSearchClear" type="button">絞り込み解除</button>
             <div id="ms4DoneSearchStatus" class="ms4-done-search-status"></div>
+          </div>
+
+          <div id="ms4PersonalDoneSearchPanel" class="ms4-done-search-panel" style="display:none;">
+            <label>
+              <span>年で絞る</span>
+              <select id="ms4PersonalDoneYearFilter"><option value="">すべての年</option></select>
+            </label>
+            <label>
+              <span>お客様名で検索</span>
+              <input id="ms4PersonalDoneCustomerSearch" type="search" placeholder="お客様名の一部を入力">
+            </label>
+            <label>
+              <span>工事名・住所で検索</span>
+              <input id="ms4PersonalDoneProjectSearch" type="search" placeholder="工事名・住所の一部を入力">
+            </label>
+            <button id="ms4PersonalDoneSearchClear" type="button">絞り込み解除</button>
+            <div id="ms4PersonalDoneSearchStatus" class="ms4-done-search-status"></div>
           </div>
 
           <div class="ms4-site-list" id="ms4SiteList"></div>
@@ -630,6 +795,11 @@ html.ms-password-locked #msPasswordGate{display:flex;}
             <button class="ms4-menu ms4-purple" onclick="location.href='invoice_summary.html'">
               <div class="ms4-menu-head"><div class="ms4-menu-badge">④</div><h3>総括請求書</h3></div>
               <p>指定月に請求がある工事をまとめて総括請求書を作成します。</p>
+              <span class="start">開く</span>
+            </button>
+            <button class="ms4-menu ms4-personal" onclick="location.href='invoice_personal.html'">
+              <div class="ms4-menu-head"><div class="ms4-menu-badge">⑤</div><h3>個人請求</h3></div>
+              <p>個人のお客様情報と工事金額を入力し、回数を決めずに請求を管理します。</p>
               <span class="start">開く</span>
             </button>
           </div>
@@ -838,26 +1008,52 @@ html.ms-password-locked #msPasswordGate{display:flex;}
     }
   }
 
-  function refreshDashboard(){
+  async function refreshDashboard(){
     if(typeof state==="undefined" || !Array.isArray(state.sites)) return;
 
     const month=selectedMonthKey();
-    let actual=0;
+    let corporateActual=0;
     let pending=0;
     let retention=0;
 
     state.sites.forEach(site=>{
-      actual += actualForMonth(month,site);
+      corporateActual += actualForMonth(month,site);
       if(pendingAtMonth(site,month)) pending++;
       if(retentionWaitingAtMonth(site,month)) retention++;
     });
 
+    let personalActual=0;
+    let personalOpen=0;
+    try{
+      if(window.MSInvoiceStorage && typeof MSInvoiceStorage.get==="function"){
+        await MSInvoiceStorage.ready;
+        const raw=await MSInvoiceStorage.get("ms_invoice_personal_v1");
+        const pd=JSON.parse(raw||"{}");
+        const projects=Array.isArray(pd?.projects)?pd.projects:[];
+        personalOpen=projects.filter(p=>p?.completed!==true).length;
+        projects.forEach(p=>{
+          (Array.isArray(p?.claims)?p.claims:[]).forEach(c=>{
+            if(String(c?.date||"").slice(0,7)===month){
+              personalActual+=Math.max(0,Number(c?.amount||0));
+            }
+          });
+        });
+      }
+    }catch(e){}
+
+    const total=corporateActual+personalActual;
     const a=document.getElementById("ms4MonthActual");
+    const ca=document.getElementById("ms4MonthCorporateActual");
+    const pa=document.getElementById("ms4MonthPersonalActual");
     const p=document.getElementById("ms4MonthPending");
     const r=document.getElementById("ms4MonthRetention");
-    if(a) a.textContent=yenText(actual);
+    const po=document.getElementById("ms4MonthPersonalOpen");
+    if(a) a.textContent=yenText(total);
+    if(ca) ca.textContent=yenText(corporateActual);
+    if(pa) pa.textContent=yenText(personalActual);
     if(p) p.textContent=pending+"件";
     if(r) r.textContent=retention+"件";
+    if(po) po.textContent=personalOpen+"件";
   }
 
   document.addEventListener("DOMContentLoaded",()=>{
@@ -971,6 +1167,238 @@ function MSInvoiceOpenGuide(){
 })();
 </script>
 
+
+<script id="ms-personal-list-fusion-script-20260921">
+(function(){
+  "use strict";
+  const KEY="ms_invoice_personal_v1";
+  let originalShowList=null;
+  let personalProjects=[];
+
+  function yen(n){return Math.round(Number(n||0)).toLocaleString("ja-JP")+"円";}
+  function finalAmount(p){return Number(p?.contract||0)+Number(p?.increase||0)-Number(p?.reduction||0);}
+  function claimed(p){return (Array.isArray(p?.claims)?p.claims:[]).reduce((a,c)=>a+Number(c?.amount||0),0);}
+  function esc(v){return String(v??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));}
+  function doneYear(p){
+    const d=String(p?.completedAt||p?.updatedAt||"");
+    return /^\d{4}/.test(d)?d.slice(0,4):"";
+  }
+
+  async function loadPersonal(){
+    try{
+      if(!window.MSInvoiceStorage||typeof MSInvoiceStorage.get!=="function") return [];
+      await MSInvoiceStorage.ready;
+      const raw=await MSInvoiceStorage.get(KEY);
+      const d=JSON.parse(raw||"{}");
+      return Array.isArray(d?.projects)?d.projects:[];
+    }catch(e){return [];}
+  }
+
+  function hideSearch(){
+    const a=document.getElementById("ms4DoneSearchPanel");
+    const b=document.getElementById("ms4PersonalDoneSearchPanel");
+    if(a)a.style.display="none";
+    if(b)b.style.display="none";
+  }
+
+  function setTabs(which){
+    const ids=["ms4PendingTab","ms4DoneTab","ms4PersonalTab","ms4PersonalDoneTab"];
+    ids.forEach(id=>{const e=document.getElementById(id);if(e)e.className="plain";});
+    const target={pending:"ms4PendingTab",done:"ms4DoneTab",personal:"ms4PersonalTab",personalDone:"ms4PersonalDoneTab"}[which];
+    const el=document.getElementById(target);if(el)el.className="active";
+  }
+
+  function row(p){
+    const f=finalAmount(p),c=claimed(p),r=Math.max(0,f-c);
+    return '<div class="ms4-personal-row">'+
+      '<div class="customer">'+esc(p?.customer||"名称未入力")+'</div>'+
+      '<div class="project">'+esc(p?.project||"工事名未入力")+'</div>'+
+      '<div class="amt">工事 '+yen(f)+'</div>'+
+      '<div class="amt">請求済 '+yen(c)+' ／ 残 '+yen(r)+'</div>'+
+      '<div class="status">'+(p?.completed===true?'完了':'請求中')+'</div>'+
+      (p?.completed===true?'<button type="button" class="ms4-personal-ref" data-personal-ref="'+esc(p.id||'')+'">参照</button>':'<span></span>')+
+    '</div>';
+  }
+
+  async function showPersonalOpen(){
+    setTabs("personal"); hideSearch();
+    personalProjects=await loadPersonal();
+    const open=personalProjects.filter(p=>p?.completed!==true);
+    const done=personalProjects.filter(p=>p?.completed===true);
+    const box=document.getElementById("ms4SiteList");
+    const summary=document.getElementById("ms4ListSummary");
+    if(summary)summary.textContent="個人 請求中 "+open.length+"件 ／ 完了 "+done.length+"件";
+    if(!box)return;
+    const ordered=open.slice().sort((x,y)=>String(y?.updatedAt||y?.createdAt||"").localeCompare(String(x?.updatedAt||x?.createdAt||"")));
+    box.innerHTML=ordered.length?ordered.map(row).join(""):'<div class="ms4-personal-empty">個人の請求中工事はありません。</div>';
+  }
+
+  function populateYears(done){
+    const sel=document.getElementById("ms4PersonalDoneYearFilter");
+    if(!sel)return;
+    const keep=sel.value;
+    const years=[...new Set(done.map(doneYear).filter(Boolean))].sort().reverse();
+    sel.innerHTML='<option value="">すべての年</option>'+years.map(y=>'<option value="'+esc(y)+'">'+esc(y)+'年</option>').join("");
+    if(years.includes(keep))sel.value=keep;
+  }
+
+  function renderPersonalDone(){
+    const done=personalProjects.filter(p=>p?.completed===true);
+    populateYears(done);
+    const year=document.getElementById("ms4PersonalDoneYearFilter")?.value||"";
+    const cq=(document.getElementById("ms4PersonalDoneCustomerSearch")?.value||"").trim().toLowerCase();
+    const pq=(document.getElementById("ms4PersonalDoneProjectSearch")?.value||"").trim().toLowerCase();
+    const filtered=done.filter(p=>{
+      if(year && doneYear(p)!==year)return false;
+      if(cq && !String(p?.customer||"").toLowerCase().includes(cq))return false;
+      const target=(String(p?.project||"")+" "+String(p?.address||"")+" "+String(p?.site||"")).toLowerCase();
+      if(pq && !target.includes(pq))return false;
+      return true;
+    }).sort((x,y)=>String(y?.completedAt||y?.updatedAt||"").localeCompare(String(x?.completedAt||x?.updatedAt||"")));
+
+    const box=document.getElementById("ms4SiteList");
+    const summary=document.getElementById("ms4ListSummary");
+    const status=document.getElementById("ms4PersonalDoneSearchStatus");
+    if(summary)summary.textContent="個人完了 "+done.length+"件";
+    if(status)status.textContent="表示 "+filtered.length+"件 ／ 個人完了 "+done.length+"件";
+    if(box){
+      box.innerHTML=filtered.length?filtered.map(row).join(""):'<div class="ms4-personal-empty">条件に一致する個人完了工事はありません。</div>';
+      box.querySelectorAll('[data-personal-ref]').forEach(btn=>btn.addEventListener('click',()=>{
+        const id=btn.dataset.personalRef||'';
+        if(id) location.href='invoice_personal.html?ref='+encodeURIComponent(id);
+      }));
+    }
+  }
+
+  async function showPersonalDone(){
+    setTabs("personalDone"); hideSearch();
+    const panel=document.getElementById("ms4PersonalDoneSearchPanel");
+    if(panel)panel.style.display="";
+    personalProjects=await loadPersonal();
+    renderPersonalDone();
+  }
+
+  function clearPersonalDoneSearch(){
+    const y=document.getElementById("ms4PersonalDoneYearFilter");
+    const c=document.getElementById("ms4PersonalDoneCustomerSearch");
+    const p=document.getElementById("ms4PersonalDoneProjectSearch");
+    if(y)y.value=""; if(c)c.value=""; if(p)p.value="";
+    renderPersonalDone();
+  }
+
+  function init(){
+    originalShowList=window.ms4ShowList;
+    if(typeof originalShowList==="function"){
+      window.ms4ShowList=function(mode){
+        const pd=document.getElementById("ms4PersonalDoneSearchPanel");if(pd)pd.style.display="none";
+        const pt=document.getElementById("ms4PersonalTab");if(pt)pt.className="plain";
+        const pdt=document.getElementById("ms4PersonalDoneTab");if(pdt)pdt.className="plain";
+        return originalShowList(mode);
+      };
+    }
+    document.getElementById("ms4PersonalTab")?.addEventListener("click",showPersonalOpen);
+    document.getElementById("ms4PersonalDoneTab")?.addEventListener("click",showPersonalDone);
+    document.getElementById("ms4PersonalDoneYearFilter")?.addEventListener("change",renderPersonalDone);
+    document.getElementById("ms4PersonalDoneCustomerSearch")?.addEventListener("input",renderPersonalDone);
+    document.getElementById("ms4PersonalDoneProjectSearch")?.addEventListener("input",renderPersonalDone);
+    document.getElementById("ms4PersonalDoneSearchClear")?.addEventListener("click",clearPersonalDoneSearch);
+    window.addEventListener("focus",()=>{
+      if(document.getElementById("ms4PersonalTab")?.classList.contains("active"))showPersonalOpen();
+      else if(document.getElementById("ms4PersonalDoneTab")?.classList.contains("active"))showPersonalDone();
+    });
+  }
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",()=>setTimeout(init,80),{once:true});
+  else setTimeout(init,80);
+})();
+</script>
+
+
+<style id="ms-corporate-completed-reference-style-20260921">
+#ms4SiteList .ms-corp-ref{
+  display:inline-flex!important;align-items:center!important;justify-content:center!important;
+  min-width:58px!important;height:30px!important;padding:0 10px!important;
+  border:1px solid #7fa8c2!important;border-radius:6px!important;
+  background:#fff!important;color:#245b80!important;font-size:12px!important;
+  font-weight:900!important;cursor:pointer!important;white-space:nowrap!important;
+}
+#ms4SiteList .ms-corp-ref:hover{background:#eef7fd!important}
+</style>
+<script id="ms-corporate-completed-reference-script-20260921">
+(function(){
+  "use strict";
+
+  function norm(v){return String(v||"").replace(/\s+/g," ").trim();}
+  function sites(){
+    try{return Array.isArray(state?.sites)?state.sites:[];}catch(e){return [];}
+  }
+  function clientText(site){
+    return norm(site?.clientName||site?.client||site?.ordererName||site?.customerName||"");
+  }
+  function findSiteForRow(row){
+    const txt=norm(row?.innerText||"");
+    if(!txt)return null;
+    const candidates=sites().filter(site=>{
+      const name=norm(site?.name||site?.siteName||"");
+      return name && txt.includes(name);
+    });
+    if(candidates.length===1)return candidates[0];
+    if(candidates.length>1){
+      const narrowed=candidates.filter(site=>{
+        const c=clientText(site);
+        return c && txt.includes(c);
+      });
+      if(narrowed.length===1)return narrowed[0];
+    }
+    return null;
+  }
+  function decorateDoneRows(){
+    const done=document.getElementById("ms4DoneTab");
+    if(!done?.classList.contains("active"))return;
+    const box=document.getElementById("ms4SiteList");
+    if(!box)return;
+
+    [...box.children].forEach(row=>{
+      if(row.querySelector(".ms-corp-ref"))return;
+      const site=findSiteForRow(row);
+      if(!site?.id)return;
+
+      const btn=document.createElement("button");
+      btn.type="button";
+      btn.className="ms-corp-ref";
+      btn.textContent="参照";
+      btn.title="完了工事の請求履歴を参照・再印刷します";
+      btn.addEventListener("click",function(e){
+        e.preventDefault();e.stopPropagation();
+        const p=new URLSearchParams();
+        p.set("site",site.id);
+        p.set("ref","1");
+        location.href="invoice_monthly.html?"+p.toString();
+      });
+
+      let actions=row.querySelector(".ms4-site-buttons,.ms4-site-actions,.site-actions,.actions");
+      if(!actions){
+        actions=document.createElement("div");
+        actions.className="ms4-site-buttons";
+        row.appendChild(actions);
+      }
+      actions.appendChild(btn);
+    });
+  }
+
+  function install(){
+    const box=document.getElementById("ms4SiteList");
+    if(box)new MutationObserver(()=>setTimeout(decorateDoneRows,20))
+      .observe(box,{childList:true,subtree:true});
+    document.getElementById("ms4DoneTab")?.addEventListener("click",()=>{
+      [40,120,300].forEach(ms=>setTimeout(decorateDoneRows,ms));
+    });
+    [300,700].forEach(ms=>setTimeout(decorateDoneRows,ms));
+  }
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",install,{once:true});
+  else install();
+})();
+</script>
+
 </body></html><style id="ms-main-target-month-refined-20260920">
 .ms4-billing-month-bar{background:#f4f7f9!important;border:1px solid #cfd9df!important;border-radius:9px!important;padding:9px 12px!important;box-shadow:none!important;}
 .ms4-billing-month-bar label{font-size:12px!important;font-weight:700!important;color:#536b79!important;}
@@ -978,3 +1406,4 @@ function MSInvoiceOpenGuide(){
 #msMainMonthWarning{width:100%;font-size:10px!important;font-weight:600!important;color:#667b88!important;text-align:left!important;margin-top:2px!important;}
 #msMainMonthWarning.current{color:#667b88!important;}
 </style>
+

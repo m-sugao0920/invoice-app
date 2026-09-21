@@ -5673,6 +5673,119 @@ document.addEventListener("click",(e)=>{
   },true);
 })();
 </script>
+
+<style id="ms-corporate-reference-mode-style-20260921">
+#msCorporateReferenceBanner{
+  display:none;margin:0 auto 12px;max-width:1372px;box-sizing:border-box;
+  padding:10px 14px;border:1px solid #a9c7da;border-radius:9px;
+  background:#eef7fd;color:#245b80;font-size:12px;font-weight:900;
+}
+body.ms-corporate-reference #msCorporateReferenceBanner{display:block}
+body.ms-corporate-reference #btnSaveMonthly,
+body.ms-corporate-reference #btnRetentionOnly,
+body.ms-corporate-reference #btnClaimRetention,
+body.ms-corporate-reference #btnDeleteMonthly,
+body.ms-corporate-reference #siteHistoryTable button[data-action="edit"],
+body.ms-corporate-reference #siteHistoryTable button[data-action="delete"]{display:none!important}
+body.ms-corporate-reference #invoiceMonthlyTargetGrid input,
+body.ms-corporate-reference #invoiceMonthlyTargetGrid select,
+body.ms-corporate-reference #m_increaseNet,
+body.ms-corporate-reference #m_reductionNet,
+body.ms-corporate-reference #m_thisMonthNet,
+body.ms-corporate-reference #m_isFinal{
+  pointer-events:none!important;
+}
+body.ms-corporate-reference .month-main-inputs{opacity:.78}
+</style>
+<script id="ms-corporate-reference-mode-script-20260921">
+(function(){
+  "use strict";
+  let q;
+  try{q=new URLSearchParams(location.search||"");}catch(e){q=new URLSearchParams();}
+  const refMode=q.get("ref")==="1";
+  const refSite=q.get("site")||"";
+  if(!refMode||!refSite)return;
+
+  function hideMutatingHistoryButtons(){
+    document.querySelectorAll("#siteHistoryTable button").forEach(btn=>{
+      const t=(btn.textContent||"").trim();
+      if(t.includes("編集")||t.includes("削除"))btn.style.display="none";
+    });
+  }
+  function lockMutationControls(){
+    ["btnSaveMonthly","btnRetentionOnly","btnClaimRetention","btnDeleteMonthly"].forEach(id=>{
+      const e=document.getElementById(id);if(e)e.style.display="none";
+    });
+    ["m_month","m_clientFilter","m_siteSearch","m_showSaved","m_site","m_isFinal",
+     "m_increaseNet","m_reductionNet","m_thisMonthNet"].forEach(id=>{
+      const e=document.getElementById(id);if(e){e.tabIndex=-1;e.setAttribute("aria-readonly","true");}
+    });
+    hideMutatingHistoryButtons();
+  }
+  function selectCompletedSite(){
+    const saved=document.getElementById("m_showSaved");
+    if(saved && !saved.checked){
+      saved.checked=true;
+      try{saved.dispatchEvent(new Event("change",{bubbles:true}));}catch(e){}
+    }
+    try{if(typeof refreshSiteSelects==="function")refreshSiteSelects();}catch(e){}
+    const site=document.getElementById("m_site");
+    if(!site)return false;
+    const opt=[...site.options].find(o=>String(o.value)===String(refSite));
+    if(!opt)return false;
+    opt.disabled=false;
+    site.value=refSite;
+    try{site.dispatchEvent(new Event("change",{bubbles:true}));}catch(e){}
+    return true;
+  }
+  function banner(){
+    if(document.getElementById("msCorporateReferenceBanner"))return;
+    const b=document.createElement("div");
+    b.id="msCorporateReferenceBanner";
+    b.textContent="完了工事の参照モードです。請求履歴の確認と過去請求書の再印刷ができます。登録・編集・削除はこの画面では行いません。";
+    const wrap=document.querySelector(".invoice-monthly-wrap");
+    if(wrap)wrap.insertBefore(b,wrap.firstChild);
+    else document.body.insertBefore(b,document.body.firstChild);
+  }
+  function init(){
+    document.body.classList.add("ms-corporate-reference");
+    banner();
+    let tries=0;
+    const run=()=>{
+      tries++;
+      const ok=selectCompletedSite();
+      lockMutationControls();
+      if(!ok && tries<18)setTimeout(run,120);
+      else{
+        [80,220,500].forEach(ms=>setTimeout(()=>{
+          const site=document.getElementById("m_site");
+          const opt=site?[...site.options].find(o=>String(o.value)===String(refSite)):null;
+          if(opt)opt.disabled=false;
+          if(site && site.value!==refSite){site.value=refSite;site.dispatchEvent(new Event("change",{bubbles:true}));}
+          lockMutationControls();
+        },ms));
+      }
+    };
+    setTimeout(run,520);
+
+    const hist=document.getElementById("siteHistoryTable");
+    if(hist)new MutationObserver(()=>setTimeout(lockMutationControls,10))
+      .observe(hist,{childList:true,subtree:true});
+    document.addEventListener("click",function(e){
+      const btn=e.target.closest("button");
+      if(!btn)return;
+      const t=(btn.textContent||"").trim();
+      if(t.includes("編集")||t.includes("削除")||t.includes("保存")||
+         (t.includes("保留金")&&t.includes("請求"))){
+        e.preventDefault();e.stopImmediatePropagation();
+      }
+    },true);
+  }
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init,{once:true});
+  else init();
+})();
+</script>
+
 </body>
 </html>
 <script id="ms-monthly-print-state-preserve-v2">
